@@ -1,0 +1,18 @@
+module.exports = [
+  { id: 1,  city: '후쿠오카',      code: 'FUK', country: 'JP', price: 231400,  region: 'east_asia',      dates: '2026.5.19 (화) - 2026.5.21 (목)', days: 3 },
+  { id: 2,  city: '오사카',        code: 'KIX', country: 'JP', price: 212070,  region: 'east_asia',      dates: '2026.7.19 (일) - 2026.7.21 (화)', days: 3 },
+  { id: 3,  city: '도쿄',          code: 'NRT', country: 'JP', price: 263850,  region: 'east_asia',      dates: '2026.6.16 (화) - 2026.6.18 (목)', days: 3 },
+  { id: 4,  city: '방콕',          code: 'BKK', country: 'TH', price: 381700,  region: 'southeast_asia', dates: '2026.6.5 (금) - 2026.6.10 (수)',  days: 6 },
+  { id: 5,  city: '나트랑',        code: 'CXR', country: 'VN', price: 323150,  region: 'southeast_asia', dates: '2026.5.24 (일) - 2026.5.28 (목)', days: 5 },
+  { id: 6,  city: '싱가포르',      code: 'SIN', country: 'SG', price: 412000,  region: 'southeast_asia', dates: '2026.6.1 (월) - 2026.6.5 (금)',   days: 5 },
+  { id: 7,  city: '바르셀로나',    code: 'BCN', country: 'ES', price: 758500,  region: 'europe',         dates: '2026.5.20 (수) - 2026.5.26 (화)', days: 7 },
+  { id: 8,  city: '로마',          code: 'FCO', country: 'IT', price: 810200,  region: 'europe',         dates: '2026.5.22 (금) - 2026.5.28 (목)', days: 7 },
+  { id: 9,  city: '파리',          code: 'CDG', country: 'FR', price: 938600,  region: 'europe',         dates: '2026.5.22 (금) - 2026.5.29 (금)', days: 8 },
+  { id: 10, city: '런던',          code: 'LHR', country: 'GB', price: 890000,  region: 'europe',         dates: '2026.6.10 (수) - 2026.6.17 (수)', days: 8 },
+  { id: 11, city: '뉴욕',          code: 'JFK', country: 'US', price: 1245000, region: 'americas',       dates: '2026.6.1 (월) - 2026.6.10 (수)',  days: 10 },
+  { id: 12, city: '로스앤젤레스',  code: 'LAX', country: 'US', price: 1150000, region: 'americas',       dates: '2026.6.5 (금) - 2026.6.14 (일)',  days: 10 },
+  { id: 13, city: '시드니',        code: 'SYD', country: 'AU', price: 890000,  region: 'oceania',        dates: '2026.7.1 (수) - 2026.7.10 (금)',  days: 10 },
+  { id: 14, city: '두바이',        code: 'DXB', country: 'AE', price: 620000,  region: 'middle_east',    dates: '2026.6.10 (수) - 2026.6.17 (수)', days: 8 },
+  { id: 15, city: '카이로',        code: 'CAI', country: 'EG', price: 780000,  region: 'africa',         dates: '2026.6.15 (월) - 2026.6.22 (월)', days: 8 },
+  { id: 16, city: '상파울루',      code: 'GRU', country: 'BR', price: 1380000, region: 'americas',       dates: '2026.7.10 (금) - 2026.7.22 (수)', days: 13 },
+];
