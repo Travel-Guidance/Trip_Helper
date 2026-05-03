@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Smartphone, Plane, MapPin, Sparkles, Calendar,
   Navigation, Wifi, ChevronRight, ChevronLeft, Menu, X, Users,
-  Hotel, Shield, Globe,
+  Hotel, Shield, Globe, Music, Pause,
 } from 'lucide-react';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -181,6 +181,8 @@ function Navbar({ mobileMenuOpen, onToggle }) {
         <div className="hidden md:flex items-center gap-1">
           <NavLink to="/flights">항공권</NavLink>
           <NavLink to="/esim">eSIM</NavLink>
+          <NavLink to="/hotels">숙소</NavLink>
+          <NavLink to="/tours">투어 및 액티비티</NavLink>
           <button className="relative text-sm font-medium text-gray-600 px-3 py-1.5 rounded-lg transition-all duration-200 hover:text-gray-900 hover:bg-gray-50 group ml-2">
             로그인
           </button>
@@ -202,6 +204,8 @@ function Navbar({ mobileMenuOpen, onToggle }) {
         <div className="md:hidden bg-white border-t border-gray-100 px-6 py-4 flex flex-col gap-1">
           <NavLink to="/flights">항공권</NavLink>
           <NavLink to="/esim">eSIM</NavLink>
+          <NavLink to="/hotels">숙소</NavLink>
+          <NavLink to="/tours">투어 및 액티비티</NavLink>
           <button className="text-left text-sm font-medium text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">로그인</button>
           <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold py-3 rounded-full mt-2 hover:shadow-lg transition-all">
             시작하기
@@ -257,6 +261,7 @@ function PhoneMockup() {
 }
 
 function HeroSection() {
+  const navigate = useNavigate();
   return (
     <section className="pt-40 pb-24 px-6 bg-gradient-to-br from-blue-50 via-purple-50/60 to-pink-50">
       <div className="max-w-[1200px] mx-auto">
@@ -279,7 +284,10 @@ function HeroSection() {
               모든 것을 알아서 해드립니다.
             </p>
             <div className="flex flex-wrap gap-3 pt-1">
-              <button className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold px-7 py-3.5 rounded-full hover:shadow-xl hover:shadow-blue-200 hover:scale-[1.02] active:scale-95 transition-all duration-200 group">
+              <button
+                onClick={() => navigate('/ai-travel')}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold px-7 py-3.5 rounded-full hover:shadow-xl hover:shadow-blue-200 hover:scale-[1.02] active:scale-95 transition-all duration-200 group"
+              >
                 <Sparkles className="w-4 h-4" />
                 무료로 여행 계획 시작하기
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -558,6 +566,7 @@ function CTAPhoneMockup() {
 }
 
 function CTASection() {
+  const navigate = useNavigate();
   return (
     <section className="py-12 px-6">
       <div className="max-w-[1200px] mx-auto">
@@ -578,7 +587,10 @@ function CTASection() {
                 지금 바로 폰가이즈와 함께<br />
                 당신만의 특별한 여행을 시작하세요
               </p>
-              <button className="inline-flex items-center gap-2 bg-white text-blue-600 text-sm font-bold px-8 py-4 rounded-full hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-200 w-fit group">
+              <button
+                onClick={() => navigate('/ai-travel')}
+                className="inline-flex items-center gap-2 bg-white text-blue-600 text-sm font-bold px-8 py-4 rounded-full hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-200 w-fit group"
+              >
                 <Sparkles className="w-4 h-4" />
                 무료로 여행 계획 시작하기
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -645,6 +657,71 @@ function Footer() {
   );
 }
 
+// ─── Music Player ─────────────────────────────────────────────────────────────
+
+function MusicPlayer() {
+  const [playing, setPlaying] = useState(false);
+  const [started, setStarted] = useState(false);
+  const iframeRef = useRef(null);
+
+  const sendCommand = (func) => {
+    iframeRef.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: 'command', func, args: '' }),
+      '*'
+    );
+  };
+
+  const toggle = () => {
+    if (!started) {
+      setStarted(true);
+      setPlaying(true);
+    } else {
+      sendCommand(playing ? 'pauseVideo' : 'playVideo');
+      setPlaying(p => !p);
+    }
+  };
+
+  return (
+    <>
+      {started && (
+        <iframe
+          ref={iframeRef}
+          src="https://www.youtube.com/embed/3ssL8vx7Xhg?autoplay=1&enablejsapi=1&list=PLbO6DZoHB7rQwNeinHBM_2bV2B6hR3Xx4&loop=1&controls=0"
+          allow="autoplay"
+          style={{ position: 'fixed', top: -9999, left: -9999, width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+          title="bgm"
+        />
+      )}
+
+      <button
+        onClick={toggle}
+        title={playing ? '음악 정지' : '음악 재생'}
+        className={`fixed bottom-6 left-6 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 ${
+          playing
+            ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white shadow-blue-200'
+            : 'bg-white text-gray-500 hover:text-gray-800'
+        }`}
+      >
+        {playing
+          ? <Pause className="w-5 h-5" />
+          : <Music className="w-5 h-5" />
+        }
+      </button>
+
+      {playing && (
+        <div className="fixed bottom-6 left-20 z-50 bg-white/90 backdrop-blur-sm border border-gray-100 rounded-full px-4 py-2 shadow-md flex items-center gap-2 text-xs text-gray-600 animate-fade-in">
+          <span className="flex gap-0.5 items-end h-3">
+            <span className="w-0.5 bg-blue-500 rounded-full animate-[bounce_0.8s_ease-in-out_infinite]" style={{ height: '60%' }} />
+            <span className="w-0.5 bg-purple-500 rounded-full animate-[bounce_0.8s_ease-in-out_0.2s_infinite]" style={{ height: '100%' }} />
+            <span className="w-0.5 bg-blue-500 rounded-full animate-[bounce_0.8s_ease-in-out_0.4s_infinite]" style={{ height: '40%' }} />
+          </span>
+          노래 재생 중
+        </div>
+      )}
+    </>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function MainPage() {
@@ -659,6 +736,7 @@ export default function MainPage() {
       <ServicesSection />
       <CTASection />
       <Footer />
+      <MusicPlayer />
     </div>
   );
 }

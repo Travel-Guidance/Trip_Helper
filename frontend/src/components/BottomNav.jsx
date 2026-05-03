@@ -3,8 +3,6 @@ import { Link, useLocation } from 'react-router-dom'
 const TABS = [
   { label: '홈', icon: '🏠', to: '/' },
   { label: 'AI 여행', icon: '✨', to: '/ai-travel' },
-  { label: '항공권', icon: '✈️', to: '/flights' },
-  { label: 'eSIM', icon: '📱', to: '/esim' },
 ]
 
 export default function BottomNav() {

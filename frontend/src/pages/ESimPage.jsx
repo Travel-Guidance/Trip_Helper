@@ -186,7 +186,11 @@ export default function ESimPage() {
   // ── Step 0: Landing ──────────────────────────────────────────────────────────
   if (step === 0) return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      <Header />
+      <Header navLinks={[
+        { label: '항공권', to: '/flights' },
+        { label: '숙소', to: '/hotels' },
+        { label: '투어 및 액티비티', to: '/tours' },
+      ]} />
       <div className="esim-landing">
         <div className="esim-landing-notice">
           <span className="esim-notice-icon">ⓘ</span>
@@ -281,7 +285,11 @@ export default function ESimPage() {
   // ── Step 1: Country selection ────────────────────────────────────────────────
   if (step === 1) return (
     <div style={{ minHeight: '100vh', background: '#fff' }}>
-      <Header />
+      <Header navLinks={[
+        { label: '항공권', to: '/flights' },
+        { label: '숙소', to: '/hotels' },
+        { label: '투어 및 액티비티', to: '/tours' },
+      ]} />
       <div className="esim-country-page">
         <button className="esim-back" onClick={() => setStep(0)}>←</button>
         <h2 className="esim-page-title">여행할 국가를 모두<br />선택해주세요.</h2>
@@ -333,7 +341,11 @@ export default function ESimPage() {
   // ── Step 2: Product combination ──────────────────────────────────────────────
   if (step === 2) return (
     <div style={{ minHeight: '100vh', background: '#fff' }}>
-      <Header />
+      <Header navLinks={[
+        { label: '항공권', to: '/flights' },
+        { label: '숙소', to: '/hotels' },
+        { label: '투어 및 액티비티', to: '/tours' },
+      ]} />
       <div className="esim-combo-page">
         <button className="esim-back" onClick={() => setStep(1)}>←</button>
         <h2 className="esim-combo-title">
@@ -511,7 +523,11 @@ export default function ESimPage() {
   // ── Step 3: Confirmation ─────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      <Header />
+      <Header navLinks={[
+        { label: '항공권', to: '/flights' },
+        { label: '숙소', to: '/hotels' },
+        { label: '투어 및 액티비티', to: '/tours' },
+      ]} />
       <div className="esim-confirm-page">
         <div className="esim-confirm-icon">✅</div>
         <h2 className="esim-confirm-title">eSIM 구매가 완료되었습니다!</h2>

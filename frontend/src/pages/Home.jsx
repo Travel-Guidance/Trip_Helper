@@ -48,7 +48,15 @@ export default function Home() {
 
   return (
     <div className="page-home">
-      <Header tripType={tripType} onTripTypeChange={setTripType} />
+      <Header
+        tripType={tripType}
+        onTripTypeChange={setTripType}
+        navLinks={[
+          { label: 'eSIM', to: '/esim' },
+          { label: '숙소', to: '/hotels' },
+          { label: '투어 및 액티비티', to: '/tours' },
+        ]}
+      />
 
       <div className="search-section">
         <div className="search-card">
