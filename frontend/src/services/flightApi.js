@@ -1,5 +1,5 @@
 // 백엔드: https://travel-generation.onrender.com
-// 프론트: https://travel-generation-ten.vercel.app
+// 프론트: https://travel-generation-jj45.vercel.app
 // const BASE = '/api' // 로컬 개발용 (Vite proxy 사용)
 const BASE = 'https://travel-generation-3.onrender.com/api' // 배포용
 

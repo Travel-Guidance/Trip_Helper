@@ -14,7 +14,7 @@ const esimRoutes = require('./routes/esimRoutes');
 
 const app = express();
 // app.use(cors()) // 로컬 개발용 (전체 허용)
-app.use(cors({ origin: 'https://travel-generation-ten.vercel.app' })) // 배포용
+app.use(cors({ origin: 'https://travel-generation-jj45.vercel.app' })) // 배포용
 app.use(express.json());
 app.use(morgan('dev'));
 
