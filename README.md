@@ -64,6 +64,7 @@ cd backend
 npm run dev       # 개발 (파일 변경 시 자동 재시작)
 # 또는
 npm start         # 일반 실행
+#test
 ```
 
 **터미널 2 — 프론트엔드**
