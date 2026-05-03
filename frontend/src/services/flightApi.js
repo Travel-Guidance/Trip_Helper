@@ -1,7 +1,7 @@
 // 백엔드: https://travel-generation.onrender.com
 // 프론트: https://travel-generation-ten.vercel.app
 // const BASE = '/api' // 로컬 개발용 (Vite proxy 사용)
-const BASE = 'https://travel-generation.onrender.com/api' // 배포용
+const BASE = 'https://travel-generation-3.onrender.com/api' // 배포용
 
 export async function getPlaces(query) {
   if (!query || query.length < 2) return []
