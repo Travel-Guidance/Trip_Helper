@@ -8,6 +8,7 @@ import SeatSelection from './pages/SeatSelection'
 import BookingForm from './pages/BookingForm'
 import Confirmation from './pages/Confirmation'
 import ESimPage from './pages/ESimPage'
+import LoginPage from './pages/LoginPage'
 import './App.css'
 
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/booking/:offerId" element={<BookingForm />} />
           <Route path="/confirmation/:orderId" element={<Confirmation />} />
           <Route path="/esim" element={<ESimPage />} />
+          <Route path="/login" element={<LoginPage />} />
         </Routes>
       </BrowserRouter>
     </SearchProvider>

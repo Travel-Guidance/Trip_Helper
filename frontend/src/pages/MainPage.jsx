@@ -183,7 +183,10 @@ function Navbar({ mobileMenuOpen, onToggle }) {
           <NavLink to="/esim">eSIM</NavLink>
           <NavLink to="/hotels">숙소</NavLink>
           <NavLink to="/tours">투어 및 액티비티</NavLink>
-          <button className="relative text-sm font-medium text-gray-600 px-3 py-1.5 rounded-lg transition-all duration-200 hover:text-gray-900 hover:bg-gray-50 group ml-2">
+          <button
+            onClick={() => navigate('/login')}
+            className="relative text-sm font-medium text-gray-600 px-3 py-1.5 rounded-lg transition-all duration-200 hover:text-gray-900 hover:bg-gray-50 group ml-2"
+          >
             로그인
           </button>
           <button
@@ -206,7 +209,7 @@ function Navbar({ mobileMenuOpen, onToggle }) {
           <NavLink to="/esim">eSIM</NavLink>
           <NavLink to="/hotels">숙소</NavLink>
           <NavLink to="/tours">투어 및 액티비티</NavLink>
-          <button className="text-left text-sm font-medium text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">로그인</button>
+          <button onClick={() => navigate('/login')} className="text-left text-sm font-medium text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">로그인</button>
           <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold py-3 rounded-full mt-2 hover:shadow-lg transition-all">
             시작하기
           </button>
