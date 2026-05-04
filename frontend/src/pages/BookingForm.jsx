@@ -5,6 +5,7 @@ import BottomNav from '../components/layout/BottomNav'
 import { formatTime, formatDateShort, parseDuration, formatDuration, formatPrice, getStopsText } from '../utils'
 import { useOffer } from '../hooks/useOffer'
 import { createOrder } from '../api/flightApi'
+import '../styles/flight.css'
 
 function SliceSummary({ slice }) {
   const first = slice.segments[0]

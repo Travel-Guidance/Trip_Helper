@@ -5,6 +5,7 @@ import Navbar from '../components/layout/Navbar'
 import { formatKrwPrice } from '../utils/currency'
 import { createStayBooking, getStayDetail, getMapEmbedUrl } from '../api/accomodationApi'
 import { pickHotelImage } from '../data/images'
+import '../styles/accommodation.css'
 
 function formatDate(value) {
   if (!value) return '날짜 미정'

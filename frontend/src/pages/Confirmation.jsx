@@ -4,6 +4,7 @@ import Navbar from '../components/layout/Navbar'
 import BottomNav from '../components/layout/BottomNav'
 import { formatTime, formatDateShort, formatPrice } from '../utils'
 import { getOrder } from '../api/flightApi'
+import '../styles/flight.css'
 
 export default function Confirmation() {
   const { orderId } = useParams()

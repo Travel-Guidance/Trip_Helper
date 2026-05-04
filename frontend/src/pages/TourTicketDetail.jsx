@@ -2,7 +2,9 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import BottomNav from '../components/layout/BottomNav'
 import Navbar from '../components/layout/Navbar'
+import { API_BASE } from '../api/config'
 import { getTourDetail } from '../api/tourApi'
+import '../styles/tour.css'
 
 const FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1533105079780-92b9be482077?w=1000&q=80',
@@ -61,7 +63,7 @@ export default function TourTicketDetail() {
     }
 
     setMapError('')
-    fetch(`/api/maps/embed-url?${params.toString()}`, { signal: controller.signal })
+    fetch(`${API_BASE}/maps/embed-url?${params.toString()}`, { signal: controller.signal })
       .then(r => r.json().then(data => {
         if (!r.ok || data.error) throw new Error(data.error || '지도를 불러오지 못했습니다')
         setMapUrls(data)

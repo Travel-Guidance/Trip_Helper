@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { Smartphone } from 'lucide-react'
+import '../../styles/layout.css'
 
 export default function Header({ tripType, onTripTypeChange, navLinks = [] }) {
   const navigate = useNavigate()

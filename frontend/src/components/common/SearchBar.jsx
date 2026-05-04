@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import AirportModal from './AirportModal'
 import CalendarPicker from './CalendarPicker'
 import { formatDateKo } from '../../utils'
+import '../../styles/flight.css'
 
 const CABIN_LABELS = {
   economy: '일반석',

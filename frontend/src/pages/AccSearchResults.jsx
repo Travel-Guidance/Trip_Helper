@@ -5,6 +5,7 @@ import Navbar from '../components/layout/Navbar'
 import { formatKrwPrice, toKrw } from '../utils/currency'
 import { searchStays } from '../api/accomodationApi'
 import { pickHotelImage } from '../data/images'
+import '../styles/accommodation.css'
 
 const SORT_OPTIONS = [
   { value: 'recommended', label: '추천순' },

@@ -6,6 +6,7 @@ import BottomNav from '../components/layout/BottomNav'
 import { FLAGS } from '../utils'
 import { getPopular } from '../api/flightApi'
 import { useSearch } from '../store/SearchContext'
+import '../styles/flight.css'
 
 const REGIONS = [
   { key: 'all', label: '추천' },

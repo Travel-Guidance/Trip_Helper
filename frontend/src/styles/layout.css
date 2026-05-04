@@ -1,0 +1,119 @@
+﻿/* ===== HEADER ===== */
+.header {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.logo {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: -1px;
+}
+.trip-tabs {
+  display: flex;
+  gap: 4px;
+}
+.trip-tab {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: all 0.15s;
+}
+.trip-tab.active {
+  background: var(--primary);
+  color: var(--white);
+}
+.trip-tab:hover:not(.active) {
+  background: var(--bg);
+}
+.header-right {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.btn-outline {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--white);
+  transition: border-color 0.15s;
+}
+.btn-outline:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+
+/* ?? Bottom Navigation ???????????????????????????????????????????????????? */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: #fff;
+  border-top: 1px solid var(--border);
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 0 8px;
+  text-decoration: none;
+  color: var(--text-muted);
+  transition: color 0.15s;
+}
+.bottom-nav-item.active {
+  color: var(--primary);
+}
+.bottom-nav-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+.bottom-nav-label {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+
+/* ===== PAGE HEADER ===== */
+.page-hero {
+  background: var(--primary-dark);
+  color: var(--white);
+  padding: 20px 24px;
+}
+.page-hero-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.page-hero-route {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+.page-hero-detail {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+

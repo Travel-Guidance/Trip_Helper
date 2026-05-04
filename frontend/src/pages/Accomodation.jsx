@@ -5,6 +5,7 @@ import Navbar from '../components/layout/Navbar'
 import { DEST_DATA, POPULAR_REGIONS } from '../data/destinations'
 import { formatKrwPrice } from '../utils/currency'
 import { searchStays } from '../api/accomodationApi'
+import '../styles/accommodation.css'
 
 /* ── 여행지 메타 ── */
 const DESTINATIONS = [

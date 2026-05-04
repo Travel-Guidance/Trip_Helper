@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import Navbar from '../components/layout/Navbar'
 import BottomNav from '../components/layout/BottomNav'
 import { formatKrwPrice } from '../utils/currency'
+import '../styles/accommodation.css'
 
 function formatDate(value) {
   if (!value) return '-'

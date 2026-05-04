@@ -5,6 +5,7 @@ import BottomNav from '../components/layout/BottomNav'
 import { formatTime, formatDateShort, formatPrice } from '../utils'
 import { useOffer } from '../hooks/useOffer'
 import { useSeatMaps } from '../hooks/useSeatMaps'
+import '../styles/seat.css'
 
 const SEAT_COLORS = {
   unavailable: { bg: '#e5e7eb', color: '#9ca3af', cursor: 'not-allowed' },

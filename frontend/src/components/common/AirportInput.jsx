@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useRef, useCallback } from 'react'
 import { getPlaces } from '../../api/flightApi'
+import '../../styles/flight.css'
 
 export default function AirportInput({ value, onChange, placeholder }) {
   const [query, setQuery] = useState(value?.name || '')

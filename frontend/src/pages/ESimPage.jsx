@@ -4,6 +4,7 @@ import Navbar from '../components/layout/Navbar'
 import BottomNav from '../components/layout/BottomNav'
 import CalendarPicker from '../components/common/CalendarPicker'
 import { purchaseEsim } from '../api/esimApi'
+import '../styles/esim.css'
 
 const COUNTRIES = [
   { code: 'JP', name: '일본',             flag: '🇯🇵', region: 'asia' },

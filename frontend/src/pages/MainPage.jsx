@@ -6,6 +6,7 @@ import {
   Hotel, Globe, Music, Pause, Smartphone,
 } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
+import '../styles/main-page.css';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 

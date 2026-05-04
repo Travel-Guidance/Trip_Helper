@@ -1,3 +1,5 @@
-// VITE_API_BASE: 백엔드 서버 주소 (예: https://your-app.onrender.com)
-// 개발 환경에서는 비워두면 Vite proxy(/api)가 자동으로 처리합니다
-export const API_BASE = (import.meta.env.VITE_API_BASE || '') + '/api'
+// VITE_API_BASE: backend origin, for example https://your-backend.onrender.com
+// Leave it empty in local development so Vite proxies /api to the backend.
+const API_ORIGIN = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
+
+export const API_BASE = `${API_ORIGIN}/api`

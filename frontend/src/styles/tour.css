@@ -1,0 +1,1223 @@
+﻿/* ===== TOUR TICKET ===== */
+.tour-page {
+  min-height: 100vh;
+  background: #f7f8fa;
+  color: #111827;
+  padding-top: 64px;
+  padding-bottom: 86px;
+}
+
+.tour-wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 22px 24px 72px;
+}
+
+.tour-hero-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 1.25fr 0.9fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.tour-hero-card {
+  position: relative;
+  min-height: 230px;
+  overflow: hidden;
+  border: none;
+  border-radius: 10px;
+  background: #111827;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tour-hero-card img {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+  opacity: 0.82;
+  transition: transform 0.2s;
+}
+
+.tour-hero-card:hover img {
+  transform: scale(1.05);
+}
+
+.tour-hero-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.72));
+}
+
+.tour-hero-card span,
+.tour-hero-card strong {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-left: 22px;
+  margin-right: 22px;
+}
+
+.tour-hero-card span {
+  margin-top: 142px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tour-hero-card strong {
+  margin-top: 6px;
+  font-size: 24px;
+  line-height: 1.22;
+}
+
+.tour-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 28px;
+  padding: 0 14px;
+  height: 48px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.tour-search-trigger {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  color: #9ca3af;
+  cursor: text;
+  text-align: left;
+}
+
+.tour-search-trigger strong {
+  flex: 1;
+  min-width: 0;
+  color: #4b5563;
+  font-size: 15px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tour-search-trigger em {
+  border-radius: 8px;
+  background: #111827;
+  color: #fff;
+  padding: 9px 15px;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.tour-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  color: #111827;
+  font-size: 15px;
+}
+
+.tour-search button {
+  border: none;
+  border-radius: 8px;
+  background: #111827;
+  color: #fff;
+  padding: 9px 15px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tour-search-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  padding: 70px 24px 24px;
+  background: rgba(15, 23, 42, 0.28);
+}
+
+.tour-search-panel {
+  max-width: 1120px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.18);
+}
+
+.tour-modal-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 50px;
+  padding: 0 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tour-modal-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  color: #111827;
+  font-size: 15px;
+}
+
+.tour-modal-search button {
+  border: none;
+  border-radius: 8px;
+  background: #111827;
+  color: #fff;
+  padding: 9px 15px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tour-modal-body {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  min-height: 330px;
+}
+
+.tour-modal-recent,
+.tour-modal-viewed {
+  padding: 20px;
+}
+
+.tour-modal-recent {
+  border-right: 1px solid #e5e7eb;
+}
+
+.tour-modal-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.tour-modal-title strong {
+  color: #111827;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.tour-modal-title span,
+.tour-modal-recent p,
+.tour-modal-viewed p {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.tour-modal-recent > button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: none;
+  background: transparent;
+  padding: 7px 0;
+  color: #4b5563;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tour-recent-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 6px;
+}
+
+.tour-recent-search-row button {
+  border: none;
+  background: transparent;
+  color: #4b5563;
+  cursor: pointer;
+}
+
+.tour-recent-search-row button:first-child {
+  min-width: 0;
+  padding: 8px 0;
+  font-size: 14px;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tour-recent-search-row button:last-child {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #9ca3af;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.tour-recent-search-row button:hover {
+  color: #111827;
+}
+
+.tour-recent-search-row button:last-child:hover {
+  background: #f3f4f6;
+  color: #ef4444;
+}
+
+.tour-modal-recent p,
+.tour-modal-viewed p {
+  margin: 48px 0 0;
+  text-align: center;
+}
+
+.tour-modal-banner {
+  display: flex;
+  align-items: center;
+  min-height: 92px;
+  margin-bottom: 18px;
+  padding: 18px 24px;
+  border-radius: 10px;
+  background:
+    linear-gradient(90deg, rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0.12)),
+    url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=900&q=80') center/cover;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.tour-modal-card-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.tour-modal-card-list button {
+  min-width: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tour-modal-card-list img {
+  width: 100%;
+  height: 116px;
+  border-radius: 8px;
+  object-fit: cover;
+  display: block;
+}
+
+.tour-modal-card-list strong,
+.tour-modal-card-list span {
+  display: block;
+}
+
+.tour-modal-card-list strong {
+  margin-top: 8px;
+  color: #111827;
+  font-size: 13px;
+  line-height: 1.35;
+  min-height: 35px;
+}
+
+.tour-modal-card-list span {
+  color: #f59e0b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tour-dashboard {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.tour-side {
+  position: sticky;
+  top: 82px;
+}
+
+.tour-side-panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.tour-side-title {
+  padding: 16px;
+  border-bottom: 1px solid #f1f3f6;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.tour-side-panel button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: none;
+  background: #fff;
+  padding: 10px 16px;
+  color: #4b5563;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tour-side-panel button:hover {
+  background: #f8fafc;
+}
+
+.tour-side-panel b {
+  width: 18px;
+  color: #2563eb;
+}
+
+.tour-filter-group {
+  padding: 14px;
+  border-top: 1px solid #f1f3f6;
+}
+
+.tour-filter-group:first-of-type {
+  border-top: none;
+}
+
+.tour-filter-group > span {
+  display: block;
+  margin-bottom: 10px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.tour-filter-group button {
+  width: 100%;
+  display: block;
+  margin-top: 7px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  padding: 9px 10px;
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.tour-filter-group button.is-active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.tour-main {
+  min-width: 0;
+}
+
+.tour-region,
+.tour-recent-viewed {
+  margin-bottom: 30px;
+}
+
+.tour-region h2,
+.tour-section-head h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 20px;
+  letter-spacing: 0;
+}
+
+.tour-dest-list {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 18px 0 4px;
+}
+
+.tour-dest-list::-webkit-scrollbar {
+  display: none;
+}
+
+.tour-dest-list button {
+  min-width: 86px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  color: #111827;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 12px 10px;
+  transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
+}
+
+.tour-dest-list button:hover {
+  border-color: #2563eb;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.12);
+  transform: translateY(-2px);
+}
+
+.tour-dest-list span {
+  display: block;
+  font-size: 32px;
+  margin-bottom: 7px;
+}
+
+.tour-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.tour-section-head span {
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.tour-mini-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.tour-mini-list button {
+  border: none;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tour-mini-list img {
+  width: 100%;
+  height: 90px;
+  object-fit: cover;
+  display: block;
+}
+
+.tour-mini-list span {
+  display: block;
+  padding: 10px;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tour-empty-mini,
+.tour-error {
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.tour-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.tour-load-more {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.tour-load-more--end {
+  color: #9ca3af;
+  font-weight: 700;
+}
+
+.tour-card {
+  min-width: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: none;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+  text-align: left;
+}
+
+.tour-card:hover {
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.12);
+}
+
+.tour-card img {
+  width: 100%;
+  aspect-ratio: 1 / 0.78;
+  object-fit: cover;
+  display: block;
+  background: #e5e7eb;
+}
+
+.tour-badges {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tour-badge {
+  width: max-content;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.tour-badge-blue {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.tour-badge-green {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.tour-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+}
+
+.tour-card-body strong,
+.tour-card-body span,
+.tour-card-body em {
+  display: block;
+}
+
+.tour-card-body strong {
+  color: #111827;
+  font-size: 15px;
+  line-height: 1.35;
+  min-height: 41px;
+}
+
+.tour-card-body span {
+  margin-top: 6px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.35;
+  min-height: 49px;
+}
+
+.tour-card-body em {
+  margin-top: auto;
+  padding-top: 8px;
+  color: #f59e0b;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.tour-card--skeleton {
+  height: 250px;
+  background: linear-gradient(90deg, #eee 25%, #f7f7f7 50%, #eee 75%);
+  background-size: 800px 100%;
+  animation: ac-shimmer 1.4s infinite linear;
+}
+
+@media (max-width: 900px) {
+  .tour-hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tour-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .tour-side {
+    position: static;
+  }
+
+  .tour-grid,
+  .tour-mini-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .tour-wrap {
+    padding: 16px 14px 72px;
+  }
+
+  .tour-hero-card {
+    min-height: 180px;
+  }
+
+  .tour-hero-card span {
+    margin-top: 104px;
+  }
+
+  .tour-grid,
+  .tour-mini-list {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .tour-search button {
+    padding: 8px 11px;
+  }
+
+  .tour-search-modal {
+    padding: 56px 12px 18px;
+  }
+
+  .tour-modal-body {
+    grid-template-columns: 1fr;
+    max-height: calc(100vh - 130px);
+    overflow-y: auto;
+  }
+
+  .tour-modal-recent {
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .tour-modal-card-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ===== TOUR DETAIL ===== */
+.tour-detail-page {
+  min-height: 100vh;
+  background: #f7f8fa;
+  color: #111827;
+  padding-top: 64px;
+  padding-bottom: 88px;
+}
+
+.tour-detail-top {
+  height: 54px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  background: rgba(255,255,255,0.94);
+  border-bottom: 1px solid #e5e7eb;
+  backdrop-filter: blur(10px);
+}
+
+.tour-detail-top button {
+  border: none;
+  background: transparent;
+  color: #111827;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.tour-detail-top span {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.tour-detail-wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 20px 72px;
+}
+
+.tour-detail-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.tour-detail-title span,
+.tour-detail-title p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.tour-detail-title h1 {
+  margin: 5px 0 6px;
+  color: #111827;
+  font-size: 26px;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+.tour-detail-title button {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  padding: 9px 13px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tour-detail-gallery {
+  display: grid;
+  grid-template-columns: 1.5fr 0.8fr 0.8fr;
+  grid-template-rows: 170px 170px;
+  gap: 8px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #e5e7eb;
+  margin-bottom: 18px;
+}
+
+.tour-detail-gallery img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tour-detail-gallery img.main {
+  grid-row: span 2;
+}
+
+.tour-detail-gallery--1 {
+  grid-template-columns: 1fr;
+  grid-template-rows: 360px;
+}
+
+.tour-detail-gallery--1 img.main {
+  grid-row: auto;
+}
+
+.tour-detail-gallery--2 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 360px;
+}
+
+.tour-detail-gallery--2 img.main {
+  grid-row: auto;
+}
+
+.tour-detail-chip-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.tour-detail-chip-grid div {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 13px 14px;
+}
+
+.tour-detail-chip-grid strong,
+.tour-detail-chip-grid span {
+  display: block;
+}
+
+.tour-detail-chip-grid strong {
+  color: #111827;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.tour-detail-chip-grid span {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.tour-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 18px;
+  align-items: start;
+}
+
+.tour-detail-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tour-detail-card,
+.tour-detail-book {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.tour-detail-card {
+  padding: 22px;
+}
+
+.tour-detail-card h2 {
+  margin: 0 0 14px;
+  color: #111827;
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.tour-detail-card p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.tour-detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.tour-detail-tags span {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tour-detail-info-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 13px 0;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.tour-detail-info-list div:last-child {
+  border-bottom: none;
+}
+
+.tour-detail-info-list span {
+  color: #6b7280;
+}
+
+.tour-detail-info-list strong {
+  color: #111827;
+  text-align: right;
+}
+
+.tour-detail-link-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.tour-detail-site-link,
+.tour-detail-map-link {
+  border: none;
+  border-radius: 10px;
+  padding: 13px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.tour-detail-site-link {
+  background: #111827;
+  color: #fff;
+}
+
+.tour-detail-site-link:disabled {
+  background: #d1d5db;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.tour-detail-map-link {
+  background: #eff6ff;
+  color: var(--primary, #2563eb);
+}
+
+.tour-detail-map-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.tour-detail-map-head h2 {
+  margin-bottom: 5px;
+}
+
+.tour-detail-map-head span {
+  display: block;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.tour-detail-map-head button {
+  flex-shrink: 0;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: var(--primary, #2563eb);
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tour-detail-map {
+  height: 320px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f3f4f6;
+}
+
+.tour-detail-map iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.tour-detail-map-state {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  color: #6b7280;
+  font-size: 14px;
+  text-align: center;
+}
+
+.tour-detail-map-state strong {
+  color: #111827;
+}
+
+.tour-detail-hours {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.tour-detail-side {
+  position: sticky;
+  top: 72px;
+}
+
+.tour-detail-book {
+  padding: 18px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+.tour-review-head span,
+.tour-review-head p {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.tour-review-head strong {
+  display: block;
+  margin: 8px 0 8px;
+  color: var(--primary, #2563eb);
+  font-size: 22px;
+}
+
+.tour-review-head p {
+  margin: 0 0 16px;
+  line-height: 1.6;
+}
+
+.tour-review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tour-review-item {
+  padding-top: 12px;
+  border-top: 1px solid #edf0f4;
+}
+
+.tour-review-item > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tour-review-item img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e5e7eb;
+}
+
+.tour-review-item a,
+.tour-review-item b,
+.tour-review-item span {
+  display: block;
+}
+
+.tour-review-item a,
+.tour-review-item b {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.tour-review-item span {
+  margin-top: 2px;
+  color: #f59e0b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tour-review-item p {
+  margin: 9px 0 0;
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tour-review-empty {
+  padding: 18px;
+  border: 1px solid #edf0f4;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #9ca3af;
+  font-size: 13px;
+  text-align: center;
+}
+
+.tour-review-more {
+  width: 100%;
+  margin-top: 14px;
+  border: none;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: var(--primary, #2563eb);
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.tour-detail-loading {
+  max-width: 540px;
+  margin: 80px auto;
+  padding: 34px 24px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.tour-detail-loading button {
+  display: block;
+  margin: 18px auto 0;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary, #2563eb);
+  color: #fff;
+  padding: 11px 16px;
+  font-weight: 800;
+}
+
+@media (max-width: 800px) {
+  .tour-detail-gallery {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 230px 130px;
+  }
+
+  .tour-detail-gallery img.main {
+    grid-column: span 2;
+    grid-row: auto;
+  }
+
+  .tour-detail-chip-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tour-detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .tour-detail-side {
+    position: static;
+  }
+}
+
+@media (max-width: 560px) {
+  .tour-detail-wrap {
+    padding: 16px 14px 72px;
+  }
+
+  .tour-detail-title {
+    flex-direction: column;
+  }
+
+  .tour-detail-gallery {
+    grid-template-columns: 1fr;
+    grid-template-rows: 280px;
+  }
+
+  .tour-detail-gallery img:not(.main) {
+    display: none;
+  }
+
+  .tour-detail-chip-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tour-detail-map-head {
+    flex-direction: column;
+  }
+
+  .tour-detail-map-head button {
+    width: 100%;
+  }
+}
+

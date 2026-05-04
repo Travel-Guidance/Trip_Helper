@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/layout/BottomNav'
 import Navbar from '../components/layout/Navbar'
 import { searchTours } from '../api/tourApi'
+import '../styles/tour.css'
 
 const POPULAR_DESTS = [
   { label: '오사카', query: 'Osaka tourist attractions', icon: '🏯' },

@@ -1,5 +1,6 @@
 ﻿import { useState, useRef, useEffect } from 'react'
 import { getPlaces } from '../../api/flightApi'
+import '../../styles/flight.css'
 
 const QUICK_CITIES = [
   {

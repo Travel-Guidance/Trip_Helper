@@ -6,6 +6,7 @@ import SearchBar from '../components/common/SearchBar'
 import FlightCard from '../components/common/FlightCard'
 import { parseDuration, formatDateKo } from '../utils'
 import { useFlightSearch } from '../hooks/useFlightSearch'
+import '../styles/flight.css'
 
 const SORT_OPTIONS = [
   { key: 'price', label: '최저가순' },

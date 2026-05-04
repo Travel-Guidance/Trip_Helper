@@ -1,5 +1,6 @@
 ﻿import { useNavigate } from 'react-router-dom'
 import { formatTime, formatDateShort, parseDuration, formatDuration, formatPrice, getStopsText, getStopsBadgeClass } from '../../utils'
+import '../../styles/flight.css'
 
 function calcDuration(segments) {
   const first = segments[0]

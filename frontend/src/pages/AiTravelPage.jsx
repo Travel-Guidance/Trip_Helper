@@ -1,5 +1,6 @@
 ﻿import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/layout/BottomNav'
+import '../styles/main-page.css'
 
 export default function AiTravelPage() {
   const navigate = useNavigate()

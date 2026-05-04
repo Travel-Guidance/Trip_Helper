@@ -15,7 +15,6 @@ import AccomodationDetail from './pages/AccomodationDetail'
 import AccomodationConfirmation from './pages/AccomodationConfirmation'
 import TourTicket from './pages/TourTicket'
 import TourTicketDetail from './pages/TourTicketDetail'
-import './assets/App.css'
 
 export default function App() {
   return (
