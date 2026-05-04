@@ -5,6 +5,19 @@
   padding-bottom: 72px;
 }
 
+@keyframes phone-schedule-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(-50% - 5px));
+  }
+}
+
+.phone-schedule-track {
+  animation: phone-schedule-scroll 28s linear infinite;
+}
+
 /* ?? Header ?? */
 .mp-header {
   position: sticky;

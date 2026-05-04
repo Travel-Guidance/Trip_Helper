@@ -1,6 +1,17 @@
 import { useNavigate } from 'react-router-dom'
 import { Sparkles, ChevronRight, Navigation, MapPin } from 'lucide-react'
 
+const phoneSchedules = [
+  { time: '09:00', name: '센소지' },
+  { time: '10:00', name: '도쿄 스카이트리' },
+  { time: '11:00', name: '아키하바라' },
+  { time: '12:30', name: '우에노 공원' },
+  { time: '14:00', name: '긴자 카페 거리' },
+  { time: '15:30', name: '시부야 스크램블' },
+  { time: '17:00', name: '메이지 신궁' },
+  { time: '19:00', name: '오모테산도' },
+]
+
 function PhoneMockupCard({ schedule }) {
   return (
     <div className="bg-white rounded-2xl p-4 shadow-sm">
@@ -19,11 +30,8 @@ function PhoneMockupCard({ schedule }) {
 }
 
 function PhoneMockup() {
-  const schedules = [
-    { time: '09:00',  name: '센소지' },
-    { time: '10:00', name: '도쿄 스카이트리' },
-    { time: '11:00', name: '아키하바라' },
-  ]
+  const loopSchedules = [...phoneSchedules, ...phoneSchedules]
+
   return (
     <div className="bg-gray-900 rounded-[2.5rem] p-3.5 shadow-2xl">
       <div className="bg-gradient-to-b from-blue-50 to-purple-50 rounded-[2rem] overflow-hidden">
@@ -32,8 +40,14 @@ function PhoneMockup() {
             <p className="text-base font-bold text-gray-900">도쿄 여행 2일차</p>
             <p className="text-xs text-gray-500 mt-0.5">AI가 추천하는 오늘의 일정</p>
           </div>
-          <div className="flex flex-col gap-2.5">
-            {schedules.map((s, i) => <PhoneMockupCard key={i} schedule={s} />)}
+          <div className="relative h-[225px] overflow-hidden">
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-blue-50 to-transparent" />
+            <div className="phone-schedule-track flex flex-col gap-2.5">
+              {loopSchedules.map((s, i) => (
+                <PhoneMockupCard key={`${s.time}-${s.name}-${i}`} schedule={s} />
+              ))}
+            </div>
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-8 bg-gradient-to-t from-purple-50 to-transparent" />
           </div>
           <div className="mt-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl py-3.5 text-white flex items-center justify-center gap-2">
             <Navigation className="w-4 h-4" />
