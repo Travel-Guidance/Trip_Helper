@@ -7,7 +7,7 @@ const swaggerSpec = swaggerJsdoc({
     info: {
       title: '폰가이즈 API',
       version: '1.0.0',
-      description: 'Duffel API 기반 항공권 조회·예약, Hotelbeds API 기반 숙소 검색·상세 조회, eSIM 구매 백엔드\n\n**테스트 환경** — 실제 결제·발권이 이루어지지 않습니다.',
+      description: 'Duffel API 기반 항공권 조회·예약, Booking.com API 기반 숙소 검색·상세 조회, eSIM 구매 백엔드\n\n**테스트 환경** — 실제 결제·발권이 이루어지지 않습니다.',
     },
     servers: [{ url: process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 3001}` }],
     tags: [
@@ -16,7 +16,7 @@ const swaggerSpec = swaggerJsdoc({
       { name: '예약조회', description: '생성된 예약 상세 조회' },
       { name: '인기여행지', description: '홈 화면 인기 여행지 정적 데이터' },
       { name: 'eSIM', description: 'eSIM 구매 및 이메일 발송' },
-      { name: '숙소', description: 'Hotelbeds API 기반 숙소 검색 및 상세 조회' },
+      { name: '숙소', description: 'Booking.com API 기반 숙소 검색 및 상세 조회' },
       { name: '지도', description: 'Google Maps Embed API 기반 위치 확인' },
       { name: '투어티켓', description: 'Google Places API 기반 해외 관광명소 검색' },
     ],
@@ -43,9 +43,9 @@ const swaggerSpec = swaggerJsdoc({
             name: { type: 'string', example: 'Rixos Pera Istanbul' },
             location: { type: 'string', example: 'New City · Istanbul' },
             rating: { type: 'integer', nullable: true, example: 5 },
-            price: { type: 'number', example: 4089.14, description: 'Hotelbeds가 반환한 검색 기간 기준 최저 총액' },
-            currency: { type: 'string', example: 'EUR' },
-            image: { type: 'string', example: 'https://photos.hotelbeds.com/giata/bigger/00/000001/000001a_hb_a_001.jpg' },
+            price: { type: 'number', example: 4089.14, description: '검색 기간 기준 최저 총액' },
+            currency: { type: 'string', example: 'USD' },
+            image: { type: 'string', example: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/12345678.jpg' },
             tag: { type: 'string', nullable: true, example: null },
           },
         },
@@ -54,7 +54,7 @@ const swaggerSpec = swaggerJsdoc({
           properties: {
             id: { type: 'string', example: '169036' },
             name: { type: 'string', example: 'Rixos Pera Istanbul' },
-            description: { type: 'string', example: 'Hotel description from Hotelbeds Content API' },
+            description: { type: 'string', example: 'Hotel description' },
             address: { type: 'string', example: 'Kamerhatun Mah. Mesrutiyet Cad. No:44' },
             city: { type: 'string', example: 'Istanbul' },
             destination: { type: 'string', example: 'Istanbul' },
@@ -76,8 +76,7 @@ const swaggerSpec = swaggerJsdoc({
               items: {
                 type: 'object',
                 properties: {
-                  type: { type: 'string', example: 'GEN' },
-                  url: { type: 'string', example: 'https://photos.hotelbeds.com/giata/bigger/00/000001/000001a_hb_a_001.jpg' },
+                  url: { type: 'string', example: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/12345678.jpg' },
                 },
               },
             },
@@ -97,7 +96,7 @@ const swaggerSpec = swaggerJsdoc({
             guests: { type: 'integer', example: 2 },
             guestName: { type: 'string', example: '솔민 김' },
             email: { type: 'string', format: 'email', example: 'guest@example.com' },
-            image: { type: 'string', example: 'https://photos.hotelbeds.com/giata/bigger/00/000001/000001a_hb_a_001.jpg' },
+            image: { type: 'string', example: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/12345678.jpg' },
           },
         },
         StayBooking: {

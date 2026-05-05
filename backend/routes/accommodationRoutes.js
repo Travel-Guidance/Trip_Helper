@@ -8,8 +8,8 @@ const router = Router();
  * /api/stays/search:
  *   post:
  *     tags: [숙소]
- *     summary: 숙소 검색 (Hotelbeds)
- *     description: 국가, 체크인/체크아웃, 성인 수를 기준으로 Hotelbeds Availability API에서 숙소를 검색합니다. 응답의 price는 검색 기간 전체 기준 최저 총액입니다.
+ *     summary: 숙소 검색 (Booking.com)
+ *     description: 국가, 체크인/체크아웃, 성인 수를 기준으로 Booking.com API에서 숙소를 검색합니다. 응답의 price는 검색 기간 전체 기준 최저 총액입니다.
  *     requestBody:
  *       required: true
  *       content:
@@ -36,7 +36,7 @@ router.post('/stays/search', searchStays);
  *   post:
  *     tags: [숙소]
  *     summary: 숙소 가예약 생성
- *     description: Hotelbeds Availability API로 선택한 일정의 예약 가능 여부를 다시 확인하고, 테스트 예약번호를 발급한 뒤 확인 이메일을 발송합니다. 실제 Hotelbeds 예약은 생성하지 않습니다.
+ *     description: 테스트 예약번호를 발급한 뒤 확인 이메일을 발송합니다. 실제 결제는 이루어지지 않습니다.
  *     requestBody:
  *       required: true
  *       content:
@@ -66,8 +66,8 @@ router.post('/stays/bookings', createMockStayBooking);
  * /api/stays/{hotelCode}:
  *   get:
  *     tags: [숙소]
- *     summary: 숙소 상세 조회 (Hotelbeds Content API)
- *     description: Hotelbeds 호텔 코드를 기준으로 숙소 설명, 주소, 이미지, 편의시설 등 정적 상세 정보를 조회합니다.
+ *     summary: 숙소 상세 조회 (Booking.com)
+ *     description: 호텔 ID를 기준으로 숙소 설명, 주소, 이미지, 편의시설 등 상세 정보를 조회합니다.
  *     parameters:
  *       - in: path
  *         name: hotelCode
