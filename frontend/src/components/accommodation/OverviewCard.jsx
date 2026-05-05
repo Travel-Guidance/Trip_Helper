@@ -1,4 +1,4 @@
-import { formatDate } from './detailUtils'
+import { formatDate } from '../../utils/accommodationDetail'
 
 function Stat({ label, value }) {
   return (

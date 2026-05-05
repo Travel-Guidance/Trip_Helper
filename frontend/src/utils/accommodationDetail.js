@@ -1,4 +1,4 @@
-import { formatKrwPrice } from '../../utils/currency'
+import { formatKrwPrice } from './currency'
 
 const AMENITY_LABELS = {
   spa: '스파',

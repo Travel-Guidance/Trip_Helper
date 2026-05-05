@@ -14,7 +14,7 @@ import {
   getHotelExternalUrl,
   parseKrwText,
   stripHtml,
-} from '../components/accommodation/detailUtils'
+} from '../utils/accommodationDetail'
 import BottomNav from '../components/layout/BottomNav'
 import Navbar from '../components/layout/Navbar'
 import { formatKrwPrice } from '../utils/currency'

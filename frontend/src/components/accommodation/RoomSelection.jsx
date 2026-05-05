@@ -1,4 +1,4 @@
-import { formatDate } from './detailUtils'
+import { formatDate } from '../../utils/accommodationDetail'
 
 export default function RoomSelection({
   roomOptions,

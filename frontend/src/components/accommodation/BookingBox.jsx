@@ -1,4 +1,4 @@
-import { formatDate } from './detailUtils'
+import { formatDate } from '../../utils/accommodationDetail'
 import { formatKrwPrice } from '../../utils/currency'
 
 export default function BookingBox({
