@@ -1,65 +1,85 @@
-﻿import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { CalendarDays, MapPin, Search, SlidersHorizontal, User, X } from 'lucide-react'
 import BottomNav from '../components/layout/BottomNav'
 import Navbar from '../components/layout/Navbar'
 import { formatKrwPrice, toKrw } from '../utils/currency'
 import { searchStays } from '../api/accommodationApi'
-import { pickHotelImage } from '../data/images'
 import '../styles/accommodation.css'
 
-const SORT_OPTIONS = [
-  { value: 'recommended', label: '추천순' },
-  { value: 'price',       label: '최저가순' },
-  { value: 'rating',      label: '별점순' },
-]
+const SORT_OPTIONS = {
+  rating: { value: 'rating', label: '평점순' },
+  priceLow: { value: 'priceLow', label: '낮은가격순' },
+  priceHigh: { value: 'priceHigh', label: '높은가격순' },
+}
+
+function formatDateLabel(value) {
+  if (!value) return ''
+  const date = new Date(`${value}T00:00:00`)
+  if (Number.isNaN(date.getTime())) return value
+  return `${String(date.getMonth() + 1).padStart(2, '0')}월 ${String(date.getDate()).padStart(2, '0')}일`
+}
+
+function hasValue(value) {
+  return value !== null && value !== undefined && value !== ''
+}
 
 export default function AccSearchResults() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
-  const countryKey  = searchParams.get('countryKey')  || ''
+  const countryKey = searchParams.get('countryKey') || ''
   const countryCode = searchParams.get('countryCode') || countryKey
   const destination = searchParams.get('destination') || countryKey
-  const checkIn     = searchParams.get('checkIn')     || ''
-  const checkOut    = searchParams.get('checkOut')    || ''
-  const guests      = Number(searchParams.get('guests') || 2)
+  const checkIn = searchParams.get('checkIn') || ''
+  const checkOut = searchParams.get('checkOut') || ''
+  const guests = Number(searchParams.get('guests') || 2)
 
-  const [hotels,  setHotels]  = useState([])
+  const [hotels, setHotels] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState('')
-
-  const [sortBy,      setSortBy]      = useState('recommended')
-  const [starFilter,  setStarFilter]  = useState(new Set([1, 2, 3, 4, 5]))
-  const [freeCancel,  setFreeCancel]  = useState(false)
+  const [error, setError] = useState('')
+  const [sortBy, setSortBy] = useState('')
 
   useEffect(() => {
-    if (!countryKey) { setError('여행지를 선택해주세요.'); setLoading(false); return }
-    searchStays({ country: countryKey, countryCode, checkIn, checkOut, guests })
-      .then(data => { setHotels(data); setLoading(false) })
-      .catch(err => { setError(err.message || '검색 중 오류가 발생했습니다.'); setLoading(false) })
-  }, [countryKey, countryCode, checkIn, checkOut, guests])
+    if (!countryKey) {
+      setError('여행지를 선택해주세요.')
+      setLoading(false)
+      return
+    }
 
-  const toggleStar = (s) => {
-    setStarFilter(prev => {
-      const next = new Set(prev)
-      next.has(s) ? next.delete(s) : next.add(s)
-      return next
-    })
-  }
+    searchStays({ country: countryKey, countryCode, checkIn, checkOut, guests })
+      .then(data => {
+        setHotels(data)
+        setLoading(false)
+      })
+      .catch(err => {
+        setError(err.message || '검색 중 오류가 발생했습니다.')
+        setLoading(false)
+      })
+  }, [countryKey, countryCode, checkIn, checkOut, guests])
 
   const nights = checkIn && checkOut
     ? Math.max(1, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000))
     : 1
 
-  const filtered = hotels
-    .filter(h => !h.rating || starFilter.has(Math.floor(h.rating)))
-    .sort((a, b) => {
-      if (sortBy === 'price')  return toKrw(a.price, a.currency) - toKrw(b.price, b.currency)
-      if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0)
-      return 0
-    })
+  const supportsRating = hotels.some(hotel => hasValue(hotel.rating))
+  const supportsPrice = hotels.some(hotel => Number(hotel.price) > 0)
+  const sortOptions = [
+    supportsRating && SORT_OPTIONS.rating,
+    supportsPrice && SORT_OPTIONS.priceLow,
+    supportsPrice && SORT_OPTIONS.priceHigh,
+  ].filter(Boolean)
 
-  const activeFilters = (freeCancel ? 1 : 0) + (starFilter.size < 5 ? 1 : 0)
+  useEffect(() => {
+    if (sortBy && !sortOptions.some(option => option.value === sortBy)) setSortBy('')
+  }, [sortBy, sortOptions])
+
+  const filtered = [...hotels].sort((a, b) => {
+    if (sortBy === 'priceLow') return toKrw(a.price, a.currency) - toKrw(b.price, b.currency)
+    if (sortBy === 'priceHigh') return toKrw(b.price, b.currency) - toKrw(a.price, a.currency)
+    if (sortBy === 'rating') return Number(b.rating || 0) - Number(a.rating || 0)
+    return 0
+  })
 
   const goDetail = (hotel) => {
     const params = new URLSearchParams({
@@ -77,80 +97,50 @@ export default function AccSearchResults() {
     <div className="asr-page">
       <Navbar />
 
-      {/* 검색 요약 바 */}
-      <div className="asr-summary-bar">
-        <span className="asr-summary-dest">{destination}</span>
-        <span className="asr-summary-dot">·</span>
-        <span className="asr-summary-info">{checkIn} ~ {checkOut}</span>
-        <span className="asr-summary-dot">·</span>
-        <span className="asr-summary-info">성인 {guests}명</span>
-        <button className="asr-modify-btn" onClick={() => navigate('/accommodation')}>수정</button>
+      <div className="asr-search-panel">
+        <div className="asr-search-cell">
+          <Search size={24} />
+          <div>
+            <span>여행지</span>
+            <strong>{destination || '여행지 선택'}</strong>
+          </div>
+          {destination && <X size={20} className="asr-search-clear" />}
+        </div>
+
+        <div className="asr-search-cell">
+          <CalendarDays size={24} />
+          <div>
+            <span>일정</span>
+            <strong>{formatDateLabel(checkIn)} - {formatDateLabel(checkOut)}</strong>
+          </div>
+          {(checkIn || checkOut) && <X size={20} className="asr-search-clear" />}
+        </div>
+
+        <div className="asr-search-cell">
+          <User size={24} />
+          <div>
+            <span>숙박 인원</span>
+            <strong>성인 {guests}명</strong>
+          </div>
+        </div>
+
+        <button className="asr-search-submit" onClick={() => navigate('/accommodation')}>숙소 검색</button>
+      </div>
+
+      <div className="asr-filter-bar">
+        <button className="asr-filter-pill"><SlidersHorizontal size={19} /> 필터</button>
+        {sortOptions.map(option => (
+          <button
+            key={option.value}
+            className={`asr-filter-pill${sortBy === option.value ? ' active' : ''}`}
+            onClick={() => setSortBy(current => current === option.value ? '' : option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
 
       <div className="asr-body">
-
-        {/* ── 왼쪽 필터 사이드바 ── */}
-        <aside className="asr-sidebar">
-          <div className="asr-filter-panel">
-            <div className="asr-filter-hd">
-              <span className="asr-filter-hd-icon">⚙</span>
-              <span className="asr-filter-hd-title">필터 &amp; 정렬</span>
-              {activeFilters > 0 && <span className="asr-filter-badge">{activeFilters}</span>}
-            </div>
-
-            {/* 정렬 */}
-            <div className="asr-filter-section">
-              <p className="asr-section-title">정렬</p>
-              {SORT_OPTIONS.map(opt => (
-                <label key={opt.value} className="asr-radio-row">
-                  <input
-                    type="radio"
-                    name="sortBy"
-                    value={opt.value}
-                    checked={sortBy === opt.value}
-                    onChange={() => setSortBy(opt.value)}
-                    className="asr-radio"
-                  />
-                  <span className={sortBy === opt.value ? 'asr-radio-label active' : 'asr-radio-label'}>
-                    {opt.label}
-                  </span>
-                </label>
-              ))}
-            </div>
-
-            {/* 숙소 성급 */}
-            <div className="asr-filter-section">
-              <p className="asr-section-title">숙소 성급</p>
-              {[5, 4, 3, 2, 1].map(s => (
-                <label key={s} className="asr-check-row">
-                  <input
-                    type="checkbox"
-                    checked={starFilter.has(s)}
-                    onChange={() => toggleStar(s)}
-                    className="asr-checkbox"
-                  />
-                  <span className="asr-stars-label">{'★'.repeat(s)}</span>
-                </label>
-              ))}
-            </div>
-
-            {/* 취소 정책 */}
-            <div className="asr-filter-section">
-              <p className="asr-section-title">취소 정책</p>
-              <label className="asr-check-row">
-                <input
-                  type="checkbox"
-                  checked={freeCancel}
-                  onChange={() => setFreeCancel(p => !p)}
-                  className="asr-checkbox"
-                />
-                <span>무료취소 가능만</span>
-              </label>
-            </div>
-          </div>
-        </aside>
-
-        {/* ── 오른쪽 결과 영역 ── */}
         <main className="asr-main">
           {loading ? (
             <div className="asr-list">
@@ -167,7 +157,6 @@ export default function AccSearchResults() {
             </div>
           ) : error ? (
             <div className="asr-error">
-              <p className="asr-error-icon">⚠️</p>
               <p className="asr-error-msg">{error}</p>
               <button className="asr-error-btn" onClick={() => navigate('/accommodation')}>돌아가기</button>
             </div>
@@ -183,14 +172,12 @@ export default function AccSearchResults() {
                 <div className="asr-list">
                   {filtered.map(hotel => (
                     <div key={hotel.id} className="asr-card" onClick={() => goDetail(hotel)}>
-                      <div className="asr-card-img-wrap">
-                        <img
-                          src={hotel.image || pickHotelImage(hotel.id)}
-                          alt={hotel.name}
-                          className="asr-card-img"
-                        />
-                        {hotel.tag && <span className="asr-card-tag">{hotel.tag}</span>}
-                      </div>
+                      {hotel.image && (
+                        <div className="asr-card-img-wrap">
+                          <img src={hotel.image} alt={hotel.name} className="asr-card-img" />
+                          {hotel.tag && <span className="asr-card-tag">{hotel.tag}</span>}
+                        </div>
+                      )}
 
                       <div className="asr-card-info">
                         <div className="asr-card-info-top">
@@ -200,17 +187,17 @@ export default function AccSearchResults() {
                               {'★'.repeat(Math.min(5, Math.floor(hotel.rating)))}
                             </p>
                           )}
-                          <p className="asr-card-location">📍 {hotel.location}</p>
+                          {hotel.location && <p className="asr-card-location"><MapPin size={16} /> {hotel.location}</p>}
                         </div>
 
                         <div className="asr-card-info-bottom">
-                          <span className="asr-free-cancel">무료취소</span>
-                          <div className="asr-price-block">
-                            <span className="asr-price">
-                              {formatKrwPrice(hotel.price, hotel.currency)}
-                            </span>
-                            <span className="asr-price-sub">총 {nights}박 세금 포함</span>
-                          </div>
+                          <div />
+                          {Number(hotel.price) > 0 && (
+                            <div className="asr-price-block">
+                              <span className="asr-price">{formatKrwPrice(hotel.price, hotel.currency)}</span>
+                              <span className="asr-price-sub">총 {nights}박 기준</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -226,7 +213,3 @@ export default function AccSearchResults() {
     </div>
   )
 }
-
-
-
-

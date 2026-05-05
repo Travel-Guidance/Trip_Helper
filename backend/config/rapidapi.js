@@ -1,5 +1,5 @@
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
-const RAPIDAPI_HOST = 'booking-com15.p.rapidapi.com';
+const RAPIDAPI_HOST = 'hotels-com-provider.p.rapidapi.com';
 const BASE_URL = `https://${RAPIDAPI_HOST}`;
 
 function getHeaders() {
