@@ -1545,6 +1545,22 @@
   cursor: pointer;
 }
 
+.acc-detail-link-btn {
+  flex-shrink: 0;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: var(--primary, #2563eb);
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.acc-detail-link-btn:hover {
+  border-color: var(--primary, #2563eb);
+}
+
 .acc-detail-actions {
   display: flex;
   align-items: center;
@@ -1708,6 +1724,25 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.acc-facilities-more {
+  width: 100%;
+  margin-top: 14px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: var(--primary, #2563eb);
+  padding: 11px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s;
+}
+
+.acc-facilities-more:hover {
+  border-color: var(--primary, #2563eb);
+  background: #eaf3ff;
 }
 
 .acc-detail-location-card h2 {
@@ -1910,6 +1945,14 @@
   margin-bottom: 8px;
 }
 
+.acc-room-copy p {
+  margin: -2px 0 8px;
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
 .acc-room-meta {
   display: flex;
   flex-wrap: wrap;
@@ -1996,6 +2039,10 @@
 }
 
 .acc-detail-book-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
   padding-bottom: 18px;
   border-bottom: 1px solid #eef1f5;
 }
@@ -2009,7 +2056,7 @@
 
 .acc-detail-book-price strong {
   display: inline-block;
-  margin: 4px 4px 0 0;
+  margin: 0 4px 0 auto;
   color: var(--primary, #2563eb);
   font-size: 24px;
   line-height: 1.2;
@@ -2456,7 +2503,8 @@
     width: 100%;
   }
 
-  .acc-detail-actions button {
+  .acc-detail-actions button,
+  .acc-detail-link-btn {
     flex: 1;
   }
 

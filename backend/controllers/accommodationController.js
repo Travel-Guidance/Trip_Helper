@@ -18,6 +18,20 @@ async function getStayDetail(req, res, next) {
   }
 }
 
+async function getStayOffers(req, res, next) {
+  try {
+    const data = await accommodationService.getStayOffers({
+      hotelId: req.params.hotelCode,
+      checkIn: req.query.checkIn,
+      checkOut: req.query.checkOut,
+      guests: req.query.guests,
+    });
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function createMockStayBooking(req, res, next) {
   try {
     const data = await accommodationService.createMockStayBooking(req.body);
@@ -27,6 +41,6 @@ async function createMockStayBooking(req, res, next) {
   }
 }
 
-module.exports = { searchStays, getStayDetail, createMockStayBooking };
+module.exports = { searchStays, getStayDetail, getStayOffers, createMockStayBooking };
 
 

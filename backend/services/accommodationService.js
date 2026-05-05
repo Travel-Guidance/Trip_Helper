@@ -145,6 +145,13 @@ function findDisplayMessage(priceSummary, state) {
   )
 }
 
+function absoluteHotelUrl(link, hotelId) {
+  const path = firstText(link)
+  if (path.startsWith('http')) return path
+  if (path.startsWith('/')) return `https://kr.hotels.com${path}`
+  return hotelId ? `https://kr.hotels.com/ho${hotelId}/` : ''
+}
+
 function normalizeHotelCard(card, cityName) {
   const leadPrice = card.price?.priceSummary?.displayPrices?.find(item => item.role === 'LEAD')
   const priceSummary = card.price?.priceSummary
@@ -191,6 +198,8 @@ function normalizeHotelCard(card, cityName) {
 
   return {
     id,
+    link: firstText(card.link),
+    externalUrl: absoluteHotelUrl(card.link, id),
     name,
     location: firstText(
       card.messages?.[0],
@@ -218,6 +227,90 @@ function normalizeHotelCard(card, cityName) {
     amenities: Array.isArray(card.short_amenities) ? card.short_amenities : [],
     tag: null,
   }
+}
+
+function getFormattedOptionPrice(option) {
+  if (!option) return ''
+  const direct = firstText(option.formattedDisplayPrice, option.price?.formatted)
+  if (direct) return direct
+  const text = typeof option === 'string' ? option : ''
+  return firstText(text.match(/formattedDisplayPrice=([^;}]+)/)?.[1])
+}
+
+function normalizeOfferRooms(room, roomIndex) {
+  const ratePlans = Array.isArray(room.propertyUnit?.ratePlans) ? room.propertyUnit.ratePlans : []
+  const images = (room.propertyUnit?.gallery || [])
+    .map(img => ({ url: img.url, description: firstText(img.description) }))
+    .filter(img => img.url)
+    .slice(0, 6)
+  const amenities = collectAmenityTexts(room.propertyUnit?.roomAmenities || [])
+    .filter(text => text && !['기타', '안전'].includes(text))
+    .slice(0, 8)
+  const roomName = firstText(room.header?.name, room.propertyUnit?.header, `객실 ${roomIndex + 1}`)
+
+  return ratePlans.flatMap((ratePlan, ratePlanIndex) => {
+    const details = Array.isArray(ratePlan.priceDetails) ? ratePlan.priceDetails : []
+    return details.map((detail, detailIndex) => {
+      const totalText = firstText(detail.lodgingPrepareCheckout?.totalPrice?.formatted, detail.totalPriceMessage)
+      const nightlyText = firstText(
+        getFormattedOptionPrice(detail.price?.options?.[0]),
+        detail.price?.lead?.formatted,
+        detail.price?.total?.formatted,
+      )
+      const totalAmount = firstNumber(detail.lodgingPrepareCheckout?.totalPrice?.amount, totalText)
+      const nightlyAmount = firstNumber(nightlyText)
+      if (detail.availability?.available === false || (!nightlyText && !totalText)) return null
+      const paymentModel = firstText(detail.paymentModel)
+      const rateName = firstText(ratePlan.name, ratePlan.description)
+      return {
+        id: `${room.unitId || roomIndex}-${firstText(ratePlan.id, ratePlanIndex)}-${detailIndex}`,
+        unitId: firstText(room.unitId, room.propertyUnit?.id),
+        ratePlanId: firstText(ratePlan.id),
+        name: roomName,
+        rateName,
+        description: firstText(room.propertyUnit?.description, room.header?.subText),
+        images,
+        amenities,
+        badge: firstText(ratePlan.badge?.text),
+        paymentModel,
+        nightlyText,
+        nightlyAmount,
+        totalText,
+        totalAmount,
+      }
+    }).filter(Boolean)
+  })
+}
+
+async function getStayOffers({ hotelId, checkIn, checkOut, guests = 2 }) {
+  const id = String(hotelId || '').trim()
+  if (!id) throw createError('호텔 ID가 필요합니다.', 400)
+  if (!checkIn || !checkOut) return []
+
+  const params = new URLSearchParams({
+    checkin_date:  checkIn,
+    checkout_date: checkOut,
+    adults_number: String(guests || 2),
+    hotel_id:      id,
+    domain:        HOTEL_DOMAIN,
+    locale:        HOTEL_LOCALE,
+  })
+
+  const res = await fetch(`${BASE_URL}/v3/hotels/offers?${params}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Hotels.com offers ${res.status}: ${text}`)
+  }
+
+  const json = await res.json()
+  const rooms = json.data?.rooms || json.rooms || []
+  if (!Array.isArray(rooms)) return []
+  return rooms
+    .flatMap((room, index) => normalizeOfferRooms(room, index))
+    .filter(Boolean)
 }
 
 async function searchStays({ checkIn, checkOut, guests = 2, country, countryCode }) {
@@ -375,4 +468,4 @@ async function createMockStayBooking({ hotelCode, checkIn, checkOut, guests = 1,
   return booking
 }
 
-module.exports = { searchStays, getStayDetail, createMockStayBooking }
+module.exports = { searchStays, getStayDetail, getStayOffers, createMockStayBooking }

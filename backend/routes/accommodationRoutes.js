@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const { searchStays, getStayDetail, createMockStayBooking } = require('../controllers/accommodationController');
+const { searchStays, getStayDetail, getStayOffers, createMockStayBooking } = require('../controllers/accommodationController');
 
 const router = Router();
 
@@ -60,6 +60,8 @@ router.post('/stays/search', searchStays);
  *         $ref: '#/components/responses/Error'
  */
 router.post('/stays/bookings', createMockStayBooking);
+
+router.get('/stays/:hotelCode/offers', getStayOffers);
 
 /**
  * @swagger
