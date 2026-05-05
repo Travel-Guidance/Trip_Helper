@@ -8,6 +8,12 @@ export function useFlightSearch({ origin, destination, departureDate, returnDate
 
   useEffect(() => {
     if (!origin || !destination || !departureDate) return
+    if (!/^[A-Z]{3}$/i.test(origin) || !/^[A-Z]{3}$/i.test(destination)) {
+      setLoading(false)
+      setOffers([])
+      setError('출발지와 도착지는 유효한 3자리 공항코드로 선택해주세요.')
+      return
+    }
     setLoading(true)
     setError(null)
     setOffers([])

@@ -20,11 +20,11 @@ function NavLink({ to, children }) {
       href={to}
       onClick={e => { e.preventDefault(); navigate(to) }}
       className={`relative text-sm font-medium px-3 py-1.5 rounded-lg transition-all duration-200 hover:text-gray-900 hover:bg-gray-50 group ${
-        isActive ? 'text-blue-600' : 'text-gray-600'
+        isActive ? 'text-sky-600' : 'text-gray-600'
       }`}
     >
       {children}
-      <span className={`absolute bottom-0.5 left-3 right-3 h-[2px] bg-gradient-to-r from-blue-600 to-purple-600 rounded-full transition-transform duration-200 origin-left ${
+      <span className={`absolute bottom-0.5 left-3 right-3 h-[2px] bg-sky-500 rounded-full transition-transform duration-200 origin-left ${
         isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
       }`} />
     </a>
@@ -49,7 +49,7 @@ export default function Navbar() {
             onClick={() => navigate('/home')}
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
+            <div className="w-9 h-9 bg-sky-500 rounded-xl flex items-center justify-center shadow-sm">
               <Smartphone className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-bold text-gray-900 tracking-tight">폰가이즈</span>
@@ -67,7 +67,7 @@ export default function Navbar() {
             </button>
             <button
               onClick={openStartCard}
-              className="ml-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:shadow-lg hover:shadow-blue-200 hover:scale-[1.03] active:scale-95 transition-all duration-200"
+              className="ml-3 bg-sky-500 text-white text-sm font-semibold px-5 py-2.5 rounded-full shadow-md shadow-sky-100 hover:bg-sky-400 hover:shadow-lg hover:shadow-sky-200 hover:scale-[1.03] active:scale-95 transition-all duration-200"
             >
               시작하기
             </button>
@@ -94,7 +94,7 @@ export default function Navbar() {
             </button>
             <button
               onClick={openStartCard}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold py-3 rounded-full mt-2 hover:shadow-lg transition-all"
+              className="w-full bg-sky-500 text-white text-sm font-semibold py-3 rounded-full mt-2 shadow-md shadow-sky-100 hover:bg-sky-400 hover:shadow-lg transition-all"
             >
               시작하기
             </button>

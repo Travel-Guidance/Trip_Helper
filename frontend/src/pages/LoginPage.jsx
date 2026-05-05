@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Smartphone, Mail, Lock, Eye, EyeOff } from 'lucide-react'
-import loginBg from '../assets/image_mj.png'
+import loginBg from '../assets/login_bg.png'
 
 const DESTINATIONS = [
   { emoji: '🏖️', name: '보라카이', top: '12%',  right: '8%',  delay: '0s'   },

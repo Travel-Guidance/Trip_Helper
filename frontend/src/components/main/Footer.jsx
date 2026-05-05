@@ -7,7 +7,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center">
                 <Smartphone className="w-4 h-4 text-white" />
               </div>
               <span className="text-white text-lg font-bold">폰가이즈</span>

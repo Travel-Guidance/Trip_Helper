@@ -12,6 +12,8 @@ const CABIN_LABELS = {
   first: '일등석',
 }
 
+const isValidAirportCode = (value) => /^[A-Z]{3}$/i.test(value || '')
+
 export default function SearchBar({ initialValues = {} }) {
   const navigate = useNavigate()
   const [tripType, setTripType] = useState(initialValues.trip_type || 'round')
@@ -53,13 +55,23 @@ export default function SearchBar({ initialValues = {} }) {
       alert('출발지, 도착지, 가는날을 입력해주세요.')
       return
     }
+    if (!isValidAirportCode(origin.code)) {
+      alert('출발지의 공항코드를 찾지 못했어요. 도시 선택에서 검색 결과나 주요도시를 선택해주세요.')
+      setOriginModal(true)
+      return
+    }
+    if (!isValidAirportCode(destination.code)) {
+      alert('도착지의 공항코드를 찾지 못했어요. 도시 선택에서 검색 결과나 주요도시를 선택해주세요.')
+      setDestModal(true)
+      return
+    }
     if (tripType === 'round' && !returnDate) {
       alert('오는날을 입력해주세요.')
       return
     }
     const params = new URLSearchParams({
-      origin: origin.code,
-      destination: destination.code,
+      origin: origin.code.toUpperCase(),
+      destination: destination.code.toUpperCase(),
       origin_name: origin.name,
       destination_name: destination.name,
       departure_date: departureDate,

@@ -13,7 +13,7 @@ export default function Header({ tripType, onTripTypeChange, navLinks = [] }) {
             onClick={() => navigate('/home')}
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
+            <div className="w-9 h-9 bg-sky-500 rounded-xl flex items-center justify-center shadow-sm">
               <Smartphone className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-bold text-gray-900 tracking-tight">폰가이즈</span>
@@ -26,7 +26,7 @@ export default function Header({ tripType, onTripTypeChange, navLinks = [] }) {
               className="relative text-sm font-medium text-gray-600 px-3 py-1.5 rounded-lg transition-all duration-200 hover:text-gray-900 hover:bg-gray-50 group"
             >
               {label}
-              <span className="absolute bottom-0.5 left-3 right-3 h-[2px] bg-gradient-to-r from-blue-600 to-purple-600 rounded-full scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
+              <span className="absolute bottom-0.5 left-3 right-3 h-[2px] bg-sky-500 rounded-full scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
             </Link>
           ))}
 

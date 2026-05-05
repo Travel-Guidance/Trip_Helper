@@ -24,7 +24,7 @@ function CTAPhoneMockup() {
               </div>
             </div>
           ))}
-          <div className="mt-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl py-3 text-white flex items-center justify-center gap-1.5">
+          <div className="mt-1 bg-teal-700 rounded-xl py-3 text-white flex items-center justify-center gap-1.5 shadow-md shadow-teal-950/15">
             <Navigation className="w-3.5 h-3.5" />
             <span className="text-xs font-semibold">실시간 가이드 중...</span>
           </div>
@@ -54,10 +54,10 @@ function CTACard() {
           </p>
           <button
             onClick={() => navigate('/ai-travel')}
-            className="inline-flex items-center gap-2 bg-white text-teal-700 text-sm font-bold px-8 py-4 rounded-full hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-200 w-fit group"
+            className="inline-flex items-center gap-2 bg-sky-500 text-white text-sm font-bold px-8 py-4 rounded-full shadow-lg shadow-sky-900/10 hover:bg-sky-400 hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-200 w-fit group"
           >
             <Sparkles className="w-4 h-4" />
-            무료로 여행 계획 시작하기
+            여행 준비하기
             <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </button>
         </div>

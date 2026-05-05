@@ -40,7 +40,7 @@ export default function MusicPlayer() {
         title={playing ? '음악 정지' : '음악 재생'}
         className={`fixed bottom-6 left-6 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 ${
           playing
-            ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white shadow-blue-200'
+            ? 'bg-sky-500 text-white shadow-sky-200'
             : 'bg-white text-gray-500 hover:text-gray-800'
         }`}
       >
@@ -51,7 +51,7 @@ export default function MusicPlayer() {
         <div className="fixed bottom-6 left-20 z-50 bg-white/90 backdrop-blur-sm border border-gray-100 rounded-full px-4 py-2 shadow-md flex items-center gap-2 text-xs text-gray-600 animate-fade-in">
           <span className="flex gap-0.5 items-end h-3">
             <span className="w-0.5 bg-blue-500 rounded-full animate-[bounce_0.8s_ease-in-out_infinite]" style={{ height: '60%' }} />
-            <span className="w-0.5 bg-purple-500 rounded-full animate-[bounce_0.8s_ease-in-out_0.2s_infinite]" style={{ height: '100%' }} />
+            <span className="w-0.5 bg-sky-500 rounded-full animate-[bounce_0.8s_ease-in-out_0.2s_infinite]" style={{ height: '100%' }} />
             <span className="w-0.5 bg-blue-500 rounded-full animate-[bounce_0.8s_ease-in-out_0.4s_infinite]" style={{ height: '40%' }} />
           </span>
           노래 재생 중

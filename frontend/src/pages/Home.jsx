@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/layout/Navbar'
 import SearchBar from '../components/common/SearchBar'
 import BottomNav from '../components/layout/BottomNav'
-import { FLAGS } from '../utils'
 import { getPopular } from '../api/flightApi'
 import { useSearch } from '../store/SearchContext'
 import '../styles/flight.css'
@@ -31,6 +30,14 @@ function getTodayDateParam() {
   const departure = new Date()
   departure.setHours(0, 0, 0, 0)
   return toDateParam(departure)
+}
+
+function countryCodeToFlag(code) {
+  const countryCode = String(code || '').trim().toUpperCase()
+  if (!/^[A-Z]{2}$/.test(countryCode)) return '🌍'
+  return [...countryCode]
+    .map(char => String.fromCodePoint(127397 + char.charCodeAt(0)))
+    .join('')
 }
 
 export default function Home() {
@@ -117,7 +124,7 @@ export default function Home() {
               <div key={ri} className="popular-items-row">
                 {row.map((dest) => (
                   <div key={dest.id} className="popular-item" onClick={() => handlePopularClick(dest)}>
-                    <div className="popular-flag">{FLAGS[dest.country] || '🌍'}</div>
+                    <div className="popular-flag">{countryCodeToFlag(dest.country)}</div>
                     <div>
                       <div className="popular-city">{dest.city}</div>
                       <div className="popular-price">{dest.price.toLocaleString('ko-KR')}원</div>
