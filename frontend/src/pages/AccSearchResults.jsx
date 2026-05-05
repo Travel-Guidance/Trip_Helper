@@ -8,7 +8,7 @@ import { searchStays } from '../api/accommodationApi'
 import '../styles/accommodation.css'
 
 const SORT_OPTIONS = {
-  rating: { value: 'rating', label: '평점순' },
+  rating: { value: 'rating', label: '고객평점순' },
   priceLow: { value: 'priceLow', label: '낮은가격순' },
   priceHigh: { value: 'priceHigh', label: '높은가격순' },
 }
@@ -22,6 +22,14 @@ function formatDateLabel(value) {
 
 function hasValue(value) {
   return value !== null && value !== undefined && value !== ''
+}
+
+function compactAmenities(amenities) {
+  if (!Array.isArray(amenities)) return []
+  return amenities
+    .map(item => typeof item === 'string' ? item : item?.text || item?.name)
+    .filter(Boolean)
+    .slice(0, 3)
 }
 
 export default function AccSearchResults() {
@@ -62,7 +70,7 @@ export default function AccSearchResults() {
     ? Math.max(1, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000))
     : 1
 
-  const supportsRating = hotels.some(hotel => hasValue(hotel.rating))
+  const supportsRating = hotels.some(hotel => hasValue(hotel.reviewScore))
   const supportsPrice = hotels.some(hotel => Number(hotel.price) > 0)
   const sortOptions = [
     supportsRating && SORT_OPTIONS.rating,
@@ -77,7 +85,7 @@ export default function AccSearchResults() {
   const filtered = [...hotels].sort((a, b) => {
     if (sortBy === 'priceLow') return toKrw(a.price, a.currency) - toKrw(b.price, b.currency)
     if (sortBy === 'priceHigh') return toKrw(b.price, b.currency) - toKrw(a.price, a.currency)
-    if (sortBy === 'rating') return Number(b.rating || 0) - Number(a.rating || 0)
+    if (sortBy === 'rating') return Number(b.reviewScore || 0) - Number(a.reviewScore || 0)
     return 0
   })
 
@@ -170,38 +178,57 @@ export default function AccSearchResults() {
                 <div className="asr-empty">조건에 맞는 숙소가 없습니다.</div>
               ) : (
                 <div className="asr-list">
-                  {filtered.map(hotel => (
+                  {filtered.map(hotel => {
+                    const amenities = compactAmenities(hotel.amenities)
+                    const displayPrice = hotel.displayPrice || formatKrwPrice(hotel.price, hotel.currency)
+                    const hasPreviousPrice = hasValue(hotel.previousPrice) && hotel.previousPrice !== displayPrice
+
+                    return (
                     <div key={hotel.id} className="asr-card" onClick={() => goDetail(hotel)}>
-                      {hotel.image && (
-                        <div className="asr-card-img-wrap">
-                          <img src={hotel.image} alt={hotel.name} className="asr-card-img" />
-                          {hotel.tag && <span className="asr-card-tag">{hotel.tag}</span>}
-                        </div>
-                      )}
+                      <div className="asr-card-img-wrap">
+                        {hotel.image
+                          ? <img src={hotel.image} alt={hotel.name} className="asr-card-img" />
+                          : <div className="asr-card-img asr-card-img--placeholder" />}
+                        {hotel.priceBadge && <span className="asr-card-tag">{hotel.priceBadge}</span>}
+                      </div>
 
                       <div className="asr-card-info">
                         <div className="asr-card-info-top">
-                          <p className="asr-card-name">{hotel.name}</p>
-                          {hotel.rating != null && (
-                            <p className="asr-card-stars">
-                              {'★'.repeat(Math.min(5, Math.floor(hotel.rating)))}
-                            </p>
-                          )}
                           {hotel.location && <p className="asr-card-location"><MapPin size={16} /> {hotel.location}</p>}
+                          <p className="asr-card-name">{hotel.name}</p>
+
+                          {hotel.reviewScore != null && (
+                            <div className="asr-review-row">
+                              <span className="asr-review-score">{Number(hotel.reviewScore).toFixed(1)}/10</span>
+                              {hotel.reviewText && <span className="asr-review-text">{hotel.reviewText}</span>}
+                              {hotel.reviewCountText && <span className="asr-review-count">{hotel.reviewCountText}</span>}
+                            </div>
+                          )}
+
+                          {amenities.length > 0 && (
+                            <div className="asr-amenities">
+                              {amenities.map(item => <span key={item}>{item}</span>)}
+                            </div>
+                          )}
                         </div>
 
                         <div className="asr-card-info-bottom">
-                          <div />
+                          <div className="asr-price-note">
+                            {hotel.pricePeriodText && <span>{hotel.pricePeriodText}</span>}
+                          </div>
                           {Number(hotel.price) > 0 && (
                             <div className="asr-price-block">
-                              <span className="asr-price">{formatKrwPrice(hotel.price, hotel.currency)}</span>
-                              <span className="asr-price-sub">총 {nights}박 기준</span>
+                              {hasPreviousPrice && <span className="asr-prev-price">{hotel.previousPrice}</span>}
+                              <span className="asr-price">{displayPrice}</span>
+                              <span className="asr-price-sub">{hotel.totalPriceText || `총 ${nights}박 기준`}</span>
+                              {hotel.taxText && <span className="asr-tax-text">{hotel.taxText}</span>}
                             </div>
                           )}
                         </div>
                       </div>
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </>

@@ -17,6 +17,32 @@ function stripHtml(value) {
   return String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
+const AMENITY_LABELS = {
+  spa: '스파',
+  'parking available': '주차 가능',
+  'free wifi': '무료 WiFi',
+  restaurant: '레스토랑',
+  'air conditioning': '에어컨',
+  gym: '피트니스 센터',
+  'pet friendly': '반려동물 동반 가능',
+  pool: '수영장',
+  bar: '바',
+  'bar/lounge': '바/라운지',
+  breakfast: '아침 식사',
+  '24-hour front desk': '24시간 프런트 데스크',
+  'non-smoking rooms': '금연 객실',
+  'luggage storage': '짐 보관',
+}
+
+function formatAmenity(value) {
+  const text = String(value || '').trim()
+  return AMENITY_LABELS[text.toLowerCase()] || text
+}
+
+function cleanTotalText(value) {
+  return String(value || '').replace(/^총\s*요금:\s*/i, '').trim()
+}
+
 function Stat({ label, value }) {
   return (
     <div className="acc-detail-stat">
@@ -43,12 +69,11 @@ export default function AccommodationDetail() {
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [activeRoom, setActiveRoom] = useState(0)
   const [guestName, setGuestName] = useState('')
   const [email, setEmail] = useState('')
   const [booking, setBooking] = useState(false)
   const [bookingError, setBookingError] = useState('')
-  const [mapOpen, setMapOpen] = useState(false)
+  const [selectedRoomId, setSelectedRoomId] = useState('standard')
   const [mapLoading, setMapLoading] = useState(false)
   const [mapError, setMapError] = useState('')
   const [mapUrls, setMapUrls] = useState(null)
@@ -62,30 +87,33 @@ export default function AccommodationDetail() {
 
   const hotel = useMemo(() => ({ ...(detail || {}), ...(stateHotel || {}) }), [detail, stateHotel])
   const nights = checkIn && checkOut ? Math.max(1, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000)) : 1
-  const totalPrice = Number(hotel.price || 0)
-  const nightlyPrice = totalPrice ? totalPrice / nights : 0
-  const currency = hotel.currency || 'USD'
+  const nightlyPrice = Number(hotel.price || 0)
+  const totalPrice = nightlyPrice ? nightlyPrice * nights : 0
+  const currency = hotel.currency || 'KRW'
   const images = detail?.images?.map(img => img.url).filter(Boolean) || []
   const gallery = [hotel.image, ...images, pickHotelImage(hotelId, 900)].filter(Boolean)
   const uniqueGallery = [...new Set(gallery)].slice(0, 5)
   const facilities = detail?.facilities?.length
     ? detail.facilities
-    : ['Free Wi-Fi', '24-hour front desk', 'Non-smoking rooms', 'Air conditioning', 'Luggage storage', 'Restaurant']
-
-  const rooms = [
-    {
-      name: 'Standard Room',
-      desc: '기본 객실 · 성인 투숙객에게 적합한 객실입니다.',
-      price: nightlyPrice,
-      policy: '무료취소 가능',
-    },
-    {
-      name: 'Superior Room',
-      desc: '여유 있는 공간과 업그레이드된 침구 구성을 제공합니다.',
-      price: nightlyPrice ? Math.round(nightlyPrice * 1.18) : 0,
-      policy: '조식 옵션',
-    },
-  ]
+    : hotel.amenities || []
+  const visibleFacilities = facilities.filter(Boolean).map(formatAmenity).slice(0, 8)
+  const roomFacilities = visibleFacilities.slice(0, 6)
+  const displayPrice = hotel.displayPrice || formatKrwPrice(nightlyPrice, currency)
+  const hasPreviousPrice = hotel.previousPrice && hotel.previousPrice !== displayPrice
+  const totalPriceText = cleanTotalText(hotel.totalPriceText)
+  const address = detail?.address || hotel.location || [detail?.zone, detail?.destination].filter(Boolean).join(' · ') || destination
+  const description = stripHtml(detail?.description)
+  const mapAvailable = Boolean(detail?.coordinates || address)
+  const roomOptions = [{
+    id: 'standard',
+    name: hotel.name || detail?.name || '객실',
+    price: displayPrice,
+    previousPrice: hotel.previousPrice,
+    totalText: totalPriceText,
+    taxText: hotel.taxText,
+    periodText: hotel.pricePeriodText,
+  }]
+  const selectedRoom = roomOptions.find(room => room.id === selectedRoomId) || roomOptions[0]
 
   const getMapQuery = () => {
     return [
@@ -95,21 +123,21 @@ export default function AccommodationDetail() {
     ].filter(Boolean).join(' ')
   }
 
-  const handleOpenMap = async () => {
-    setMapOpen(true)
+  useEffect(() => {
+    if (!detail || !mapAvailable) return
+    let cancelled = false
     setMapLoading(true)
     setMapError('')
-    try {
-      const lat = detail?.coordinates?.latitude
-      const lng = detail?.coordinates?.longitude
-      const data = await getMapEmbedUrl({ query: getMapQuery(), lat, lng })
-      setMapUrls(data)
-    } catch (err) {
-      setMapError(err.message || '지도를 불러오지 못했습니다.')
-    } finally {
-      setMapLoading(false)
-    }
-  }
+    const lat = detail?.coordinates?.latitude
+    const lng = detail?.coordinates?.longitude
+
+    getMapEmbedUrl({ query: getMapQuery(), lat, lng })
+      .then(data => { if (!cancelled) setMapUrls(data) })
+      .catch(err => { if (!cancelled) setMapError(err.message || '지도를 불러오지 못했습니다.') })
+      .finally(() => { if (!cancelled) setMapLoading(false) })
+
+    return () => { cancelled = true }
+  }, [detail, mapAvailable, hotel.name, hotel.location, destination])
 
   const handleBooking = async () => {
     if (!guestName.trim() || !email.trim()) {
@@ -128,6 +156,7 @@ export default function AccommodationDetail() {
         checkIn,
         checkOut,
         guests,
+        roomName: selectedRoom.name,
         guestName: guestName.trim(),
         email: email.trim(),
         image: uniqueGallery[0],
@@ -164,14 +193,16 @@ export default function AccommodationDetail() {
                 <div className="acc-detail-kicker">{hotel.location || [detail?.zone, detail?.destination].filter(Boolean).join(' · ') || destination}</div>
                 <h1>{hotel.name || detail?.name || '숙소 상세'}</h1>
                 <div className="acc-detail-meta">
-                  {hotel.rating != null && <span className="acc-detail-stars">{'★'.repeat(Math.min(5, Math.floor(hotel.rating)))}</span>}
+                  {hotel.reviewScore != null && (
+                    <span className="acc-detail-review">
+                      {Number(hotel.reviewScore).toFixed(1)}/10
+                      {hotel.reviewText && <b>{hotel.reviewText}</b>}
+                      {hotel.reviewCountText && <em>{hotel.reviewCountText}</em>}
+                    </span>
+                  )}
                   {detail?.category && <span>{detail.category}</span>}
-                  {detail?.address && <span>{detail.address}</span>}
+                  {address && <span>{address}</span>}
                 </div>
-              </div>
-              <div className="acc-detail-actions">
-                <button className="acc-detail-map-btn" onClick={handleOpenMap}>지도 확인</button>
-                <button className="acc-detail-share">공유</button>
               </div>
             </section>
 
@@ -184,11 +215,8 @@ export default function AccommodationDetail() {
             <section className="acc-detail-grid">
               <div className="acc-detail-main">
                 <div className="acc-detail-card acc-detail-overview">
-                  <h2>숙소 정보</h2>
-                  <p>
-                    {stripHtml(detail?.description) ||
-                      '검색한 일정에 예약 가능한 숙소입니다. 객실 옵션과 요금은 Hotelbeds API에서 받은 검색 결과를 기준으로 표시됩니다.'}
-                  </p>
+                  <h2>{description ? '숙소 소개' : '숙소 정보'}</h2>
+                  {description && <p>{description}</p>}
                   <div className="acc-detail-stats">
                     <Stat label="체크인" value={formatDate(checkIn)} />
                     <Stat label="체크아웃" value={formatDate(checkOut)} />
@@ -197,38 +225,89 @@ export default function AccommodationDetail() {
                   </div>
                 </div>
 
+                {visibleFacilities.length > 0 && (
                 <div className="acc-detail-card">
                   <div className="acc-detail-section-head">
                     <h2>편의시설</h2>
                     <span>주요 제공 항목</span>
                   </div>
                   <div className="acc-detail-facilities">
-                    {facilities.map((item, i) => (
+                    {visibleFacilities.map((item, i) => (
                       <span key={`${item}-${i}`}>{item}</span>
                     ))}
                   </div>
                 </div>
+                )}
+
+                {mapAvailable && (
+                <div className="acc-detail-card acc-detail-location-card">
+                  <h2>숙소 위치</h2>
+                  <div className="acc-detail-map-panel">
+                    {mapLoading ? (
+                      <div className="acc-map-state">
+                        <div className="spinner" />
+                        지도를 불러오는 중...
+                      </div>
+                    ) : mapError ? (
+                      <div className="acc-map-state">
+                        <strong>{mapError}</strong>
+                        <span>Google Maps API 키 설정 또는 숙소 위치 정보를 확인해주세요.</span>
+                      </div>
+                    ) : (
+                      mapUrls?.embedUrl && <iframe title="숙소 위치 지도" src={mapUrls.embedUrl} loading="lazy" allowFullScreen />
+                    )}
+                  </div>
+                  <div className="acc-detail-address-row">
+                    <span>{address}</span>
+                    {mapUrls?.externalUrl && (
+                      <button onClick={() => window.open(mapUrls.externalUrl, '_blank', 'noopener,noreferrer')}>새 탭에서 보기</button>
+                    )}
+                  </div>
+                </div>
+                )}
 
                 <div className="acc-detail-card">
                   <div className="acc-detail-section-head">
                     <h2>객실 선택</h2>
                     <span>{checkIn && checkOut ? `${formatDate(checkIn)} - ${formatDate(checkOut)}` : '선택한 일정'}</span>
                   </div>
-                  <div className="acc-detail-room-list">
-                    {rooms.map((room, i) => (
+                  <div className="acc-room-list">
+                    {roomOptions.map(room => (
                       <button
-                        key={room.name}
-                        className={`acc-detail-room${activeRoom === i ? ' active' : ''}`}
-                        onClick={() => setActiveRoom(i)}
+                        key={room.id}
+                        className={`acc-room-card${selectedRoomId === room.id ? ' selected' : ''}`}
+                        onClick={() => setSelectedRoomId(room.id)}
                       >
-                        <div>
-                          <strong>{room.name}</strong>
-                          <span>{room.desc}</span>
-                          <em>{room.policy}</em>
+                        <span className="acc-room-selected">선택됨</span>
+                        <div className="acc-room-media">
+                          {uniqueGallery.slice(0, 3).map((src, i) => (
+                            <img key={`${src}-room-${i}`} src={src} alt={`${room.name} ${i + 1}`} />
+                          ))}
                         </div>
-                        <div className="acc-detail-room-price">
-                          {formatKrwPrice(room.price, currency)}
-                          <span>/1박</span>
+                        <div className="acc-room-body">
+                          <div className="acc-room-copy">
+                            <strong>{room.name}</strong>
+                            <div className="acc-room-meta">
+                              <span>성인 {guests}명</span>
+                              {room.periodText && <span>{room.periodText}</span>}
+                            </div>
+                            {roomFacilities.length > 0 && (
+                              <div className="acc-room-facilities">
+                                {roomFacilities.map((item, i) => <span key={`${item}-room-${i}`}>{item}</span>)}
+                              </div>
+                            )}
+                          </div>
+                          {nightlyPrice > 0 && (
+                            <div className="acc-room-price">
+                              {hasPreviousPrice && <span className="acc-room-prev">{room.previousPrice}</span>}
+                              <div className="acc-room-main-price">
+                                <strong>{room.price}</strong>
+                                <span>/1박</span>
+                              </div>
+                              {room.totalText && <em>총 {room.totalText}</em>}
+                              {room.taxText && <small>{room.taxText}</small>}
+                            </div>
+                          )}
                         </div>
                       </button>
                     ))}
@@ -240,7 +319,7 @@ export default function AccommodationDetail() {
                 <div className="acc-detail-bookbox">
                   <div className="acc-detail-book-price">
                     <span>최저가</span>
-                    <strong>{formatKrwPrice(nightlyPrice, currency)}</strong>
+                    <strong>{displayPrice}</strong>
                     <em>/1박</em>
                   </div>
                   <div className="acc-detail-book-row">
@@ -254,7 +333,7 @@ export default function AccommodationDetail() {
                   {totalPrice > 0 && (
                     <div className="acc-detail-total">
                       <span>총 결제 예상금액</span>
-                      <strong>{formatKrwPrice(totalPrice, currency)}</strong>
+                      <strong>{totalPriceText || formatKrwPrice(totalPrice, currency)}</strong>
                     </div>
                   )}
                   <div className="acc-detail-book-form">
@@ -271,46 +350,11 @@ export default function AccommodationDetail() {
                   <button disabled={booking} onClick={handleBooking}>
                     {booking ? '예약 처리 중...' : '예약하기'}
                   </button>
-                  <p>세금 및 수수료는 실제 예약 단계에서 달라질 수 있습니다.</p>
+                  <p>{hotel.taxText || '세금 및 수수료는 실제 예약 단계에서 달라질 수 있습니다.'}</p>
                 </div>
               </aside>
             </section>
           </main>
-
-          {mapOpen && (
-            <div className="acc-map-overlay" onClick={() => setMapOpen(false)}>
-              <div className="acc-map-modal" onClick={e => e.stopPropagation()}>
-                <div className="acc-map-head">
-                  <div>
-                    <strong>지도 확인</strong>
-                    <span>{hotel.name || detail?.name || '숙소 위치'}</span>
-                  </div>
-                  <button onClick={() => setMapOpen(false)}>×</button>
-                </div>
-                <div className="acc-map-body">
-                  {mapLoading ? (
-                    <div className="acc-map-state">
-                      <div className="spinner" />
-                      지도를 불러오는 중...
-                    </div>
-                  ) : mapError ? (
-                    <div className="acc-map-state">
-                      <strong>{mapError}</strong>
-                      <span>Google Maps API 키 설정 또는 숙소 위치 정보를 확인해주세요.</span>
-                    </div>
-                  ) : (
-                    mapUrls?.embedUrl && <iframe title="숙소 위치 지도" src={mapUrls.embedUrl} loading="lazy" allowFullScreen />
-                  )}
-                </div>
-                <div className="acc-map-footer">
-                  <span>{detail?.address || hotel.location || destination}</span>
-                  {mapUrls?.externalUrl && (
-                    <button onClick={() => window.open(mapUrls.externalUrl, '_blank', 'noopener,noreferrer')}>새 탭에서 보기</button>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
 
           <BottomNav />
         </>
