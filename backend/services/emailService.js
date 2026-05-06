@@ -24,9 +24,10 @@ function genStayBookingRef() {
 
 async function sendTemplateEmail({ to, template }) {
   if (!mailer) return false;
+  const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_NAVER_USER || process.env.EMAIL_USER;
 
   await mailer.sendMail({
-    from: `"${template.fromName}" <${process.env.EMAIL_USER}>`,
+    from: `"${template.fromName}" <${fromEmail}>`,
     to,
     subject: template.subject,
     html: template.html,
