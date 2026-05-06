@@ -98,6 +98,28 @@ function pickImage(value) {
   return firstText(...candidates)
 }
 
+function collectAmenityTexts(items) {
+  const result = []
+  const visit = (item) => {
+    if (!item) return
+    if (typeof item === 'string') {
+      result.push(item)
+      return
+    }
+    if (Array.isArray(item)) {
+      item.forEach(visit)
+      return
+    }
+    const text = firstText(item.text, item.name)
+    if (text) result.push(text)
+    visit(item.items)
+    visit(item.contents)
+    visit(item.sections)
+  }
+  visit(items)
+  return [...new Set(result)].filter(Boolean)
+}
+
 function extractRating(value) {
   return firstNumber(
     value?.star,
@@ -111,8 +133,28 @@ function extractRating(value) {
   )
 }
 
+function findDisplayPrice(priceSummary, role) {
+  return firstText(
+    priceSummary?.displayPrices?.find(item => item.role === role)?.price?.formatted,
+  )
+}
+
+function findDisplayMessage(priceSummary, state) {
+  return firstText(
+    priceSummary?.displayPrices?.find(item => item.state === state)?.value,
+  )
+}
+
+function absoluteHotelUrl(link, hotelId) {
+  const path = firstText(link)
+  if (path.startsWith('http')) return path
+  if (path.startsWith('/')) return `https://kr.hotels.com${path}`
+  return hotelId ? `https://kr.hotels.com/ho${hotelId}/` : ''
+}
+
 function normalizeHotelCard(card, cityName) {
   const leadPrice = card.price?.priceSummary?.displayPrices?.find(item => item.role === 'LEAD')
+  const priceSummary = card.price?.priceSummary
   const id = firstText(
     card.hotelId,
     card.hotel_id,
@@ -136,7 +178,7 @@ function normalizeHotelCard(card, cityName) {
   if (!id || !name) return null
 
   const price = firstNumber(
-    card.price?.priceSummary?.definition?.displayPrice,
+    priceSummary?.definition?.displayPrice,
     leadPrice?.price?.formatted,
     card.price?.lead?.amount,
     card.price?.lead?.formatted?.replace(/[^\d.]/g, ''),
@@ -149,9 +191,15 @@ function normalizeHotelCard(card, cityName) {
     card.price?.displayMessages?.[0]?.lineItems?.[0]?.price?.formatted?.replace(/[^\d.]/g, ''),
     card.price?.options?.[0]?.formattedDisplayPrice?.replace(/[^\d.]/g, ''),
   )
+  const reviewPhrases = Array.isArray(card.guestRating?.phrases) ? card.guestRating.phrases : []
+  const priceMessages = (priceSummary?.priceMessaging || [])
+    .map(item => firstText(item?.value))
+    .filter(Boolean)
 
   return {
     id,
+    link: firstText(card.link),
+    externalUrl: absoluteHotelUrl(card.link, id),
     name,
     location: firstText(
       card.messages?.[0],
@@ -162,14 +210,107 @@ function normalizeHotelCard(card, cityName) {
       card.destinationInfo?.distanceFromDestination?.value,
       cityName,
     ),
-    rating: extractRating(card) || null,
+    rating: null,
+    reviewScore: firstNumber(card.guestRating?.rating, card.reviews?.score, card.reviews?.score?.value) || null,
+    reviewText: firstText(reviewPhrases[0], card.guestRating?.ratingText),
+    reviewCountText: firstText(reviewPhrases[1]),
+    starRating: firstNumber(card.star, card.starRating, card.propertyClass) || null,
     price,
     currency: 'KRW',
+    displayPrice: findDisplayPrice(priceSummary, 'LEAD') || firstText(priceSummary?.definition?.displayPrice),
+    previousPrice: findDisplayPrice(priceSummary, 'STRIKEOUT') || firstText(priceSummary?.definition?.strikeOut),
+    totalPriceText: findDisplayMessage(priceSummary, 'BREAKOUT_TYPE_SECONDARY_PRICE'),
+    taxText: findDisplayMessage(priceSummary, 'BREAKOUT_TYPE_TAX_AND_FEE_CLARIFY'),
+    pricePeriodText: priceMessages.join(' · '),
+    priceBadge: firstText(card.price?.badge?.text, card.price?.standardBadge?.text),
     image: pickImage(card),
     amenities: Array.isArray(card.short_amenities) ? card.short_amenities : [],
-    reviewText: firstText(card.guestRating?.phrases, card.guestRating?.ratingText),
     tag: null,
   }
+}
+
+function getFormattedOptionPrice(option) {
+  if (!option) return ''
+  const direct = firstText(option.formattedDisplayPrice, option.price?.formatted)
+  if (direct) return direct
+  const text = typeof option === 'string' ? option : ''
+  return firstText(text.match(/formattedDisplayPrice=([^;}]+)/)?.[1])
+}
+
+function normalizeOfferRooms(room, roomIndex) {
+  const ratePlans = Array.isArray(room.propertyUnit?.ratePlans) ? room.propertyUnit.ratePlans : []
+  const images = (room.propertyUnit?.gallery || [])
+    .map(img => ({ url: img.url, description: firstText(img.description) }))
+    .filter(img => img.url)
+    .slice(0, 6)
+  const amenities = collectAmenityTexts(room.propertyUnit?.roomAmenities || [])
+    .filter(text => text && !['기타', '안전'].includes(text))
+    .slice(0, 8)
+  const roomName = firstText(room.header?.name, room.propertyUnit?.header, `객실 ${roomIndex + 1}`)
+
+  return ratePlans.flatMap((ratePlan, ratePlanIndex) => {
+    const details = Array.isArray(ratePlan.priceDetails) ? ratePlan.priceDetails : []
+    return details.map((detail, detailIndex) => {
+      const totalText = firstText(detail.lodgingPrepareCheckout?.totalPrice?.formatted, detail.totalPriceMessage)
+      const nightlyText = firstText(
+        getFormattedOptionPrice(detail.price?.options?.[0]),
+        detail.price?.lead?.formatted,
+        detail.price?.total?.formatted,
+      )
+      const totalAmount = firstNumber(detail.lodgingPrepareCheckout?.totalPrice?.amount, totalText)
+      const nightlyAmount = firstNumber(nightlyText)
+      if (detail.availability?.available === false || (!nightlyText && !totalText)) return null
+      const paymentModel = firstText(detail.paymentModel)
+      const rateName = firstText(ratePlan.name, ratePlan.description)
+      return {
+        id: `${room.unitId || roomIndex}-${firstText(ratePlan.id, ratePlanIndex)}-${detailIndex}`,
+        unitId: firstText(room.unitId, room.propertyUnit?.id),
+        ratePlanId: firstText(ratePlan.id),
+        name: roomName,
+        rateName,
+        description: firstText(room.propertyUnit?.description, room.header?.subText),
+        images,
+        amenities,
+        badge: firstText(ratePlan.badge?.text),
+        paymentModel,
+        nightlyText,
+        nightlyAmount,
+        totalText,
+        totalAmount,
+      }
+    }).filter(Boolean)
+  })
+}
+
+async function getStayOffers({ hotelId, checkIn, checkOut, guests = 2 }) {
+  const id = String(hotelId || '').trim()
+  if (!id) throw createError('호텔 ID가 필요합니다.', 400)
+  if (!checkIn || !checkOut) return []
+
+  const params = new URLSearchParams({
+    checkin_date:  checkIn,
+    checkout_date: checkOut,
+    adults_number: String(guests || 2),
+    hotel_id:      id,
+    domain:        HOTEL_DOMAIN,
+    locale:        HOTEL_LOCALE,
+  })
+
+  const res = await fetch(`${BASE_URL}/v3/hotels/offers?${params}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Hotels.com offers ${res.status}: ${text}`)
+  }
+
+  const json = await res.json()
+  const rooms = json.data?.rooms || json.rooms || []
+  if (!Array.isArray(rooms)) return []
+  return rooms
+    .flatMap((room, index) => normalizeOfferRooms(room, index))
+    .filter(Boolean)
 }
 
 async function searchStays({ checkIn, checkOut, guests = 2, country, countryCode }) {
@@ -249,13 +390,10 @@ async function getStayDetail(hotelId) {
     .filter(p => p.url)
     .slice(0, 12)
 
-  const facilities = [
+  const facilities = collectAmenityTexts([
     ...(hotel.amenities?.topAmenities?.items || []),
     ...(hotel.amenities?.amenities || []),
-  ]
-    .map(f => f.text || f.name || (typeof f === 'string' ? f : ''))
-    .filter(Boolean)
-    .slice(0, 18)
+  ]).slice(0, 18)
 
   return {
     id:          id,
@@ -330,4 +468,4 @@ async function createMockStayBooking({ hotelCode, checkIn, checkOut, guests = 1,
   return booking
 }
 
-module.exports = { searchStays, getStayDetail, createMockStayBooking }
+module.exports = { searchStays, getStayDetail, getStayOffers, createMockStayBooking }

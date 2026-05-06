@@ -9,6 +9,15 @@ export async function getStayDetail(hotelId) {
   return apiGet(`/stays/${hotelId}`)
 }
 
+export async function getStayOffers({ hotelId, checkIn, checkOut, guests }) {
+  const params = new URLSearchParams()
+  if (checkIn) params.set('checkIn', checkIn)
+  if (checkOut) params.set('checkOut', checkOut)
+  if (guests) params.set('guests', String(guests))
+  const data = await apiGet(`/stays/${hotelId}/offers?${params}`)
+  return Array.isArray(data) ? data : []
+}
+
 export async function getMapEmbedUrl({ query, lat, lng }) {
   const params = new URLSearchParams({ query })
   if (lat != null) params.set('lat', String(lat))
