@@ -1,0 +1,82 @@
+services:
+  backend:
+    build: ./backend
+    container_name: trip-backend
+    restart: unless-stopped
+    env_file: ./backend/.env
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      REDIS_HOST: redis
+      QDRANT_URL: http://qdrant:6333
+    ports:
+      - "3001:3001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - trip-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: trip-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: trip_helper
+      MYSQL_USER: tripuser
+      MYSQL_PASSWORD: trippassword
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/models/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - trip-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: trip-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - trip-network
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: trip-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__HTTP_PORT: 6333
+    networks:
+      - trip-network
+
+volumes:
+  mysql_data:
+  redis_data:
+  qdrant_data:
+
+networks:
+  trip-network:
+    driver: bridge

@@ -5,7 +5,9 @@ const morgan = require('morgan');
 
 const { swaggerUi, swaggerSpec } = require('./config/swagger');
 const errorHandler = require('./middlewares/errorHandler');
+const { generalLimiter } = require('./middlewares/rateLimiter');
 const apiRoutes = require('./routes');
+require('./config/database');
 
 const app = express();
 app.use(cors({
@@ -13,6 +15,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(morgan('dev'));
+app.use('/api', generalLimiter);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
@@ -26,5 +29,3 @@ app.listen(PORT, () => {
   console.log(`Server:  ${BASE}`);
   console.log(`Swagger: ${BASE}/api-docs`);
 });
-
-process.stdin.resume();

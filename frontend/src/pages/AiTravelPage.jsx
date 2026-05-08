@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { apiPost } from '../api/apiClient'
 import {
   ArrowLeft, Sparkles, X, Plus, Minus, Check,
   Copy, Link, ChevronRight, Search, MapPin, Calendar,
-  Users, DollarSign, Zap, Send,
+  Users, DollarSign, Zap, Send, MessageCircle,
 } from 'lucide-react'
 import CalendarPicker from '../components/common/CalendarPicker'
 
@@ -13,7 +14,7 @@ const CONTINENTS = [
   { key: 'asia',       label: '아시아',       emoji: '🌏', countries: ['일본', '태국', '베트남', '싱가포르', '인도네시아', '대만', '홍콩', '말레이시아'] },
   { key: 'europe',     label: '유럽',         emoji: '🏰', countries: ['프랑스', '이탈리아', '스페인', '영국', '독일', '체코', '포르투갈', '그리스'] },
   { key: 'americas',   label: '미주',         emoji: '🗽', countries: ['미국', '캐나다', '멕시코', '브라질', '페루', '아르헨티나', '쿠바'] },
-  { key: 'oceania',    label: '오세아니아',   emoji: '🦘', countries: ['호주', '뉴질랜드', '피지', '괌', '사이판'] },
+  { key: 'oceania',    label: '오세아니아',   emoji: '🦘', countries: ['시드니', '멜버른', '골드코스트', '케언즈', '울루루', '뉴질랜드', '피지'] },
   { key: 'middleeast', label: '중동·아프리카', emoji: '🌴', countries: ['튀르키예', 'UAE', '모로코', '이집트', '케냐', '남아공'] },
 ]
 
@@ -166,6 +167,122 @@ const MOCK_RESULTS = {
 }
 const MOCK_RESULTS_DEFAULT = MOCK_RESULTS.food
 
+/* ─── 호주 전용 폴백 (시연용) ─────────────────────────── */
+const AUSTRALIA_CITIES = new Set(['호주','시드니','멜버른','골드코스트','케언즈','울루루','브리즈번'])
+
+const MOCK_AUSTRALIA = {
+  nature: { days: [
+    { label: '1일차', theme: '시드니 하버 & 본다이 코스탈 워크', items: [
+      { time: '08:00', name: '서큘러 키 도착', note: '오팔 카드 충전 · 하버 전경 감상' },
+      { time: '09:00', name: '오페라하우스 외관 투어', note: '가이드 투어 45달러 · 한국어 오디오 가이드 제공' },
+      { time: '10:30', name: '하버 브리지 도보 산책', note: '브리지 위 도보 무료 · 항구 파노라마 뷰' },
+      { time: '12:30', name: '더 록스 마켓 점심', note: '현지 푸드 트럭 · 피시앤칩스 20달러', isMeal: true },
+      { time: '14:30', name: '본다이 비치', note: '버스 333번 · 서핑 강습 99달러 또는 자유 수영' },
+      { time: '16:30', name: '본다이~쿠지 코스탈 워크', note: '6km 절벽 해안 산책로 무료 · 왕복 2시간' },
+      { time: '19:00', name: '달링 하버 저녁', note: '항구 뷰 레스토랑 · 토요일 밤 불꽃놀이 무료', isMeal: true },
+    ]},
+    { label: '2일차', theme: '블루 마운틴 세 자매 바위', items: [
+      { time: '07:30', name: '센트럴역 출발', note: '블루마운틴 라인 기차 편도 13달러 · 약 2시간' },
+      { time: '09:30', name: '에코 포인트 도착', note: '세 자매 바위(Three Sisters) 전망 · 무료 입장' },
+      { time: '10:30', name: '시닉 레일웨이 탑승', note: '세계에서 가장 가파른 철도 · 편도 16달러' },
+      { time: '12:30', name: '카툼바 카페 점심', note: '블루마운틴 유기농 카페 · 브런치 25달러', isMeal: true },
+      { time: '14:00', name: '시닉 스카이웨이 곤돌라', note: '270m 높이 협곡 위 · 왕복 31달러' },
+      { time: '16:00', name: '제이미슨 밸리 전망대', note: '협곡 일몰 포인트 · 무료' },
+      { time: '19:30', name: '시드니 CBD 귀환 · 저녁', note: '차이나타운 딤섬 15달러', isMeal: true },
+    ]},
+    { label: '3일차', theme: '타롱가 동물원 & 맨리 해변', items: [
+      { time: '09:00', name: '서큘러 키 페리 출발', note: '타롱가 동물원행 페리 12분 · 오팔 카드' },
+      { time: '09:30', name: '타롱가 동물원', note: '코알라·캥거루·왈라비 직접 만남 · 성인 47달러' },
+      { time: '12:30', name: '동물원 카페 점심', note: '항구 뷰 야외 카페 · 25달러', isMeal: true },
+      { time: '14:30', name: '맨리 페리 이동', note: '서큘러 키→맨리 30분 · 하버 크루즈 경험 · 7.35달러' },
+      { time: '15:30', name: '맨리 비치 & 코스탈 워크', note: '맨리 코스탈 워크 10km · 숨은 해변 탐방' },
+      { time: '18:00', name: '맨리 선셋 뷰', note: '서부 해안 일몰 감상 포인트' },
+      { time: '19:30', name: '맨리 씨푸드 저녁', note: '갓잡은 생선 그릴 · 35달러', isMeal: true },
+    ]},
+  ]},
+
+  food: { days: [
+    { label: '1일차', theme: '시드니 미식 — 피시마켓부터 파인다이닝까지', items: [
+      { time: '07:30', name: '시드니 피시 마켓', note: '남반구 최대 수산물 시장 · 생굴 1다스 24달러', isMeal: true },
+      { time: '10:00', name: '서리힐스 스페셜티 카페', note: '플랫화이트 발상지 · 빌스(Bills) 스크램블 에그 유명' },
+      { time: '12:30', name: '더 록스 마켓 점심', note: '현지 길거리 음식 · 타코·파에야 15달러', isMeal: true },
+      { time: '14:30', name: '뉴타운 카페 투어', note: '독립 카페 밀집 구역 · 마켓 레인 커피 추천' },
+      { time: '17:00', name: '달링허스트 와인바', note: '호주산 내추럴 와인 · 해피아워 17~19시' },
+      { time: '19:30', name: '시드니 오페라하우스 Bennelong', note: '미슐랭급 · 1인 150달러 · 사전 예약 필수', isMeal: true },
+    ]},
+    { label: '2일차', theme: '멜버른 커피 & 퀸 빅토리아 마켓', items: [
+      { time: '08:00', name: '디그레이브스 스트리트 카페', note: '멜버른 최고의 커피 골목 · 플랫화이트 5달러', isMeal: true },
+      { time: '09:30', name: '퀸 빅토리아 마켓 오전 장', note: '1878년 개장 · 신선 과일·치즈·육포 구입' },
+      { time: '12:00', name: '마켓 내 핫독 & 소시지', note: '현지인 단골 스탠드 · 8달러', isMeal: true },
+      { time: '13:30', name: '피츠로이 브런치 카페', note: '세인트 알리(St. Ali) 시그니처 브런치 28달러', isMeal: true },
+      { time: '15:30', name: '사우스뱅크 초콜릿 투어', note: '벨기에 초콜릿 숍 · 테이스팅 20달러' },
+      { time: '19:00', name: '멜버른 야라강변 레스토랑', note: '강변 야경 파스타 · 40달러', isMeal: true },
+    ]},
+    { label: '3일차', theme: '골드코스트 해변 브런치 & 씨푸드', items: [
+      { time: '08:30', name: '버리 헤즈 브런치 카페', note: '해변 뷰 아보카도 토스트 · 22달러', isMeal: true },
+      { time: '10:30', name: '서퍼스 파라다이스 카페 투어', note: '카비 스트리트 일대 스페셜티 카페 3곳' },
+      { time: '12:30', name: '브로드비치 씨푸드 레스토랑', note: '킹 크랩·새우 플래터 · 2인 80달러', isMeal: true },
+      { time: '14:30', name: '내추럴 브리지 와이너리', note: '힌터랜드 와이너리 · 시음 20달러' },
+      { time: '17:00', name: '해변 바베큐', note: '공공 바베큐 그릴 무료 · 마트에서 재료 구입' },
+      { time: '19:30', name: '서퍼스 파라다이스 야시장', note: '매주 수·금·토 · 스트리트 푸드 10달러~', isMeal: true },
+    ]},
+  ]},
+
+  activity: { days: [
+    { label: '1일차', theme: '본다이 서핑 & 하버 브리지 클라이밍', items: [
+      { time: '08:00', name: '본다이 서핑 강습', note: "Let's Go Surfing · 2시간 그룹 레슨 99달러" },
+      { time: '11:00', name: '본다이 비치 자유 수영', note: '라이프가드 감시 구역 · 안전' },
+      { time: '13:00', name: '본다이 비치 카페 점심', note: '바다 뷰 버거 · 25달러', isMeal: true },
+      { time: '15:00', name: '시드니 하버 카약', note: '서큘러 키 출발 · 2시간 투어 90달러' },
+      { time: '18:00', name: 'BridgeClimb 선셋', note: '하버 브리지 정상(134m) · 선셋 클라이밍 350달러' },
+      { time: '20:30', name: '서큘러 키 야경 디너', note: '오페라하우스 야경 감상하며 식사', isMeal: true },
+    ]},
+    { label: '2일차', theme: '그레이트 배리어 리프 다이빙', items: [
+      { time: '07:00', name: '케언즈 리프 플릿 터미널 출발', note: 'Great Adventures 투어 · 체험 다이빙 포함 180달러' },
+      { time: '09:30', name: '아우터 리프 도착', note: '스노클링 2시간 · 산호초·열대어 감상' },
+      { time: '12:00', name: '선상 점심', note: '뷔페 포함 · 투어 패키지에 포함', isMeal: true },
+      { time: '13:00', name: '체험 스쿠버다이빙', note: '강사 동행 · 30~40분 수중 탐험 · 60달러 추가' },
+      { time: '15:00', name: '두 번째 스노클링 포인트', note: '다른 산호초 구역 · 거북이 출몰 빈번' },
+      { time: '17:30', name: '케언즈 귀항 & 저녁', note: '에스플러네이드 씨푸드 레스토랑 · 40달러', isMeal: true },
+    ]},
+    { label: '3일차', theme: '골드코스트 테마파크 & 서핑', items: [
+      { time: '09:00', name: '워너 브라더스 무비 월드 입장', note: 'DC 히어로 라이드 · 1일권 120달러' },
+      { time: '10:00', name: '배트맨 어드벤처 라이드', note: '대기 줄 적은 오전 공략 필수' },
+      { time: '13:00', name: '무비 월드 레스토랑', note: '테마 버거 · 20달러', isMeal: true },
+      { time: '15:00', name: '씨월드 돌고래 쇼', note: '옆 파크 이동 · 콤보 패스 이용' },
+      { time: '17:30', name: '서퍼스 파라다이스 해변 서핑', note: '저녁 파도 · 보드 렌탈 30달러/시간' },
+      { time: '20:00', name: '카비 스트리트 디너', note: '서퍼스 파라다이스 중심 레스토랑 · 35달러', isMeal: true },
+    ]},
+  ]},
+
+  rest: { days: [
+    { label: '1일차', theme: '멜버른 세인트 킬다 & 커피 힐링', items: [
+      { time: '10:00', name: '멜버른 레이트 체크인', note: '세인트 킬다 해변 인근 부티크 호텔' },
+      { time: '11:00', name: '세인트 킬다 비치 산책', note: '조용한 해변 · 피크닉 분위기' },
+      { time: '13:00', name: '아크란드 스트리트 케이크 카페', note: '세인트 킬다 명물 케이크 숍 · 15달러', isMeal: true },
+      { time: '15:00', name: '리틀 펭귄 서식지 방문', note: '세인트 킬다 부두 · 야생 리틀 펭귄 무료 관찰 (일몰 후)' },
+      { time: '17:00', name: 'NGV 갤러리 관람', note: '호주 최대 미술관 · 상설 전시 무료' },
+      { time: '19:30', name: '사우스뱅크 강변 저녁', note: '야라강 뷰 이탈리안 · 45달러', isMeal: true },
+    ]},
+    { label: '2일차', theme: '야라 밸리 와이너리 & 스파', items: [
+      { time: '09:30', name: '야라 밸리 와이너리 출발', note: '멜버른에서 1시간 · 투어 버스 이용 편리' },
+      { time: '11:00', name: '도마인 샨동 와이너리', note: '스파클링 와인 명가 · 시음 25달러' },
+      { time: '13:00', name: '와이너리 레스토랑 런치', note: '제철 코스 메뉴 · 55달러', isMeal: true },
+      { time: '15:00', name: '힐링 스파 & 마사지', note: 'Peninsula Hot Springs · 1시간 코스 120달러' },
+      { time: '17:30', name: '야라 밸리 선셋 뷰', note: '포도밭 너머 일몰 · 무료' },
+      { time: '19:30', name: '멜버른 귀환 · 저녁', note: '피츠로이 타파스 바 · 40달러', isMeal: true },
+    ]},
+    { label: '3일차', theme: '시드니 로얄 보태닉 가든 & 슬로우 데이', items: [
+      { time: '09:00', name: '로얄 보태닉 가든 아침 산책', note: '30헥타르 무료 공원 · 하버 뷰 최고' },
+      { time: '10:30', name: '가든 카페 브런치', note: '가든 내 카페 · 아보카도 토스트 22달러', isMeal: true },
+      { time: '12:30', name: '미세스 맥콰리 포인트', note: '오페라하우스+하버브리지 동시 뷰 · 무료' },
+      { time: '14:00', name: '서큘러 키 페리 산책', note: '페리 타고 하버 한 바퀴 · 오팔 카드' },
+      { time: '16:00', name: '더 록스 카페 휴식', note: '애프터눈 티 · 빈티지 분위기 카페' },
+      { time: '19:00', name: '오페라하우스 야경 디너', note: '야외 바 · 캐주얼 식사 + 야경 감상', isMeal: true },
+    ]},
+  ]},
+}
+
 /* ──────────────────────────────────────────── 유틸 */
 function randomCode() { return Math.random().toString(36).slice(2, 7).toUpperCase() }
 function formatWon(n) { return n >= 1000000 ? `${(n / 10000).toFixed(0)}만원` : `${n.toLocaleString()}원` }
@@ -293,7 +410,7 @@ function StyleSelector({ selected, onChange, customStyles, onCustomAdd, onCustom
    LANDING
 ════════════════════════════════════════════ */
 function Landing({ onStart }) {
-  const tags = ['도쿄', '파리', '발리', '교토', '싱가포르', '방콕', '뉴질랜드', '바르셀로나', '로마', '뉴욕']
+  const tags = ['시드니', '멜버른', '골드코스트', '케언즈', '도쿄', '파리', '발리', '싱가포르', '바르셀로나', '뉴욕']
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#0B0F1A' }}>
       {/* 배경 glow */}
@@ -962,16 +1079,37 @@ const LOADING_MSGS = ['목적지 정보 분석', '관광 명소 선별', '동선
 
 function Loading({ info, onDone }) {
   const [step, setStep] = useState(0)
-  useEffect(() => {
-    const t = setInterval(() => {
-      setStep(prev => {
-        if (prev >= LOADING_MSGS.length - 1) { clearInterval(t); setTimeout(onDone, 600); return prev }
-        return prev + 1
-      })
-    }, 750)
-    return () => clearInterval(t)
-  }, [onDone])
+  const [error, setError] = useState(null)
   const dest = info.country || CONTINENTS.find(c => c.key === info.continent)?.label || '목적지'
+
+  useEffect(() => {
+    const t = setInterval(() => setStep(prev => Math.min(prev + 1, LOADING_MSGS.length - 1)), 900)
+
+    apiPost('/ai-travel/generate', info)
+      .then(json => {
+        clearInterval(t)
+        setStep(LOADING_MSGS.length - 1)
+        setTimeout(() => onDone(json.data), 600)
+      })
+      .catch(err => {
+        clearInterval(t)
+        setError(err.message)
+      })
+
+    return () => clearInterval(t)
+  }, [])
+
+  if (error) return (
+    <div className="min-h-screen flex flex-col items-center justify-center px-8 gap-6" style={{ background: '#0B0F1A' }}>
+      <div className="text-center">
+        <p className="text-white font-bold mb-2">일정 생성에 실패했어요</p>
+        <p className="text-red-400 text-sm mb-6">{error}</p>
+        <button onClick={() => onDone(null)} className="text-zinc-400 underline text-sm hover:text-zinc-200 transition-colors">
+          돌아가기
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-8 gap-12"
@@ -1006,14 +1144,179 @@ function Loading({ info, onDone }) {
 }
 
 /* ════════════════════════════════════════════
+   TRAVEL CHAT DRAWER (페르소나 챗봇)
+════════════════════════════════════════════ */
+const PERSONA_DEFAULTS = {
+  '호주':       { name: 'Matey',    emoji: '🦘', greeting: "G'day! 호주 여행이라면 뭐든 물어봐~ No worries!" },
+  '시드니':     { name: 'Matey',    emoji: '🦘', greeting: "G'day mate! 시드니 현지인 Matey야. 뭐든 물어봐!" },
+  '멜버른':     { name: 'Matey',    emoji: '☕', greeting: "G'day! 멜버른 커피는 세계 최고야. 뭐가 궁금해?" },
+  '골드코스트': { name: 'Matey',    emoji: '🏄', greeting: "No worries! 골드코스트 서퍼 Matey야~ 꿀팁 알려줄게!" },
+  '케언즈':     { name: 'Matey',    emoji: '🤿', greeting: "G'day! 그레이트 배리어 리프 다이버 Matey야. 물어봐!" },
+  '울루루':     { name: 'Matey',    emoji: '🪨', greeting: "No worries! 레드센터 Matey야. 뭐든 알려줄게!" },
+  '브리즈번':   { name: 'Matey',    emoji: '🐨', greeting: "G'day! 브리즈번 로컬 Matey야~ 뭐든 물어봐!" },
+  '일본':       { name: 'Yuki',     emoji: '⛩️', greeting: '안녕하세요! 일본 가이드 유키입니다. 무엇이든 물어보세요.' },
+  '도쿄':       { name: 'Yuki',     emoji: '🗼', greeting: '안녕하세요! 도쿄 로컬 유키입니다. 뭐든 도움드릴게요!' },
+  '프랑스':     { name: 'Sophie',   emoji: '🗼', greeting: 'Bonjour! 파리 현지인 Sophie예요. 뭐든 물어보세요~' },
+  '이탈리아':   { name: 'Marco',    emoji: '🏛️', greeting: 'Ciao! 이탈리아 가이드 Marco입니다. 뭐든 알려드려요!' },
+  '스페인':     { name: 'Isabella', emoji: '💃', greeting: '¡Hola! 스페인 현지인 Isabella야. 뭐든 물어봐!' },
+  '태국':       { name: 'Nam',      emoji: '🌴', greeting: 'Sawasdee! 태국 가이드 Nam이에요. 무엇이든 물어보세요!' },
+}
+const DEFAULT_PERSONA_FB = { name: 'Trip AI', emoji: '✈️', greeting: '안녕하세요! 여행에 대해 무엇이든 물어보세요!' }
+
+function TravelChatDrawer({ destination }) {
+  const [open, setOpen]       = useState(false)
+  const [msgs, setMsgs]       = useState([])
+  const [input, setInput]     = useState('')
+  const [loading, setLoading] = useState(false)
+  const [apiPersona, setApiPersona] = useState(null)
+  const bottomRef = useRef(null)
+
+  const basePersona = PERSONA_DEFAULTS[destination] || DEFAULT_PERSONA_FB
+  const persona     = apiPersona || basePersona
+
+  const handleToggle = () => {
+    if (!open && msgs.length === 0) {
+      setMsgs([{ role: 'bot', text: basePersona.greeting, isGreeting: true }])
+    }
+    setOpen(v => !v)
+  }
+
+  const send = async () => {
+    if (!input.trim() || loading) return
+    const userText = input.trim()
+    setInput('')
+
+    const next = [...msgs, { role: 'user', text: userText }]
+    setMsgs(next)
+    setLoading(true)
+
+    try {
+      const history = next
+        .slice(0, -1)
+        .filter(m => !m.isGreeting)
+        .map(m => ({
+          role: m.role === 'user' ? 'user' : 'model',
+          parts: [{ text: m.text }],
+        }))
+
+      const res = await apiPost('/ai-travel/chat', { message: userText, history, destination })
+
+      if (res.persona && !apiPersona) setApiPersona(res.persona)
+      setMsgs(prev => [...prev, { role: 'bot', text: res.reply }])
+    } catch {
+      setMsgs(prev => [...prev, { role: 'bot', text: '죄송해요, 잠시 후 다시 시도해주세요.' }])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [msgs, loading])
+
+  return (
+    <>
+      {/* FAB 버튼 */}
+      <button
+        onClick={handleToggle}
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all active:scale-95 z-40"
+        style={{ background: open ? '#18181B' : '#2563EB' }}
+        title={open ? '닫기' : `${persona.name}에게 물어보기`}
+      >
+        {open
+          ? <X className="w-5 h-5 text-white" />
+          : <MessageCircle className="w-5 h-5 text-white" />
+        }
+      </button>
+
+      {/* 채팅 드로어 */}
+      {open && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-30 flex flex-col bg-white rounded-t-2xl border-t border-zinc-200"
+          style={{ height: '70vh', maxWidth: '512px', margin: '0 auto', boxShadow: '0 -8px 40px rgba(0,0,0,0.12)' }}
+        >
+          {/* 헤더 */}
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-zinc-100 flex-shrink-0">
+            <div className="w-9 h-9 rounded-full bg-zinc-100 flex items-center justify-center text-xl">{persona.emoji}</div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-zinc-900">{persona.name}</p>
+              <p className="text-xs text-zinc-400">{destination} 현지 가이드</p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span className="text-[10px] text-zinc-400">온라인</span>
+            </div>
+          </div>
+
+          {/* 메시지 목록 */}
+          <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+            {msgs.map((m, i) => (
+              <div key={i} className={`flex items-end gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {m.role === 'bot' && (
+                  <div className="w-7 h-7 rounded-full bg-zinc-100 flex items-center justify-center text-sm flex-shrink-0">{persona.emoji}</div>
+                )}
+                <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                  m.role === 'user'
+                    ? 'bg-blue-600 text-white rounded-br-sm'
+                    : 'bg-zinc-100 text-zinc-800 rounded-bl-sm'
+                }`}>
+                  {m.text}
+                </div>
+              </div>
+            ))}
+
+            {/* 타이핑 인디케이터 */}
+            {loading && (
+              <div className="flex items-end gap-2 justify-start">
+                <div className="w-7 h-7 rounded-full bg-zinc-100 flex items-center justify-center text-sm flex-shrink-0">{persona.emoji}</div>
+                <div className="bg-zinc-100 px-4 py-3 rounded-2xl rounded-bl-sm">
+                  <div className="flex gap-1 items-center h-4">
+                    {[0, 1, 2].map(j => (
+                      <div key={j} className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce"
+                        style={{ animationDelay: `${j * 0.15}s` }} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* 입력창 */}
+          <div className="px-4 py-3 border-t border-zinc-100 flex gap-2 flex-shrink-0">
+            <input
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
+              placeholder={`${persona.name}에게 물어보기...`}
+              className="flex-1 h-10 px-4 text-sm bg-zinc-100 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-400 transition-all"
+            />
+            <button
+              onClick={send}
+              disabled={!input.trim() || loading}
+              className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center disabled:opacity-40 hover:bg-blue-700 active:scale-95 transition-all flex-shrink-0"
+            >
+              <Send className="w-4 h-4 text-white" />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+/* ════════════════════════════════════════════
    RESULT
 ════════════════════════════════════════════ */
-function Result({ info, onReset }) {
+function Result({ info, planData, onReset }) {
   const [activeDay, setActiveDay] = useState(0)
   const dest = info.country || CONTINENTS.find(c => c.key === info.continent)?.label || '여행'
   const theme = getDominantTheme(info.styles ?? [])
-  const mockData = MOCK_RESULTS[theme] ?? MOCK_RESULTS_DEFAULT
-  const days = mockData.days.slice(0, Math.min(info.nights + 1, 3))
+  const isAustralia = AUSTRALIA_CITIES.has(info.country || '') || AUSTRALIA_CITIES.has(info.continent || '')
+  const mockPool = isAustralia ? MOCK_AUSTRALIA : MOCK_RESULTS
+  const fallback = mockPool[theme] ?? (isAustralia ? MOCK_AUSTRALIA.nature : MOCK_RESULTS_DEFAULT)
+  const source = planData ?? fallback
+  const days = source.days.slice(0, info.nights + 1)
   const day = days[activeDay]
   const diffLabel  = DIFFICULTY_OPTIONS.find(d => d.key === info.difficulty)
   const budgetLabel = BUDGET_OPTIONS.find(b => b.key === info.budget)
@@ -1085,7 +1388,7 @@ function Result({ info, onReset }) {
       </div>
 
       {/* 타임라인 */}
-      <div className="flex-1 px-5 py-5 max-w-lg mx-auto w-full pb-20">
+      <div className="flex-1 px-5 py-5 max-w-lg mx-auto w-full pb-28">
         <p className="text-xs font-semibold text-zinc-400 mb-4 uppercase tracking-wider">{day.theme}</p>
         {day.items.map((item, i) => (
           <div key={i} className="flex gap-3">
@@ -1107,6 +1410,9 @@ function Result({ info, onReset }) {
           </div>
         ))}
       </div>
+
+      {/* 페르소나 챗봇 */}
+      <TravelChatDrawer destination={dest} />
     </div>
   )
 }
@@ -1122,6 +1428,7 @@ export default function AiTravelPage() {
   const [roomCode]              = useState(randomCode)
   const [friends, setFriends]   = useState([])
   const [tripInfo, setTripInfo] = useState(null)
+  const [planData, setPlanData] = useState(null)
 
   useEffect(() => {
     if (view !== 'group-invite') return
@@ -1137,15 +1444,15 @@ export default function AiTravelPage() {
     if (info.travelType === 'group') setView('group-invite')
     else setView('loading')
   }
-  const handleReset = () => { setTripInfo(null); setFriends([]); setView('landing') }
+  const handleReset = () => { setTripInfo(null); setFriends([]); setPlanData(null); setView('landing') }
 
   return (
     <div>
       {view === 'landing'      && <Landing onStart={() => setView('form')} />}
       {view === 'form'         && <TravelFormWizard onSubmit={handleFormSubmit} onBack={() => setView('landing')} />}
       {view === 'group-invite' && <GroupInvite roomCode={roomCode} friends={friends} tripInfo={tripInfo} onProceed={() => setView('loading')} />}
-      {view === 'loading'      && <Loading info={tripInfo} onDone={() => setView('result')} />}
-      {view === 'result'       && <Result info={tripInfo} onReset={handleReset} />}
+      {view === 'loading'      && <Loading info={tripInfo} onDone={data => { if (data) setPlanData(data); setView('result') }} />}
+      {view === 'result'       && <Result info={tripInfo} planData={planData} onReset={handleReset} />}
     </div>
   )
 }
