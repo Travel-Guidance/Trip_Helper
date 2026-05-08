@@ -1,13 +1,14 @@
 ﻿const { Router } = require('express');
 
-const flightRoutes = require('./flightRoutes');
-const orderRoutes = require('./orderRoutes');
-const seatRoutes = require('./seatRoutes');
-const popularRoutes = require('./popularRoutes');
-const esimRoutes = require('./esimRoutes');
+const flightRoutes       = require('./flightRoutes');
+const orderRoutes        = require('./orderRoutes');
+const seatRoutes         = require('./seatRoutes');
+const popularRoutes      = require('./popularRoutes');
+const esimRoutes         = require('./esimRoutes');
 const accommodationRoutes = require('./accommodationRoutes');
-const mapsRoutes = require('./mapsRoutes');
-const tourRoutes = require('./tourRoutes');
+const mapsRoutes         = require('./mapsRoutes');
+const tourRoutes         = require('./tourRoutes');
+const aiTravelRoutes     = require('./aiTravelRoutes');
 
 const router = Router();
 
@@ -19,6 +20,7 @@ router.use(esimRoutes);
 router.use(accommodationRoutes);
 router.use(mapsRoutes);
 router.use(tourRoutes);
+router.use(aiTravelRoutes);
 
 module.exports = router;
 
