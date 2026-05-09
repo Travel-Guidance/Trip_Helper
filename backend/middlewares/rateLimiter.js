@@ -43,6 +43,7 @@ function makeStore(prefix) {
 const generalLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 60,
+  skip: req => req.path === '/tours/photo',
   standardHeaders: true,
   legacyHeaders: false,
   store: makeStore('rl:gen:'),

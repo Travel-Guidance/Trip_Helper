@@ -1,20 +1,22 @@
 const nodemailer = require('nodemailer');
 
 function createMailer() {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return null;
+  const smtpUser = process.env.EMAIL_NAVER_USER || process.env.EMAIL_USER;
+  const smtpPass = process.env.EMAIL_NAVER_PASS || process.env.EMAIL_PASS;
+  if (!smtpUser || !smtpPass) return null;
 
   if (process.env.SMTP_HOST) {
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT || 465),
       secure: String(process.env.SMTP_SECURE || 'true') === 'true',
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+      auth: { user: smtpUser, pass: smtpPass },
     });
   }
 
   return nodemailer.createTransport({
     service: process.env.EMAIL_SERVICE || 'gmail',
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+    auth: { user: smtpUser, pass: smtpPass },
   });
 }
 

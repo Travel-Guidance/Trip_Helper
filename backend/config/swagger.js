@@ -96,6 +96,8 @@ const swaggerSpec = swaggerJsdoc({
             guests: { type: 'integer', example: 2 },
             guestName: { type: 'string', example: '솔민 김' },
             email: { type: 'string', format: 'email', example: 'guest@example.com' },
+            totalAmount: { type: 'number', example: 408900 },
+            totalCurrency: { type: 'string', example: 'KRW' },
             image: { type: 'string', example: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/12345678.jpg' },
           },
         },

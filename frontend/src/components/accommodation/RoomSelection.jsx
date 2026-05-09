@@ -7,6 +7,7 @@ export default function RoomSelection({
   uniqueGallery,
   roomFacilities,
   hasOffers,
+  isLoading,
   hasPreviousPrice,
   hotelTaxText,
   checkIn,
@@ -19,6 +20,11 @@ export default function RoomSelection({
         <h2>객실 선택</h2>
         <span>{checkIn && checkOut ? `${formatDate(checkIn)} - ${formatDate(checkOut)}` : '선택한 일정'}</span>
       </div>
+      {isLoading && (
+        <div className="acc-room-loading">
+          객실 요금을 불러오는 중입니다
+        </div>
+      )}
       <div className="acc-room-list">
         {roomOptions.map(room => (
           <button

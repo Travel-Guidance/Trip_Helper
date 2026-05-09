@@ -38,7 +38,8 @@ export default function AccommodationDetail() {
 
   const [detail, setDetail] = useState(null)
   const [offers, setOffers] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!stateHotel)
+  const [offersLoading, setOffersLoading] = useState(false)
   const [error, setError] = useState('')
   const [guestName, setGuestName] = useState('')
   const [email, setEmail] = useState('')
@@ -51,16 +52,18 @@ export default function AccommodationDetail() {
   const [mapUrls, setMapUrls] = useState(null)
 
   useEffect(() => {
-    setLoading(true)
+    setLoading(!stateHotel)
     getStayDetail(hotelId)
       .then(data => { setDetail(data); setLoading(false) })
       .catch(err => { setError(err.message || '숙소 정보를 불러오지 못했습니다.'); setLoading(false) })
-  }, [hotelId])
+  }, [hotelId, stateHotel])
 
   useEffect(() => {
+    setOffersLoading(true)
     getStayOffers({ hotelId, checkIn, checkOut, guests })
       .then(data => setOffers(data))
       .catch(() => setOffers([]))
+      .finally(() => setOffersLoading(false))
   }, [hotelId, checkIn, checkOut, guests])
 
   const hotel = useMemo(() => ({ ...(detail || {}), ...(stateHotel || {}) }), [detail, stateHotel])
@@ -124,6 +127,8 @@ export default function AccommodationDetail() {
       setBookingError('예약자 이름과 이메일을 입력해주세요.')
       return
     }
+    const bookingTotalAmount = selectedRoom?.totalAmount || parseKrwText(selectedRoom?.totalText) || totalPrice
+    const bookingCurrency = selectedRoom?.currency || currency
     setBooking(true)
     setBookingError('')
     try {
@@ -137,6 +142,8 @@ export default function AccommodationDetail() {
         checkOut,
         guests,
         roomName: selectedRoom.name,
+        totalAmount: bookingTotalAmount,
+        totalCurrency: bookingCurrency,
         guestName: guestName.trim(),
         email: email.trim(),
         image: selectedRoom.images?.[0] || uniqueGallery[0],
@@ -188,6 +195,7 @@ export default function AccommodationDetail() {
                   uniqueGallery={uniqueGallery}
                   roomFacilities={roomFacilities}
                   hasOffers={offers.length > 0}
+                  isLoading={offersLoading}
                   hasPreviousPrice={hasPreviousPrice}
                   hotelTaxText={hotel.taxText}
                   checkIn={checkIn}

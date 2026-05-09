@@ -23,6 +23,7 @@ const COUNTRY_CITY = {
 
 const HOTEL_DOMAIN = 'KR'
 const HOTEL_LOCALE = 'ko_KR'
+const CACHE_TTL_MS = 5 * 60 * 1000
 
 function getDefaultDates() {
   const ci = new Date()
@@ -34,6 +35,21 @@ function getDefaultDates() {
 }
 
 const destIdCache = {}
+const apiCache = new Map()
+
+function getCached(key) {
+  const item = apiCache.get(key)
+  if (!item || item.expiresAt < Date.now()) {
+    apiCache.delete(key)
+    return null
+  }
+  return item.value
+}
+
+function setCached(key, value) {
+  apiCache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS })
+  return value
+}
 
 async function searchDestId(cityName) {
   if (destIdCache[cityName]) return destIdCache[cityName]
@@ -286,6 +302,9 @@ async function getStayOffers({ hotelId, checkIn, checkOut, guests = 2 }) {
   const id = String(hotelId || '').trim()
   if (!id) throw createError('호텔 ID가 필요합니다.', 400)
   if (!checkIn || !checkOut) return []
+  const cacheKey = `offers:${id}:${checkIn}:${checkOut}:${guests || 2}`
+  const cached = getCached(cacheKey)
+  if (cached) return cached
 
   const params = new URLSearchParams({
     checkin_date:  checkIn,
@@ -308,9 +327,9 @@ async function getStayOffers({ hotelId, checkIn, checkOut, guests = 2 }) {
   const json = await res.json()
   const rooms = json.data?.rooms || json.rooms || []
   if (!Array.isArray(rooms)) return []
-  return rooms
+  return setCached(cacheKey, rooms
     .flatMap((room, index) => normalizeOfferRooms(room, index))
-    .filter(Boolean)
+    .filter(Boolean))
 }
 
 async function searchStays({ checkIn, checkOut, guests = 2, country, countryCode }) {
@@ -323,6 +342,9 @@ async function searchStays({ checkIn, checkOut, guests = 2, country, countryCode
   const defaults = getDefaultDates()
   const ci = checkIn || defaults.checkIn
   const co = checkOut || defaults.checkOut
+  const cacheKey = `search:${code}:${ci}:${co}:${guests}`
+  const cached = getCached(cacheKey)
+  if (cached) return cached
 
   const { destId } = await searchDestId(cityName)
 
@@ -359,15 +381,18 @@ async function searchStays({ checkIn, checkOut, guests = 2, country, countryCode
     json.results,
   ].find(Array.isArray) || []
 
-  return listings
+  return setCached(cacheKey, listings
     .map(card => normalizeHotelCard(card, cityName))
     .filter(Boolean)
-    .slice(0, 20)
+    .slice(0, 20))
 }
 
 async function getStayDetail(hotelId) {
   const id = String(hotelId || '').trim()
   if (!id) throw createError('호텔 ID가 필요합니다.', 400)
+  const cacheKey = `detail:${id}`
+  const cached = getCached(cacheKey)
+  if (cached) return cached
 
   const params = new URLSearchParams({
     domain:   HOTEL_DOMAIN,
@@ -395,7 +420,7 @@ async function getStayDetail(hotelId) {
     ...(hotel.amenities?.amenities || []),
   ]).slice(0, 18)
 
-  return {
+  return setCached(cacheKey, {
     id:          id,
     name:        firstText(hotel.name, hotel.summary?.name),
     description: firstText(hotel.tagline, hotel.description, hotel.aboutThisProperty?.sections?.[0]?.bodySubSections?.[0]?.elements?.[0]?.items?.[0]?.content?.text),
@@ -412,16 +437,30 @@ async function getStayDetail(hotelId) {
     emails:      [],
     images,
     facilities,
-  }
+  })
 }
 
-async function createMockStayBooking({ hotelCode, checkIn, checkOut, guests = 1, guestName, email, hotelName, location, image }) {
+async function createMockStayBooking({
+  hotelCode,
+  checkIn,
+  checkOut,
+  guests = 1,
+  guestName,
+  email,
+  hotelName,
+  location,
+  image,
+  totalAmount,
+  totalCurrency = 'KRW',
+}) {
   if (!hotelCode || !checkIn || !checkOut || !email || !guestName) {
     throw createError('숙소 예약에 필요한 값이 누락되었습니다.', 400)
   }
 
   const nights = Math.max(1, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000))
   const bookingRef = genStayBookingRef()
+  const bookingTotalAmount = Number(totalAmount) > 0 ? Number(totalAmount) : 0
+  const bookingCurrency = totalCurrency || 'KRW'
 
   const booking = {
     id:                `stay_demo_${Math.random().toString(36).slice(2, 14)}`,
@@ -440,8 +479,8 @@ async function createMockStayBooking({ hotelCode, checkIn, checkOut, guests = 1,
     check_out:      checkOut,
     nights,
     guests:         Number(guests),
-    total_amount:   0,
-    total_currency: 'USD',
+    total_amount:   bookingTotalAmount,
+    total_currency: bookingCurrency,
     created_at:     new Date().toISOString(),
   }
 
@@ -456,8 +495,8 @@ async function createMockStayBooking({ hotelCode, checkIn, checkOut, guests = 1,
       checkOut,
       nights,
       guests,
-      totalPrice: 0,
-      currency:   'USD',
+      totalPrice: bookingTotalAmount,
+      currency:   bookingCurrency,
       image,
     })
   } catch (err) {

@@ -132,6 +132,11 @@ export default function TourTicket() {
   }, [filters, sortBy, tours])
 
   const queryLabel = hasSearched ? displayQuery || getSearchLabel(query) : SEARCH_PLACEHOLDER
+  const replaceBrokenImage = (event, fallback) => {
+    if (event.currentTarget.dataset.fallbackApplied) return
+    event.currentTarget.dataset.fallbackApplied = 'true'
+    event.currentTarget.src = fallback
+  }
 
   return (
     <div className="tour-page">
@@ -188,7 +193,11 @@ export default function TourTicket() {
                     <div className="tour-modal-card-list">
                       {recentTours.map(tour => (
                         <button key={tour.id} onClick={() => handleTourClick(tour)}>
-                          <img src={tour.photoUrl || FALLBACK_IMAGES[0]} alt={tour.name} />
+                          <img
+                            src={tour.photoUrl || FALLBACK_IMAGES[0]}
+                            alt={tour.name}
+                            onError={event => replaceBrokenImage(event, FALLBACK_IMAGES[0])}
+                          />
                           <strong>{tour.name}</strong>
                           <span>{tour.rating ? `★ ${tour.rating} (${Number(tour.reviewCount || 0).toLocaleString()})` : '평점 정보 없음'}</span>
                         </button>
@@ -251,7 +260,11 @@ export default function TourTicket() {
                 <div className="tour-mini-list">
                   {recentTours.map(tour => (
                     <button key={tour.id} onClick={() => handleTourClick(tour)}>
-                      <img src={tour.photoUrl || FALLBACK_IMAGES[0]} alt={tour.name} />
+                      <img
+                        src={tour.photoUrl || FALLBACK_IMAGES[0]}
+                        alt={tour.name}
+                        onError={event => replaceBrokenImage(event, FALLBACK_IMAGES[0])}
+                      />
                       <span>{tour.name}</span>
                     </button>
                   ))}
@@ -279,7 +292,11 @@ export default function TourTicket() {
                     <div className="tour-grid">
                       {visibleTours.map((tour, i) => (
                         <button key={tour.id} className="tour-card" onClick={() => handleTourClick(tour)}>
-                          <img src={tour.photoUrl || FALLBACK_IMAGES[i % FALLBACK_IMAGES.length]} alt={tour.name} />
+                          <img
+                            src={tour.photoUrl || FALLBACK_IMAGES[i % FALLBACK_IMAGES.length]}
+                            alt={tour.name}
+                            onError={event => replaceBrokenImage(event, FALLBACK_IMAGES[i % FALLBACK_IMAGES.length])}
+                          />
                           <div className="tour-badges">
                             <span className="tour-badge tour-badge-blue">{tour.reservationLevel}</span>
                             <span className="tour-badge tour-badge-green">{tour.costLevel}</span>

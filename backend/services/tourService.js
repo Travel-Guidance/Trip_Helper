@@ -1,6 +1,9 @@
 const { requireEnv } = require('../utils/env')
 const { createError } = require('../utils/errors')
 
+const PHOTO_CACHE_TTL = 60 * 60 * 1000;
+const photoUriCache = new Map();
+
 const PAID_TYPES = new Set([
   'amusement_park',
   'aquarium',
@@ -169,14 +172,24 @@ async function getTourPhotoUri(name) {
   const cleanName = String(name || '').trim()
   if (!cleanName.startsWith('places/')) throw createError('사진 리소스 이름이 필요합니다.', 400)
 
+  const cached = photoUriCache.get(cleanName);
+  if (cached && cached.expiresAt > Date.now()) return cached.uri;
+  photoUriCache.delete(cleanName);
+
   const url = `https://places.googleapis.com/v1/${encodeURI(cleanName)}/media?maxWidthPx=800&skipHttpRedirect=true&key=${encodeURIComponent(key)}`;
   const response = await fetch(url);
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Google Place Photo ${response.status}: ${text}`);
+    throw createError(`Google Place Photo ${response.status}: ${text}`, response.status);
   }
 
   const json = await response.json();
+  if (json.photoUri) {
+    photoUriCache.set(cleanName, {
+      uri: json.photoUri,
+      expiresAt: Date.now() + PHOTO_CACHE_TTL,
+    });
+  }
   return json.photoUri;
 }
 

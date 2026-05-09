@@ -46,3 +46,6 @@ desktop.ini
 *.sln
 *.sw?
 .claude/
+
+#kimsolmin gitignore
+pre-front-work

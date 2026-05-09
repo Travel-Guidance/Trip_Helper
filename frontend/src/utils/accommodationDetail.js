@@ -62,6 +62,8 @@ export function buildRoomOptions({ offers, hotel, detail, uniqueGallery, roomFac
       amenities: room.amenities?.map(formatAmenity).slice(0, 6) || [],
       price: room.nightlyText || formatKrwPrice(room.nightlyPrice, currency),
       totalText: cleanTotalText(room.totalText),
+      totalAmount: room.totalAmount || parseKrwText(room.totalText),
+      currency,
       badge: room.badge,
       paymentModel: room.paymentModel,
       periodText: hotel.pricePeriodText,
@@ -76,6 +78,8 @@ export function buildRoomOptions({ offers, hotel, detail, uniqueGallery, roomFac
     price: displayPrice,
     previousPrice: hotel.previousPrice,
     totalText: totalPriceText,
+    totalAmount: parseKrwText(totalPriceText),
+    currency,
     taxText: hotel.taxText,
     periodText: hotel.pricePeriodText,
   }]

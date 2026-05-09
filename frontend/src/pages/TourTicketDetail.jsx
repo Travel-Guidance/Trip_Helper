@@ -48,6 +48,11 @@ export default function TourTicketDetail() {
   const openLabel = tour.openNow === true ? '현재 운영 중' : tour.openNow === false ? '현재 운영 종료' : '운영시간 확인 필요'
   const types = (tour.types || []).filter(type => !['point_of_interest', 'establishment'].includes(type)).slice(0, 5)
   const reviews = (tour.reviews || []).slice(0, 10)
+  const replaceBrokenImage = (event, fallback) => {
+    if (event.currentTarget.dataset.fallbackApplied) return
+    event.currentTarget.dataset.fallbackApplied = 'true'
+    event.currentTarget.src = fallback
+  }
 
   useEffect(() => {
     const query = [tour.name, tour.address].filter(Boolean).join(' ')
@@ -110,7 +115,13 @@ export default function TourTicketDetail() {
 
         <section className={`tour-detail-gallery tour-detail-gallery--${photos.length}`}>
           {photos.map((src, i) => (
-            <img key={`${src}-${i}`} src={src} alt={`${tour.name} ${i + 1}`} className={i === 0 ? 'main' : ''} />
+            <img
+              key={`${src}-${i}`}
+              src={src}
+              alt={`${tour.name} ${i + 1}`}
+              className={i === 0 ? 'main' : ''}
+              onError={event => replaceBrokenImage(event, FALLBACK_IMAGES[i % FALLBACK_IMAGES.length])}
+            />
           ))}
         </section>
 
