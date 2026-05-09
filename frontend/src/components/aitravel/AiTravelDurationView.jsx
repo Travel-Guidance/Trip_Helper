@@ -1,6 +1,6 @@
 export default function AiTravelDurationView() {
   return (
-    <>
+    <div className="ai-travel-duration-page">
       {/* TOPBAR */}
       <header className="topbar">
         <div className="topbar-in">
@@ -230,6 +230,6 @@ export default function AiTravelDurationView() {
           <div className="map-modal-frame" id="modalMap"></div>
         </div>
       </div>
-    </>
+    </div>
   )
 }

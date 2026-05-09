@@ -1,4 +1,4 @@
-:root {
+.ai-travel-duration-page {
       --blue:      #29ABE2;
       --blue-d:    #1A8FC4;
       --blue-g:    linear-gradient(135deg, #29ABE2, #1A8FC4);
@@ -19,69 +19,69 @@
       --shadow:    0 2px 12px rgba(15,39,68,.08);
       --shadow-md: 0 4px 24px rgba(15,39,68,.12);
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body {
+    .ai-travel-duration-page *, .ai-travel-duration-page *::before, .ai-travel-duration-page *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    .ai-travel-duration-page { scroll-behavior: smooth; }
+    .ai-travel-duration-page {
       background: var(--bg);
       color: var(--text);
       font-family: "Noto Sans KR", sans-serif;
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
     }
-    button { font: inherit; border: 0; cursor: pointer; }
-    a { color: inherit; text-decoration: none; }
-    input, textarea, select { font: inherit; }
+    .ai-travel-duration-page button { font: inherit; border: 0; cursor: pointer; }
+    .ai-travel-duration-page a { color: inherit; text-decoration: none; }
+    .ai-travel-duration-page input, .ai-travel-duration-page textarea, .ai-travel-duration-page select { font: inherit; }
 
     /* ─── TOPBAR ─── */
-    .topbar {
+    .ai-travel-duration-page .topbar {
       position: sticky; top: 0; z-index: 90;
       background: rgba(255,255,255,.95);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
       box-shadow: 0 1px 8px rgba(15,39,68,.06);
     }
-    .topbar-in {
+    .ai-travel-duration-page .topbar-in {
       max-width: 1320px; margin: 0 auto;
       display: flex; align-items: center; gap: 12px;
       padding: 0 24px; height: 58px;
     }
-    .brand {
+    .ai-travel-duration-page .brand {
       display: flex; align-items: center; gap: 8px;
       font-weight: 900; font-size: 15px; color: var(--navy); white-space: nowrap;
     }
-    .brand-icon {
+    .ai-travel-duration-page .brand-icon {
       width: 32px; height: 32px; border-radius: 10px;
       background: var(--blue-g); display: grid; place-items: center;
       font-size: 15px; box-shadow: 0 4px 12px rgba(41,171,226,.35);
     }
-    .topbar-trip {
+    .ai-travel-duration-page .topbar-trip {
       flex: 1; display: flex; align-items: center; gap: 8px;
       font-size: 12px; color: var(--muted); font-weight: 600;
     }
-    .topbar-trip strong { color: var(--text); font-weight: 700; }
-    .sep { color: var(--dim); }
-    .live-pill {
+    .ai-travel-duration-page .topbar-trip strong { color: var(--text); font-weight: 700; }
+    .ai-travel-duration-page .sep { color: var(--dim); }
+    .ai-travel-duration-page .live-pill {
       display: inline-flex; align-items: center; gap: 5px;
       padding: 3px 10px; border-radius: 999px;
       background: rgba(41,171,226,.1); border: 1px solid rgba(41,171,226,.2);
       color: var(--blue); font-size: 11px; font-weight: 700;
     }
-    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); animation: blink 1.6s ease infinite; flex-shrink: 0; }
+    .ai-travel-duration-page .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); animation: blink 1.6s ease infinite; flex-shrink: 0; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-    .topbar-actions { display: flex; align-items: center; gap: 6px; }
-    .t-btn {
+    .ai-travel-duration-page .topbar-actions { display: flex; align-items: center; gap: 6px; }
+    .ai-travel-duration-page .t-btn {
       display: flex; align-items: center; gap: 5px;
       padding: 7px 13px; border-radius: 999px; font-size: 12px; font-weight: 700;
       transition: opacity .15s, transform .12s;
     }
-    .t-btn:hover { opacity: .85; transform: translateY(-1px); }
-    .t-btn.translate { background: var(--blue-g); color: #fff; box-shadow: 0 4px 14px rgba(41,171,226,.3); }
-    .t-btn.map-btn { background: rgba(11,185,122,.1); border: 1px solid rgba(11,185,122,.25); color: var(--green); }
-    .t-btn.ghost { background: var(--bg); border: 1px solid var(--border2); color: var(--muted); }
+    .ai-travel-duration-page .t-btn:hover { opacity: .85; transform: translateY(-1px); }
+    .ai-travel-duration-page .t-btn.translate { background: var(--blue-g); color: #fff; box-shadow: 0 4px 14px rgba(41,171,226,.3); }
+    .ai-travel-duration-page .t-btn.map-btn { background: rgba(11,185,122,.1); border: 1px solid rgba(11,185,122,.25); color: var(--green); }
+    .ai-travel-duration-page .t-btn.ghost { background: var(--bg); border: 1px solid var(--border2); color: var(--muted); }
 
     /* ─── HERO STRIP ─── */
-    .dest-hero {
+    .ai-travel-duration-page .dest-hero {
       position: relative; overflow: hidden;
       min-height: 480px;
       display: flex; align-items: flex-end;
@@ -89,98 +89,98 @@
         linear-gradient(to bottom, rgba(15,39,68,.08) 0%, rgba(15,39,68,.5) 60%, rgba(15,39,68,.88) 100%),
         url("https://images.unsplash.com/photo-1539037116277-4db20889f2d4?auto=format&fit=crop&w=1800&q=80") center/cover;
     }
-    .dest-hero-inner {
+    .ai-travel-duration-page .dest-hero-inner {
       max-width: 1320px; width: 100%; margin: 0 auto;
       padding: 0 24px 24px;
       display: flex; align-items: flex-end; justify-content: space-between; gap: 20px;
     }
-    .dest-city {
+    .ai-travel-duration-page .dest-city {
       font-size: clamp(40px, 6vw, 72px);
       font-weight: 900; line-height: .95;
       letter-spacing: -.02em; color: #fff;
       text-shadow: 0 2px 20px rgba(0,0,0,.3);
     }
-    .dest-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-    .dest-tag {
+    .ai-travel-duration-page .dest-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .ai-travel-duration-page .dest-tag {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 5px 11px; border-radius: 999px;
       background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25);
       backdrop-filter: blur(8px); font-size: 11px; font-weight: 700; color: rgba(255,255,255,.95);
     }
-    .dest-right { flex-shrink: 0; }
-    .budget-badge {
+    .ai-travel-duration-page .dest-right { flex-shrink: 0; }
+    .ai-travel-duration-page .budget-badge {
       background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25);
       backdrop-filter: blur(8px); border-radius: 14px; padding: 10px 14px; text-align: right;
     }
-    .budget-label { font-size: 10px; color: rgba(255,255,255,.6); font-weight: 700; letter-spacing: .07em; text-transform: uppercase; margin-bottom: 4px; }
-    .budget-bar { width: 180px; height: 5px; border-radius: 999px; background: rgba(255,255,255,.2); overflow: hidden; margin-bottom: 5px; }
-    .budget-bar-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #29ABE2, #0BB97A); transition: width .6s ease; }
-    .budget-nums { display: flex; justify-content: flex-end; align-items: baseline; gap: 4px; }
-    .budget-spent { font-family: "JetBrains Mono", monospace; font-size: 20px; font-weight: 700; color: #fff; }
-    .budget-total { font-size: 11px; color: rgba(255,255,255,.5); font-weight: 600; }
+    .ai-travel-duration-page .budget-label { font-size: 10px; color: rgba(255,255,255,.6); font-weight: 700; letter-spacing: .07em; text-transform: uppercase; margin-bottom: 4px; }
+    .ai-travel-duration-page .budget-bar { width: 180px; height: 5px; border-radius: 999px; background: rgba(255,255,255,.2); overflow: hidden; margin-bottom: 5px; }
+    .ai-travel-duration-page .budget-bar-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #29ABE2, #0BB97A); transition: width .6s ease; }
+    .ai-travel-duration-page .budget-nums { display: flex; justify-content: flex-end; align-items: baseline; gap: 4px; }
+    .ai-travel-duration-page .budget-spent { font-family: "JetBrains Mono", monospace; font-size: 20px; font-weight: 700; color: #fff; }
+    .ai-travel-duration-page .budget-total { font-size: 11px; color: rgba(255,255,255,.5); font-weight: 600; }
 
     /* ─── CITY ACCORDION ─── */
-    .city-list { padding: 8px; display: flex; flex-direction: column; gap: 4px; max-height: 460px; overflow-y: auto; scrollbar-width: none; }
-    .city-list::-webkit-scrollbar { display: none; }
-    .city-summary {
+    .ai-travel-duration-page .city-list { padding: 8px; display: flex; flex-direction: column; gap: 4px; max-height: 460px; overflow-y: auto; scrollbar-width: none; }
+    .ai-travel-duration-page .city-list::-webkit-scrollbar { display: none; }
+    .ai-travel-duration-page .city-summary {
       margin-bottom: 4px; padding: 10px 10px 9px;
       border-radius: 11px; background: linear-gradient(135deg,rgba(41,171,226,.1),rgba(41,171,226,.03));
       border: 1px solid rgba(41,171,226,.18);
     }
-    .city-summary-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-    .city-summary-day {
+    .ai-travel-duration-page .city-summary-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .ai-travel-duration-page .city-summary-day {
       font-family: "JetBrains Mono", monospace; font-size: 14px; font-weight: 700;
       color: var(--blue-d);
     }
-    .city-summary-day span { color: var(--dim); font-size: 10px; }
-    .city-summary-copy { font-size: 10px; font-weight: 700; color: var(--muted); white-space: nowrap; }
-    .city-progress { height: 5px; border-radius: 999px; background: rgba(160,174,190,.2); overflow: hidden; }
-    .city-progress-fill { height: 100%; border-radius: inherit; background: var(--blue-g); transition: width .25s ease; }
-    .city-group { position: relative; }
-    .city-row {
+    .ai-travel-duration-page .city-summary-day span { color: var(--dim); font-size: 10px; }
+    .ai-travel-duration-page .city-summary-copy { font-size: 10px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+    .ai-travel-duration-page .city-progress { height: 5px; border-radius: 999px; background: rgba(160,174,190,.2); overflow: hidden; }
+    .ai-travel-duration-page .city-progress-fill { height: 100%; border-radius: inherit; background: var(--blue-g); transition: width .25s ease; }
+    .ai-travel-duration-page .city-group { position: relative; }
+    .ai-travel-duration-page .city-row {
       display: grid; grid-template-columns: 28px minmax(0,1fr) auto; align-items: center; gap: 9px;
       padding: 8px; border-radius: 10px;
       color: var(--muted); font-size: 12px; font-weight: 600;
       cursor: pointer; transition: background .12s, color .12s, border-color .12s, box-shadow .12s; text-align: left; background: transparent; width: 100%; border: 1px solid transparent;
     }
-    .city-row:hover { background: var(--bg); color: var(--text); }
-    .city-row.active { background: #EAF7FD; color: var(--blue-d); border-color: rgba(41,171,226,.28); box-shadow: inset 3px 0 0 var(--blue); }
-    .city-num {
+    .ai-travel-duration-page .city-row:hover { background: var(--bg); color: var(--text); }
+    .ai-travel-duration-page .city-row.active { background: #EAF7FD; color: var(--blue-d); border-color: rgba(41,171,226,.28); box-shadow: inset 3px 0 0 var(--blue); }
+    .ai-travel-duration-page .city-num {
       width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
       font-family: "JetBrains Mono", monospace; font-size: 10px; font-weight: 700;
       background: var(--bg); color: var(--muted); flex-shrink: 0;
     }
-    .city-row.active .city-num { background: var(--blue-g); color: #fff; }
-    .city-info { min-width: 0; }
-    .city-info strong { display: block; font-size: 12px; font-weight: 800; color: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .city-info span { display: block; margin-top: 1px; font-size: 10px; color: var(--dim); font-weight: 700; }
-    .city-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-    .city-duration {
+    .ai-travel-duration-page .city-row.active .city-num { background: var(--blue-g); color: #fff; }
+    .ai-travel-duration-page .city-info { min-width: 0; }
+    .ai-travel-duration-page .city-info strong { display: block; font-size: 12px; font-weight: 800; color: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ai-travel-duration-page .city-info span { display: block; margin-top: 1px; font-size: 10px; color: var(--dim); font-weight: 700; }
+    .ai-travel-duration-page .city-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .ai-travel-duration-page .city-duration {
       padding: 2px 6px; border-radius: 999px;
       background: var(--bg); border: 1px solid var(--border);
       font-family: "JetBrains Mono", monospace; font-size: 9px; font-weight: 700;
       color: var(--muted); white-space: nowrap;
     }
-    .city-row.active .city-duration { background: #fff; color: var(--blue-d); border-color: rgba(41,171,226,.28); }
-    .city-wx { font-size: 12px; line-height: 1; opacity: .8; }
-    .city-days {
+    .ai-travel-duration-page .city-row.active .city-duration { background: #fff; color: var(--blue-d); border-color: rgba(41,171,226,.28); }
+    .ai-travel-duration-page .city-wx { font-size: 12px; line-height: 1; opacity: .8; }
+    .ai-travel-duration-page .city-days {
       display: none; grid-template-columns: repeat(auto-fit, minmax(36px, 1fr)); gap: 4px;
       padding: 3px 2px 7px 37px;
     }
-    .city-days.open { display: grid; }
-    .city-day {
+    .ai-travel-duration-page .city-days.open { display: grid; }
+    .ai-travel-duration-page .city-day {
       min-height: 26px; padding: 3px 5px; border-radius: 8px;
       font-family: "JetBrains Mono", monospace; font-size: 9px; font-weight: 700;
       background: var(--bg); border: 1px solid var(--border); color: var(--muted);
       cursor: pointer; transition: background .12s, color .12s, border-color .12s;
     }
-    .city-day:hover { background: rgba(41,171,226,.08); color: var(--blue-d); border-color: rgba(41,171,226,.2); }
-    .city-day.active { background: var(--blue-g); color: #fff; border-color: transparent; }
-    .city-day.done { opacity: .45; }
-    .city-day.today { border-color: var(--blue); color: var(--blue-d); }
+    .ai-travel-duration-page .city-day:hover { background: rgba(41,171,226,.08); color: var(--blue-d); border-color: rgba(41,171,226,.2); }
+    .ai-travel-duration-page .city-day.active { background: var(--blue-g); color: #fff; border-color: transparent; }
+    .ai-travel-duration-page .city-day.done { opacity: .45; }
+    .ai-travel-duration-page .city-day.today { border-color: var(--blue); color: var(--blue-d); }
 
     /* ─── WORKSPACE ─── */
-    .workspace {
+    .ai-travel-duration-page .workspace {
       max-width: 1320px; margin: 0 auto;
       display: grid; grid-template-columns: 200px minmax(0, 1fr) 320px;
       gap: 14px; padding: 16px 24px 48px;
@@ -188,306 +188,305 @@
     }
 
     /* ─── LEFT RAIL ─── */
-    .left-rail { position: sticky; top: 70px; display: flex; flex-direction: column; gap: 10px; }
-    .c-card {
+    .ai-travel-duration-page .left-rail { position: sticky; top: 70px; display: flex; flex-direction: column; gap: 10px; }
+    .ai-travel-duration-page .c-card {
       background: var(--card); border: 1px solid var(--border);
       border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow);
     }
-    .c-card-title {
+    .ai-travel-duration-page .c-card-title {
       padding: 11px 14px 7px; font-size: 10px; font-weight: 700;
       color: var(--muted); letter-spacing: .08em; text-transform: uppercase;
       border-bottom: 1px solid var(--border);
     }
-    .tool-pad { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 8px; }
-    .tool-pad-btn {
+    .ai-travel-duration-page .tool-pad { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 8px; }
+    .ai-travel-duration-page .tool-pad-btn {
       display: flex; flex-direction: column; align-items: center; gap: 3px;
       padding: 9px 6px; border-radius: 10px; font-size: 10px; font-weight: 700;
       background: var(--bg); border: 1px solid var(--border); color: var(--muted);
       cursor: pointer; transition: background .12s, color .12s, border-color .12s;
     }
-    .tool-pad-btn:hover { background: rgba(41,171,226,.08); color: var(--blue-d); border-color: rgba(41,171,226,.25); }
-    .tool-pad-btn span { font-size: 16px; }
+    .ai-travel-duration-page .tool-pad-btn:hover { background: rgba(41,171,226,.08); color: var(--blue-d); border-color: rgba(41,171,226,.25); }
+    .ai-travel-duration-page .tool-pad-btn span { font-size: 16px; }
 
     /* ─── FEED ─── */
-    .feed { display: flex; flex-direction: column; gap: 12px; }
+    .ai-travel-duration-page .feed { display: flex; flex-direction: column; gap: 12px; }
 
-    .sec {
+    .ai-travel-duration-page .sec {
       background: var(--card); border: 1px solid var(--border);
       border-radius: 18px; overflow: hidden; box-shadow: var(--shadow);
     }
-    .sec-head {
+    .ai-travel-duration-page .sec-head {
       padding: 16px 18px 12px;
       border-bottom: 1px solid var(--border);
       display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
     }
-    .sec-kicker { font-size: 10px; font-weight: 700; color: var(--blue); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
-    .sec-head h2 { font-size: 16px; font-weight: 800; color: var(--navy); line-height: 1.3; }
-    .sec-desc { font-size: 11px; color: var(--muted); line-height: 1.6; font-weight: 500; margin-top: 4px; word-break: keep-all; }
-    .sec-body { padding: 14px 18px; }
-    .sec-action-btn {
+    .ai-travel-duration-page .sec-kicker { font-size: 10px; font-weight: 700; color: var(--blue); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
+    .ai-travel-duration-page .sec-head h2 { font-size: 16px; font-weight: 800; color: var(--navy); line-height: 1.3; }
+    .ai-travel-duration-page .sec-desc { font-size: 11px; color: var(--muted); line-height: 1.6; font-weight: 500; margin-top: 4px; word-break: keep-all; }
+    .ai-travel-duration-page .sec-body { padding: 14px 18px; }
+    .ai-travel-duration-page .sec-action-btn {
       padding: 6px 12px; border-radius: 999px;
       background: var(--bg); border: 1px solid var(--border2);
       color: var(--muted); font-size: 11px; font-weight: 700; white-space: nowrap;
       flex-shrink: 0; transition: background .12s, color .12s;
     }
-    .sec-action-btn:hover { background: rgba(41,171,226,.08); color: var(--blue-d); border-color: rgba(41,171,226,.25); }
-    .sec-action-btn.primary { background: var(--blue-g); color: #fff; border: none; box-shadow: 0 4px 12px rgba(41,171,226,.25); }
-    .sec-action-btn.primary:hover { opacity: .9; }
+    .ai-travel-duration-page .sec-action-btn:hover { background: rgba(41,171,226,.08); color: var(--blue-d); border-color: rgba(41,171,226,.25); }
+    .ai-travel-duration-page .sec-action-btn.primary { background: var(--blue-g); color: #fff; border: none; box-shadow: 0 4px 12px rgba(41,171,226,.25); }
+    .ai-travel-duration-page .sec-action-btn.primary:hover { opacity: .9; }
 
     /* Timeline */
-    .tl { display: flex; flex-direction: column; }
-    .tl-node { display: grid; grid-template-columns: 54px 18px 1fr; gap: 10px; padding-bottom: 8px; }
-    .tl-t { padding-top: 10px; font-family: "JetBrains Mono", monospace; font-size: 10px; font-weight: 700; color: var(--dim); text-align: right; }
-    .tl-axis { display: flex; flex-direction: column; align-items: center; padding-top: 12px; position: relative; }
-    .tl-axis::after {
+    .ai-travel-duration-page .tl { display: flex; flex-direction: column; }
+    .ai-travel-duration-page .tl-node { display: grid; grid-template-columns: 54px 18px 1fr; gap: 10px; padding-bottom: 8px; }
+    .ai-travel-duration-page .tl-t { padding-top: 10px; font-family: "JetBrains Mono", monospace; font-size: 10px; font-weight: 700; color: var(--dim); text-align: right; }
+    .ai-travel-duration-page .tl-axis { display: flex; flex-direction: column; align-items: center; padding-top: 12px; position: relative; }
+    .ai-travel-duration-page .tl-axis::after {
       content: ''; position: absolute; top: 22px; bottom: -8px;
       width: 1px; background: var(--border2); left: 50%; transform: translateX(-50%);
     }
-    .tl-node:last-child .tl-axis::after { display: none; }
-    .tl-dot { width: 10px; height: 10px; border-radius: 50%; z-index: 1; border: 2px solid var(--bg); flex-shrink: 0; }
-    .tl-dot.spot  { background: var(--blue); box-shadow: 0 0 6px rgba(41,171,226,.5); }
-    .tl-dot.meal  { background: var(--amber); box-shadow: 0 0 6px rgba(245,158,11,.5); }
-    .tl-dot.rest  { background: var(--green); box-shadow: 0 0 6px rgba(11,185,122,.5); }
-    .tl-dot.risk  { background: var(--rose); box-shadow: 0 0 6px rgba(239,68,68,.5); }
-    .tl-dot.now   { animation: glow 1.6s ease infinite; }
+    .ai-travel-duration-page .tl-node:last-child .tl-axis::after { display: none; }
+    .ai-travel-duration-page .tl-dot { width: 10px; height: 10px; border-radius: 50%; z-index: 1; border: 2px solid var(--bg); flex-shrink: 0; }
+    .ai-travel-duration-page .tl-dot.spot  { background: var(--blue); box-shadow: 0 0 6px rgba(41,171,226,.5); }
+    .ai-travel-duration-page .tl-dot.meal  { background: var(--amber); box-shadow: 0 0 6px rgba(245,158,11,.5); }
+    .ai-travel-duration-page .tl-dot.rest  { background: var(--green); box-shadow: 0 0 6px rgba(11,185,122,.5); }
+    .ai-travel-duration-page .tl-dot.risk  { background: var(--rose); box-shadow: 0 0 6px rgba(239,68,68,.5); }
+    .ai-travel-duration-page .tl-dot.now   { animation: glow 1.6s ease infinite; }
     @keyframes glow { 0%,100%{box-shadow:0 0 0 0 rgba(41,171,226,.6)} 50%{box-shadow:0 0 0 6px rgba(41,171,226,0)} }
-    .tl-card {
+    .ai-travel-duration-page .tl-card {
       background: var(--bg); border: 1px solid var(--border); border-radius: 11px;
       padding: 10px 12px; cursor: pointer; transition: border-color .15s, box-shadow .15s;
     }
-    .tl-card:hover { border-color: var(--border2); box-shadow: var(--shadow); }
-    .tl-card.active {
+    .ai-travel-duration-page .tl-card:hover { border-color: var(--border2); box-shadow: var(--shadow); }
+    .ai-travel-duration-page .tl-card.active {
       background: #F7FCFF;
       border-color: rgba(41,171,226,.45);
       box-shadow: 0 0 0 3px rgba(41,171,226,.1), var(--shadow);
     }
-    .tl-card.active .tl-route-place.dest {
+    .ai-travel-duration-page .tl-card.active .tl-route-place.dest {
       background: #EAF7FD;
       border-color: rgba(41,171,226,.35);
     }
-    .tl-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; margin-bottom: 4px; }
-    .tl-card h3 { font-size: 13px; font-weight: 700; color: var(--navy); }
-    .tl-badge { padding: 2px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; flex-shrink: 0; }
-    .tl-badge.spot { background: rgba(41,171,226,.1); color: var(--blue-d); }
-    .tl-badge.meal { background: rgba(245,158,11,.1); color: var(--amber); }
-    .tl-badge.rest { background: rgba(11,185,122,.1); color: var(--green); }
-    .tl-badge.risk { background: rgba(239,68,68,.1); color: var(--rose); }
-    .tl-card p { font-size: 11px; color: var(--muted); line-height: 1.55; word-break: keep-all; margin-bottom: 6px; }
-    .tl-tags { display: flex; flex-wrap: wrap; gap: 3px; }
-    .tl-tag { padding: 2px 6px; border-radius: 5px; font-size: 10px; font-weight: 600; background: var(--card); color: var(--muted); border: 1px solid var(--border); }
-    .tl-tag.warn { background: rgba(245,158,11,.08); color: var(--amber); border-color: rgba(245,158,11,.2); }
-    .tl-transport {
+    .ai-travel-duration-page .tl-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; margin-bottom: 4px; }
+    .ai-travel-duration-page .tl-card h3 { font-size: 13px; font-weight: 700; color: var(--navy); }
+    .ai-travel-duration-page .tl-badge { padding: 2px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+    .ai-travel-duration-page .tl-badge.spot { background: rgba(41,171,226,.1); color: var(--blue-d); }
+    .ai-travel-duration-page .tl-badge.meal { background: rgba(245,158,11,.1); color: var(--amber); }
+    .ai-travel-duration-page .tl-badge.rest { background: rgba(11,185,122,.1); color: var(--green); }
+    .ai-travel-duration-page .tl-badge.risk { background: rgba(239,68,68,.1); color: var(--rose); }
+    .ai-travel-duration-page .tl-card p { font-size: 11px; color: var(--muted); line-height: 1.55; word-break: keep-all; margin-bottom: 6px; }
+    .ai-travel-duration-page .tl-tags { display: flex; flex-wrap: wrap; gap: 3px; }
+    .ai-travel-duration-page .tl-tag { padding: 2px 6px; border-radius: 5px; font-size: 10px; font-weight: 600; background: var(--card); color: var(--muted); border: 1px solid var(--border); }
+    .ai-travel-duration-page .tl-tag.warn { background: rgba(245,158,11,.08); color: var(--amber); border-color: rgba(245,158,11,.2); }
+    .ai-travel-duration-page .tl-transport {
       margin-top: 9px; padding: 8px 10px;
       border-radius: 9px; background: var(--card); border: 1px solid var(--border);
     }
-    .tl-route-flow {
+    .ai-travel-duration-page .tl-route-flow {
       display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
       align-items: center; gap: 10px;
     }
-    .tl-route-place {
+    .ai-travel-duration-page .tl-route-place {
       min-width: 0; padding: 9px 10px; border-radius: 10px;
       background: var(--bg); border: 1px solid var(--border);
     }
-    .tl-route-place.dest { background: #F7FCFF; border-color: rgba(41,171,226,.22); }
-    .tl-route-label {
+    .ai-travel-duration-page .tl-route-place.dest { background: #F7FCFF; border-color: rgba(41,171,226,.22); }
+    .ai-travel-duration-page .tl-route-label {
       display: block; margin-bottom: 3px;
       font-size: 10px; font-weight: 800; color: var(--dim);
       letter-spacing: .06em; text-transform: uppercase;
     }
-    .tl-route-name {
+    .ai-travel-duration-page .tl-route-name {
       display: block; min-width: 0; font-size: 13px; font-weight: 800; color: var(--navy);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .tl-route-mid {
+    .ai-travel-duration-page .tl-route-mid {
       min-width: 154px; align-self: stretch;
       display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
       padding: 6px 0; position: relative;
     }
-    .tl-route-mid::before,
-    .tl-route-mid::after {
+    .ai-travel-duration-page .tl-route-mid::before, .ai-travel-duration-page .tl-route-mid::after {
       content: ''; position: absolute; top: 50%; width: 18px; height: 1px;
       background: var(--border2);
     }
-    .tl-route-mid::before { right: 100%; }
-    .tl-route-mid::after { left: 100%; }
-    .tl-route-arrow {
+    .ai-travel-duration-page .tl-route-mid::before { right: 100%; }
+    .ai-travel-duration-page .tl-route-mid::after { left: 100%; }
+    .ai-travel-duration-page .tl-route-arrow {
       width: 26px; height: 26px; border-radius: 999px;
       display: grid; place-items: center;
       background: var(--blue-g); color: #fff; font-size: 14px; font-weight: 900;
       box-shadow: 0 4px 12px rgba(41,171,226,.25);
     }
-    .tl-transport-main { min-width: 0; }
-    .tl-transport-label { display: none; }
-    .tl-transport-rec { display: flex; align-items: baseline; justify-content: center; gap: 4px; font-size: 12px; font-weight: 800; color: var(--navy); white-space: nowrap; }
-    .tl-transport-rec span { color: var(--blue-d); }
-    .tl-transport-chip {
+    .ai-travel-duration-page .tl-transport-main { min-width: 0; }
+    .ai-travel-duration-page .tl-transport-label { display: none; }
+    .ai-travel-duration-page .tl-transport-rec { display: flex; align-items: baseline; justify-content: center; gap: 4px; font-size: 12px; font-weight: 800; color: var(--navy); white-space: nowrap; }
+    .ai-travel-duration-page .tl-transport-rec span { color: var(--blue-d); }
+    .ai-travel-duration-page .tl-transport-chip {
       padding: 3px 7px; border-radius: 999px;
       background: var(--bg); border: 1px solid var(--border);
       font-size: 10px; font-weight: 700; color: var(--muted); white-space: nowrap;
     }
-    button.tl-transport-chip:hover {
+    .ai-travel-duration-page button.tl-transport-chip:hover {
       background: rgba(41,171,226,.08); color: var(--blue-d); border-color: rgba(41,171,226,.25);
     }
-    .tl-transit-toggle {
+    .ai-travel-duration-page .tl-transit-toggle {
       margin-top: 6px; padding: 4px 10px; border-radius: 999px;
       background: rgba(41,171,226,.1); border: 1px solid rgba(41,171,226,.22);
       color: var(--blue-d); font-size: 11px; font-weight: 800;
     }
-    .tl-transit-panel {
+    .ai-travel-duration-page .tl-transit-panel {
       display: grid; grid-template-rows: 0fr;
       opacity: 0; margin-top: 0;
       transition: grid-template-rows .24s ease, opacity .18s ease, margin-top .24s ease;
     }
-    .tl-card.transit-open .tl-transit-panel { grid-template-rows: 1fr; opacity: 1; margin-top: 9px; }
-    .tl-transit-inner { overflow: hidden; }
-    .tl-transit-list {
+    .ai-travel-duration-page .tl-card.transit-open .tl-transit-panel { grid-template-rows: 1fr; opacity: 1; margin-top: 9px; }
+    .ai-travel-duration-page .tl-transit-inner { overflow: hidden; }
+    .ai-travel-duration-page .tl-transit-list {
       display: grid; gap: 6px; padding-top: 9px;
       border-top: 1px dashed var(--border2);
     }
-    .tl-transit-option {
+    .ai-travel-duration-page .tl-transit-option {
       display: grid; grid-template-columns: 42px minmax(0, 1fr) auto;
       align-items: center; gap: 9px; padding: 9px 10px;
       border-radius: 10px; background: var(--bg); border: 1px solid var(--border);
       cursor: pointer; transition: background .12s, border-color .12s, box-shadow .12s;
     }
-    .tl-transit-option:hover { background: #F7FCFF; border-color: rgba(41,171,226,.25); }
-    .tl-transit-option.active {
+    .ai-travel-duration-page .tl-transit-option:hover { background: #F7FCFF; border-color: rgba(41,171,226,.25); }
+    .ai-travel-duration-page .tl-transit-option.active {
       background: #EAF7FD;
       border-color: rgba(41,171,226,.42);
       box-shadow: inset 3px 0 0 var(--blue);
     }
-    .tl-transit-option.has-detail {
+    .ai-travel-duration-page .tl-transit-option.has-detail {
       display: block; padding: 0; overflow: hidden;
     }
-    .tl-transit-option-head {
+    .ai-travel-duration-page .tl-transit-option-head {
       display: grid; grid-template-columns: 42px minmax(0, 1fr) auto;
       align-items: center; gap: 9px; padding: 9px 10px;
     }
-    .tl-transit-detail {
+    .ai-travel-duration-page .tl-transit-detail {
       display: grid; grid-template-rows: 0fr;
       opacity: 0;
       transition: grid-template-rows .24s ease, opacity .18s ease;
     }
-    .tl-transit-option.detail-open .tl-transit-detail {
+    .ai-travel-duration-page .tl-transit-option.detail-open .tl-transit-detail {
       grid-template-rows: 1fr; opacity: 1;
     }
-    .tl-transit-detail-inner {
+    .ai-travel-duration-page .tl-transit-detail-inner {
       overflow: hidden; display: grid; gap: 6px;
       padding: 0 10px;
     }
-    .tl-transit-option.detail-open .tl-transit-detail-inner {
+    .ai-travel-duration-page .tl-transit-option.detail-open .tl-transit-detail-inner {
       padding: 0 10px 10px;
     }
-    .tl-transit-step {
+    .ai-travel-duration-page .tl-transit-step {
       display: grid; grid-template-columns: 34px minmax(0, 1fr) auto;
       align-items: center; gap: 8px; padding: 8px;
       border-radius: 9px; background: var(--card); border: 1px solid var(--border);
       cursor: pointer;
     }
-    .tl-transit-step.active {
+    .ai-travel-duration-page .tl-transit-step.active {
       border-color: rgba(41,171,226,.42);
       box-shadow: inset 3px 0 0 var(--blue);
     }
-    .tl-transit-mode {
+    .ai-travel-duration-page .tl-transit-mode {
       display: grid; place-items: center; height: 32px; border-radius: 9px;
       background: var(--card); border: 1px solid var(--border2);
       font-size: 15px; font-weight: 800;
     }
-    .tl-transit-main { min-width: 0; }
-    .tl-transit-main strong {
+    .ai-travel-duration-page .tl-transit-main { min-width: 0; }
+    .ai-travel-duration-page .tl-transit-main strong {
       display: block; font-size: 12px; font-weight: 800; color: var(--navy);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .tl-transit-main span {
+    .ai-travel-duration-page .tl-transit-main span {
       display: block; margin-top: 2px; font-size: 11px; font-weight: 600;
       color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .tl-transit-meta {
+    .ai-travel-duration-page .tl-transit-meta {
       display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;
     }
-    .tl-transit-meta span {
+    .ai-travel-duration-page .tl-transit-meta span {
       padding: 2px 6px; border-radius: 999px;
       background: var(--card); border: 1px solid var(--border);
       color: var(--muted); font-size: 10px; font-weight: 700;
       white-space: nowrap;
     }
-    .tl-transit-time {
+    .ai-travel-duration-page .tl-transit-time {
       font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 800;
       color: var(--blue-d); white-space: nowrap;
     }
-    .tl-transit-note {
+    .ai-travel-duration-page .tl-transit-note {
       padding: 8px 10px; border-radius: 10px;
       background: rgba(41,171,226,.06); border: 1px solid rgba(41,171,226,.18);
       color: var(--muted); font-size: 11px; font-weight: 600; line-height: 1.45;
     }
-    .tl-expense {
+    .ai-travel-duration-page .tl-expense {
       display: flex; align-items: center; gap: 8px;
       margin-top: 10px; padding-top: 10px;
       border-top: 1px dashed var(--border2);
     }
-    .tl-expense label { font-size: 11px; font-weight: 800; color: var(--muted); white-space: nowrap; }
-    .tl-expense input {
+    .ai-travel-duration-page .tl-expense label { font-size: 11px; font-weight: 800; color: var(--muted); white-space: nowrap; }
+    .ai-travel-duration-page .tl-expense input {
       width: 120px; height: 34px; padding: 0 12px;
       border-radius: 9px; border: 1px solid var(--border2);
       background: var(--card); color: var(--text);
       font-family: "JetBrains Mono", monospace; font-size: 13px; font-weight: 700;
     }
-    .tl-expense input:focus { border-color: var(--blue); outline: none; box-shadow: 0 0 0 3px rgba(41,171,226,.12); }
-    .tl-expense span { font-size: 11px; font-weight: 800; color: var(--muted); }
-    .reroute-drop {
+    .ai-travel-duration-page .tl-expense input:focus { border-color: var(--blue); outline: none; box-shadow: 0 0 0 3px rgba(41,171,226,.12); }
+    .ai-travel-duration-page .tl-expense span { font-size: 11px; font-weight: 800; color: var(--muted); }
+    .ai-travel-duration-page .reroute-drop {
       display: none; margin-top: 8px; padding: 10px;
       border-radius: 10px; border: 1px dashed rgba(41,171,226,.3);
       background: rgba(41,171,226,.04);
     }
-    .reroute-drop.open { display: block; }
-    .reroute-drop strong { display: block; font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 3px; }
-    .reroute-drop p { font-size: 10px; color: var(--muted); margin-bottom: 7px; line-height: 1.5; }
-    .reroute-acts { display: flex; gap: 5px; }
-    .rd-yes { padding: 5px 10px; border-radius: 999px; background: var(--blue-g); color: #fff; font-size: 11px; font-weight: 700; }
-    .rd-no  { padding: 5px 10px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border2); color: var(--muted); font-size: 11px; font-weight: 700; }
+    .ai-travel-duration-page .reroute-drop.open { display: block; }
+    .ai-travel-duration-page .reroute-drop strong { display: block; font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 3px; }
+    .ai-travel-duration-page .reroute-drop p { font-size: 10px; color: var(--muted); margin-bottom: 7px; line-height: 1.5; }
+    .ai-travel-duration-page .reroute-acts { display: flex; gap: 5px; }
+    .ai-travel-duration-page .rd-yes { padding: 5px 10px; border-radius: 999px; background: var(--blue-g); color: #fff; font-size: 11px; font-weight: 700; }
+    .ai-travel-duration-page .rd-no  { padding: 5px 10px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border2); color: var(--muted); font-size: 11px; font-weight: 700; }
 
     /* Budget */
-    .budget-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .b-block { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
-    .b-block-title { font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 10px; }
-    .b-row { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
-    .b-icon {
+    .ai-travel-duration-page .budget-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .ai-travel-duration-page .b-block { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+    .ai-travel-duration-page .b-block-title { font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 10px; }
+    .ai-travel-duration-page .b-row { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
+    .ai-travel-duration-page .b-icon {
       width: 20px; height: 20px; flex-shrink: 0;
       display: grid; place-items: center;
       font-size: 15px; line-height: 1;
     }
-    .b-name { font-size: 10px; color: var(--muted); width: 34px; flex-shrink: 0; }
-    .b-bar { flex: 1; height: 5px; border-radius: 999px; background: var(--border); overflow: hidden; }
-    .b-fill { height: 100%; border-radius: inherit; transition: width .5s ease; }
-    .b-val { font-family: "JetBrains Mono", monospace; font-size: 10px; font-weight: 700; color: var(--text); white-space: nowrap; }
-    .exp-form { display: flex; gap: 5px; margin-top: 4px; }
-    .exp-input { flex: 1; min-width: 0; padding: 7px 9px; border-radius: 8px; background: var(--card); border: 1px solid var(--border2); color: var(--text); font-size: 11px; }
-    .exp-input:focus { border-color: var(--blue); outline: none; }
-    .exp-num { width: 84px; padding: 7px 8px; border-radius: 8px; background: var(--card); border: 1px solid var(--border2); color: var(--text); font-size: 11px; }
-    .exp-cat-sel { padding: 7px 8px; border-radius: 8px; background: var(--card); border: 1px solid var(--border2); color: var(--text); font-size: 11px; }
-    .exp-add { padding: 7px 12px; border-radius: 8px; background: var(--blue-g); color: #fff; font-size: 12px; font-weight: 700; box-shadow: 0 3px 10px rgba(41,171,226,.25); }
-    .exp-log { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; max-height: 120px; overflow-y: auto; }
-    .exp-log-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 9px; border-radius: 7px; background: var(--card); border: 1px solid var(--border); font-size: 11px; }
-    .exp-log-left { display: flex; align-items: center; gap: 5px; }
-    .exp-cat-dot { width: 6px; height: 6px; border-radius: 50%; }
-    .exp-log-name { color: var(--text); font-weight: 600; }
-    .exp-log-amt { font-family: "JetBrains Mono", monospace; font-weight: 700; color: var(--gold); }
-    .exp-log-amt.over { color: var(--rose); }
-    .meal-reroute-panel {
+    .ai-travel-duration-page .b-name { font-size: 10px; color: var(--muted); width: 34px; flex-shrink: 0; }
+    .ai-travel-duration-page .b-bar { flex: 1; height: 5px; border-radius: 999px; background: var(--border); overflow: hidden; }
+    .ai-travel-duration-page .b-fill { height: 100%; border-radius: inherit; transition: width .5s ease; }
+    .ai-travel-duration-page .b-val { font-family: "JetBrains Mono", monospace; font-size: 10px; font-weight: 700; color: var(--text); white-space: nowrap; }
+    .ai-travel-duration-page .exp-form { display: flex; gap: 5px; margin-top: 4px; }
+    .ai-travel-duration-page .exp-input { flex: 1; min-width: 0; padding: 7px 9px; border-radius: 8px; background: var(--card); border: 1px solid var(--border2); color: var(--text); font-size: 11px; }
+    .ai-travel-duration-page .exp-input:focus { border-color: var(--blue); outline: none; }
+    .ai-travel-duration-page .exp-num { width: 84px; padding: 7px 8px; border-radius: 8px; background: var(--card); border: 1px solid var(--border2); color: var(--text); font-size: 11px; }
+    .ai-travel-duration-page .exp-cat-sel { padding: 7px 8px; border-radius: 8px; background: var(--card); border: 1px solid var(--border2); color: var(--text); font-size: 11px; }
+    .ai-travel-duration-page .exp-add { padding: 7px 12px; border-radius: 8px; background: var(--blue-g); color: #fff; font-size: 12px; font-weight: 700; box-shadow: 0 3px 10px rgba(41,171,226,.25); }
+    .ai-travel-duration-page .exp-log { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; max-height: 120px; overflow-y: auto; }
+    .ai-travel-duration-page .exp-log-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 9px; border-radius: 7px; background: var(--card); border: 1px solid var(--border); font-size: 11px; }
+    .ai-travel-duration-page .exp-log-left { display: flex; align-items: center; gap: 5px; }
+    .ai-travel-duration-page .exp-cat-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .ai-travel-duration-page .exp-log-name { color: var(--text); font-weight: 600; }
+    .ai-travel-duration-page .exp-log-amt { font-family: "JetBrains Mono", monospace; font-weight: 700; color: var(--gold); }
+    .ai-travel-duration-page .exp-log-amt.over { color: var(--rose); }
+    .ai-travel-duration-page .meal-reroute-panel {
       display: none; margin-top: 8px; padding: 10px; border-radius: 9px;
       border: 1px dashed rgba(245,158,11,.3); background: rgba(245,158,11,.04);
     }
-    .meal-reroute-panel.open { display: block; }
-    .meal-reroute-panel strong { display: block; font-size: 11px; font-weight: 700; margin-bottom: 3px; color: var(--amber); }
-    .meal-reroute-panel p { font-size: 10px; color: var(--muted); margin-bottom: 7px; line-height: 1.5; }
+    .ai-travel-duration-page .meal-reroute-panel.open { display: block; }
+    .ai-travel-duration-page .meal-reroute-panel strong { display: block; font-size: 11px; font-weight: 700; margin-bottom: 3px; color: var(--amber); }
+    .ai-travel-duration-page .meal-reroute-panel p { font-size: 10px; color: var(--muted); margin-bottom: 7px; line-height: 1.5; }
 
     /* ─── RIGHT STACK ─── */
-    .right-col { position: sticky; top: 70px; display: flex; flex-direction: column; gap: 10px; }
-    .map-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; box-shadow: var(--shadow); }
-    .map-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px 0; }
-    .map-hd-title { font-size: 13px; font-weight: 700; color: var(--navy); }
-    .map-hd-actions { display: flex; align-items: center; gap: 6px; }
-    .map-icon-btn {
+    .ai-travel-duration-page .right-col { position: sticky; top: 70px; display: flex; flex-direction: column; gap: 10px; }
+    .ai-travel-duration-page .map-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; box-shadow: var(--shadow); }
+    .ai-travel-duration-page .map-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px 0; }
+    .ai-travel-duration-page .map-hd-title { font-size: 13px; font-weight: 700; color: var(--navy); }
+    .ai-travel-duration-page .map-hd-actions { display: flex; align-items: center; gap: 6px; }
+    .ai-travel-duration-page .map-icon-btn {
       width: 34px; height: 34px; border-radius: 999px;
       display: grid; place-items: center;
       background: var(--bg); border: 1px solid var(--border2);
@@ -495,215 +494,151 @@
       box-shadow: 0 3px 10px rgba(15,39,68,.07);
       transition: background .12s, color .12s, border-color .12s, transform .12s;
     }
-    .map-icon-btn:hover { background: rgba(41,171,226,.08); color: var(--blue-d); border-color: rgba(41,171,226,.25); transform: translateY(-1px); }
-    .map-hd-btn { padding: 5px 11px; border-radius: 999px; background: var(--blue-g); color: #fff; font-size: 10px; font-weight: 700; box-shadow: 0 3px 10px rgba(41,171,226,.25); }
-    .map-frame { height: 220px; margin: 10px 10px 0; border-radius: 12px; background: linear-gradient(135deg,#dceef8,#e8f4fb,#d4edf6); border: 1px solid var(--border); overflow: hidden; position: relative; }
-    .map-fallback { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; font-size: 12px; color: var(--muted); text-align: center; line-height: 1.6; }
-    .map-route-card { margin: 8px 10px 8px; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); }
-    .map-route-card strong { display: block; font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
-    .map-route-card span { font-size: 11px; color: var(--muted); font-weight: 500; }
-    .map-btns { display: flex; gap: 6px; padding: 0 10px 10px; }
-    .map-btn { flex: 1; padding: 8px; border-radius: 9px; font-size: 11px; font-weight: 700; transition: opacity .15s; }
-    .map-btn:hover { opacity: .85; }
-    .map-btn.primary { background: var(--blue-g); color: #fff; box-shadow: 0 3px 10px rgba(41,171,226,.25); }
-    .map-btn.sec { background: var(--bg); border: 1px solid var(--border2); color: var(--muted); }
+    .ai-travel-duration-page .map-icon-btn:hover { background: rgba(41,171,226,.08); color: var(--blue-d); border-color: rgba(41,171,226,.25); transform: translateY(-1px); }
+    .ai-travel-duration-page .map-hd-btn { padding: 5px 11px; border-radius: 999px; background: var(--blue-g); color: #fff; font-size: 10px; font-weight: 700; box-shadow: 0 3px 10px rgba(41,171,226,.25); }
+    .ai-travel-duration-page .map-frame { height: 220px; margin: 10px 10px 0; border-radius: 12px; background: linear-gradient(135deg,#dceef8,#e8f4fb,#d4edf6); border: 1px solid var(--border); overflow: hidden; position: relative; }
+    .ai-travel-duration-page .map-fallback { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; font-size: 12px; color: var(--muted); text-align: center; line-height: 1.6; }
+    .ai-travel-duration-page .map-route-card { margin: 8px 10px 8px; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); }
+    .ai-travel-duration-page .map-route-card strong { display: block; font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
+    .ai-travel-duration-page .map-route-card span { font-size: 11px; color: var(--muted); font-weight: 500; }
+    .ai-travel-duration-page .map-btns { display: flex; gap: 6px; padding: 0 10px 10px; }
+    .ai-travel-duration-page .map-btn { flex: 1; padding: 8px; border-radius: 9px; font-size: 11px; font-weight: 700; transition: opacity .15s; }
+    .ai-travel-duration-page .map-btn:hover { opacity: .85; }
+    .ai-travel-duration-page .map-btn.primary { background: var(--blue-g); color: #fff; box-shadow: 0 3px 10px rgba(41,171,226,.25); }
+    .ai-travel-duration-page .map-btn.sec { background: var(--bg); border: 1px solid var(--border2); color: var(--muted); }
 
-    .wx-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
-    .wx-bg { padding: 14px 16px; display: flex; align-items: center; gap: 14px; background: linear-gradient(135deg,rgba(41,171,226,.07),rgba(11,185,122,.04)); }
-    .wx-icon-big { font-size: 36px; }
-    .wx-num { font-size: 30px; font-weight: 900; color: var(--navy); line-height: 1; }
-    .wx-cond { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }
-    .wx-outfit { padding: 10px 14px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); line-height: 1.55; }
-    .wx-outfit strong { color: var(--navy); display: block; font-size: 11px; font-weight: 700; margin-bottom: 2px; }
-    .wx-btns { display: flex; gap: 6px; padding: 8px 10px 10px; }
+    .ai-travel-duration-page .wx-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+    .ai-travel-duration-page .wx-bg { padding: 14px 16px; display: flex; align-items: center; gap: 14px; background: linear-gradient(135deg,rgba(41,171,226,.07),rgba(11,185,122,.04)); }
+    .ai-travel-duration-page .wx-icon-big { font-size: 36px; }
+    .ai-travel-duration-page .wx-num { font-size: 30px; font-weight: 900; color: var(--navy); line-height: 1; }
+    .ai-travel-duration-page .wx-cond { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+    .ai-travel-duration-page .wx-outfit { padding: 10px 14px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); line-height: 1.55; }
+    .ai-travel-duration-page .wx-outfit strong { color: var(--navy); display: block; font-size: 11px; font-weight: 700; margin-bottom: 2px; }
+    .ai-travel-duration-page .wx-btns { display: flex; gap: 6px; padding: 8px 10px 10px; }
 
-    .fatigue-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; box-shadow: var(--shadow); }
-    .fc-title { font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 10px; }
-    .fc-body { display: flex; align-items: center; gap: 12px; }
-    .fc-ring-wrap { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
-    .fc-ring-wrap svg { transform: rotate(-90deg); }
-    .fc-ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .fc-ring-num { font-family: "JetBrains Mono", monospace; font-size: 18px; font-weight: 700; line-height: 1; color: var(--navy); }
-    .fc-ring-denom { font-size: 9px; color: var(--muted); font-weight: 600; }
-    .fc-right { flex: 1; }
-    .fc-label { font-size: 12px; font-weight: 700; margin-bottom: 7px; color: var(--text); }
-    .fc-slider { width: 100%; accent-color: var(--blue); margin-bottom: 6px; }
-    .fc-hint { font-size: 10px; color: var(--muted); line-height: 1.5; }
-    .fc-btn { width: 100%; padding: 8px; border-radius: 9px; margin-top: 10px; font-size: 11px; font-weight: 700; background: rgba(11,185,122,.1); border: 1px solid rgba(11,185,122,.2); color: var(--green); transition: background .12s; }
-    .fc-btn:hover { background: rgba(11,185,122,.18); }
+    .ai-travel-duration-page .fatigue-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; box-shadow: var(--shadow); }
+    .ai-travel-duration-page .fc-title { font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 10px; }
+    .ai-travel-duration-page .fc-body { display: flex; align-items: center; gap: 12px; }
+    .ai-travel-duration-page .fc-ring-wrap { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+    .ai-travel-duration-page .fc-ring-wrap svg { transform: rotate(-90deg); }
+    .ai-travel-duration-page .fc-ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .ai-travel-duration-page .fc-ring-num { font-family: "JetBrains Mono", monospace; font-size: 18px; font-weight: 700; line-height: 1; color: var(--navy); }
+    .ai-travel-duration-page .fc-ring-denom { font-size: 9px; color: var(--muted); font-weight: 600; }
+    .ai-travel-duration-page .fc-right { flex: 1; }
+    .ai-travel-duration-page .fc-label { font-size: 12px; font-weight: 700; margin-bottom: 7px; color: var(--text); }
+    .ai-travel-duration-page .fc-slider { width: 100%; accent-color: var(--blue); margin-bottom: 6px; }
+    .ai-travel-duration-page .fc-hint { font-size: 10px; color: var(--muted); line-height: 1.5; }
+    .ai-travel-duration-page .fc-btn { width: 100%; padding: 8px; border-radius: 9px; margin-top: 10px; font-size: 11px; font-weight: 700; background: rgba(11,185,122,.1); border: 1px solid rgba(11,185,122,.2); color: var(--green); transition: background .12s; }
+    .ai-travel-duration-page .fc-btn:hover { background: rgba(11,185,122,.18); }
 
     /* ─── TOAST ─── */
-    .toast {
+    .ai-travel-duration-page .toast {
       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
       z-index: 300; min-width: 300px; max-width: 480px; padding: 12px 16px;
       border-radius: 14px; display: flex; align-items: center; gap: 10px;
       opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none;
       box-shadow: var(--shadow-md);
     }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: all; }
-    .toast.info   { background: var(--card); border: 1px solid var(--border2); }
-    .toast.warn   { background: #FFFBEB; border: 1px solid rgba(245,158,11,.3); }
-    .toast.danger { background: #FEF2F2; border: 1px solid rgba(239,68,68,.25); }
-    .toast.ok     { background: #ECFDF5; border: 1px solid rgba(11,185,122,.3); }
-    .toast-icon { font-size: 18px; flex-shrink: 0; }
-    .toast-body { flex: 1; }
-    .toast-title { font-size: 13px; font-weight: 700; color: var(--navy); }
-    .toast-msg { font-size: 11px; color: var(--muted); margin-top: 1px; line-height: 1.4; }
-    .toast-actions { display: flex; gap: 5px; }
-    .ta-btn { padding: 5px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--bg); color: var(--text); border: 1px solid var(--border); cursor: pointer; }
-    .ta-btn.primary { background: var(--blue-g); color: #fff; border: none; }
-    .ta-close { padding: 4px 7px; border-radius: 999px; background: transparent; color: var(--dim); font-size: 16px; border: 0; cursor: pointer; }
+    .ai-travel-duration-page .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: all; }
+    .ai-travel-duration-page .toast.info   { background: var(--card); border: 1px solid var(--border2); }
+    .ai-travel-duration-page .toast.warn   { background: #FFFBEB; border: 1px solid rgba(245,158,11,.3); }
+    .ai-travel-duration-page .toast.danger { background: #FEF2F2; border: 1px solid rgba(239,68,68,.25); }
+    .ai-travel-duration-page .toast.ok     { background: #ECFDF5; border: 1px solid rgba(11,185,122,.3); }
+    .ai-travel-duration-page .toast-icon { font-size: 18px; flex-shrink: 0; }
+    .ai-travel-duration-page .toast-body { flex: 1; }
+    .ai-travel-duration-page .toast-title { font-size: 13px; font-weight: 700; color: var(--navy); }
+    .ai-travel-duration-page .toast-msg { font-size: 11px; color: var(--muted); margin-top: 1px; line-height: 1.4; }
+    .ai-travel-duration-page .toast-actions { display: flex; gap: 5px; }
+    .ai-travel-duration-page .ta-btn { padding: 5px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--bg); color: var(--text); border: 1px solid var(--border); cursor: pointer; }
+    .ai-travel-duration-page .ta-btn.primary { background: var(--blue-g); color: #fff; border: none; }
+    .ai-travel-duration-page .ta-close { padding: 4px 7px; border-radius: 999px; background: transparent; color: var(--dim); font-size: 16px; border: 0; cursor: pointer; }
 
     /* ─── OVERLAY ─── */
-    .overlay { position: fixed; inset: 0; z-index: 200; display: none; place-items: center; padding: 20px; background: rgba(15,39,68,.45); backdrop-filter: blur(8px); }
-    .overlay.show { display: grid; }
-    .modal-box { width: min(520px,100%); background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 22px; box-shadow: var(--shadow-md); animation: pop-in .2s ease; }
+    .ai-travel-duration-page .overlay { position: fixed; inset: 0; z-index: 200; display: none; place-items: center; padding: 20px; background: rgba(15,39,68,.45); backdrop-filter: blur(8px); }
+    .ai-travel-duration-page .overlay.show { display: grid; }
+    .ai-travel-duration-page .modal-box { width: min(520px,100%); background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 22px; box-shadow: var(--shadow-md); animation: pop-in .2s ease; }
     @keyframes pop-in { from{opacity:0;transform:scale(.94) translateY(12px)} to{opacity:1;transform:none} }
-    .modal-title { font-size: 18px; font-weight: 800; color: var(--navy); margin-bottom: 14px; }
-    #modalContent { margin-bottom: 14px; }
-    .modal-footer { display: flex; justify-content: flex-end; gap: 7px; }
-    .mf { padding: 9px 18px; border-radius: 999px; font-size: 13px; font-weight: 700; }
-    .mf.ghost { background: var(--bg); border: 1px solid var(--border2); color: var(--muted); }
-    .mf.primary { background: var(--blue-g); color: #fff; box-shadow: 0 4px 14px rgba(41,171,226,.3); }
-    .map-modal-box {
+    .ai-travel-duration-page .modal-title { font-size: 18px; font-weight: 800; color: var(--navy); margin-bottom: 14px; }
+    .ai-travel-duration-page #modalContent { margin-bottom: 14px; }
+    .ai-travel-duration-page .modal-footer { display: flex; justify-content: flex-end; gap: 7px; }
+    .ai-travel-duration-page .mf { padding: 9px 18px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+    .ai-travel-duration-page .mf.ghost { background: var(--bg); border: 1px solid var(--border2); color: var(--muted); }
+    .ai-travel-duration-page .mf.primary { background: var(--blue-g); color: #fff; box-shadow: 0 4px 14px rgba(41,171,226,.3); }
+    .ai-travel-duration-page .map-modal-box {
       width: min(920px,100%); height: min(74vh,680px);
       background: var(--card); border: 1px solid var(--border);
       border-radius: 20px; padding: 16px; box-shadow: var(--shadow-md);
       animation: pop-in .2s ease; display: flex; flex-direction: column;
     }
-    .map-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-    .map-modal-title { font-size: 18px; font-weight: 800; color: var(--navy); }
-    .map-modal-close {
+    .ai-travel-duration-page .map-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .ai-travel-duration-page .map-modal-title { font-size: 18px; font-weight: 800; color: var(--navy); }
+    .ai-travel-duration-page .map-modal-close {
       width: 36px; height: 36px; border-radius: 999px;
       background: var(--bg); border: 1px solid var(--border2);
       color: var(--muted); font-size: 20px; font-weight: 700;
     }
-    .map-modal-frame { flex: 1; min-height: 320px; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); background: var(--bg); }
-    .mi-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); font-size: 12px; margin-bottom: 5px; }
-    .mi-row strong { font-weight: 700; color: var(--navy); }
-    .mi-row span { color: var(--muted); font-weight: 600; }
-    .mi-emergency { padding: 11px; border-radius: 11px; background: rgba(239,68,68,.06); border: 1px solid rgba(239,68,68,.2); margin-bottom: 7px; }
-    .mi-emergency strong { font-size: 15px; font-weight: 900; color: var(--rose); }
-    .mi-emergency span { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .mi-safe { padding: 11px; border-radius: 11px; background: rgba(11,185,122,.06); border: 1px solid rgba(11,185,122,.2); margin-bottom: 7px; }
-    .mi-safe strong { font-size: 13px; font-weight: 700; color: var(--green); }
-    .mi-safe span { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .mi-phrase { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
-    .mi-phrase button { padding: 6px 11px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--bg); border: 1px solid var(--border2); color: var(--text); cursor: pointer; }
-    .mi-phrase button:hover { border-color: var(--blue); color: var(--blue-d); }
-    .mi-textarea { width: 100%; min-height: 64px; padding: 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border2); color: var(--text); font-size: 13px; resize: none; margin-bottom: 7px; }
-    .mi-textarea:focus { border-color: var(--blue); outline: none; }
-    .mi-result { padding: 11px; border-radius: 10px; background: rgba(41,171,226,.06); border: 1px solid rgba(41,171,226,.2); font-size: 14px; font-weight: 700; color: var(--navy); min-height: 42px; }
-    .mi-album-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; }
-    .mi-album-thumb { aspect-ratio: 1; border-radius: 9px; display: grid; place-items: center; font-size: 26px; background: var(--bg); border: 1px solid var(--border); }
+    .ai-travel-duration-page .map-modal-frame { flex: 1; min-height: 320px; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); background: var(--bg); }
+    .ai-travel-duration-page .mi-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); font-size: 12px; margin-bottom: 5px; }
+    .ai-travel-duration-page .mi-row strong { font-weight: 700; color: var(--navy); }
+    .ai-travel-duration-page .mi-row span { color: var(--muted); font-weight: 600; }
+    .ai-travel-duration-page .mi-emergency { padding: 11px; border-radius: 11px; background: rgba(239,68,68,.06); border: 1px solid rgba(239,68,68,.2); margin-bottom: 7px; }
+    .ai-travel-duration-page .mi-emergency strong { font-size: 15px; font-weight: 900; color: var(--rose); }
+    .ai-travel-duration-page .mi-emergency span { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .ai-travel-duration-page .mi-safe { padding: 11px; border-radius: 11px; background: rgba(11,185,122,.06); border: 1px solid rgba(11,185,122,.2); margin-bottom: 7px; }
+    .ai-travel-duration-page .mi-safe strong { font-size: 13px; font-weight: 700; color: var(--green); }
+    .ai-travel-duration-page .mi-safe span { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .ai-travel-duration-page .mi-phrase { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+    .ai-travel-duration-page .mi-phrase button { padding: 6px 11px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--bg); border: 1px solid var(--border2); color: var(--text); cursor: pointer; }
+    .ai-travel-duration-page .mi-phrase button:hover { border-color: var(--blue); color: var(--blue-d); }
+    .ai-travel-duration-page .mi-textarea { width: 100%; min-height: 64px; padding: 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border2); color: var(--text); font-size: 13px; resize: none; margin-bottom: 7px; }
+    .ai-travel-duration-page .mi-textarea:focus { border-color: var(--blue); outline: none; }
+    .ai-travel-duration-page .mi-result { padding: 11px; border-radius: 10px; background: rgba(41,171,226,.06); border: 1px solid rgba(41,171,226,.2); font-size: 14px; font-weight: 700; color: var(--navy); min-height: 42px; }
+    .ai-travel-duration-page .mi-album-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; }
+    .ai-travel-duration-page .mi-album-thumb { aspect-ratio: 1; border-radius: 9px; display: grid; place-items: center; font-size: 26px; background: var(--bg); border: 1px solid var(--border); }
 
     /* ─── READABILITY BUMP ─── */
-    .brand { font-size: 16px; }
-    .topbar-trip,
-    .t-btn { font-size: 13px; }
-    .live-pill,
-    .dest-tag,
-    .budget-total { font-size: 12px; }
-    .budget-label { font-size: 11px; }
-    .budget-spent { font-size: 22px; }
+    .ai-travel-duration-page .brand { font-size: 16px; }
+    .ai-travel-duration-page .topbar-trip, .ai-travel-duration-page .t-btn { font-size: 13px; }
+    .ai-travel-duration-page .live-pill, .ai-travel-duration-page .dest-tag, .ai-travel-duration-page .budget-total { font-size: 12px; }
+    .ai-travel-duration-page .budget-label { font-size: 11px; }
+    .ai-travel-duration-page .budget-spent { font-size: 22px; }
 
-    .city-summary-day { font-size: 16px; }
-    .city-summary-day span,
-    .city-summary-copy,
-    .city-info span { font-size: 11px; }
-    .city-row,
-    .city-info strong,
-    .city-wx { font-size: 13px; }
-    .city-num,
-    .city-duration,
-    .city-day { font-size: 11px; }
+    .ai-travel-duration-page .city-summary-day { font-size: 16px; }
+    .ai-travel-duration-page .city-summary-day span, .ai-travel-duration-page .city-summary-copy, .ai-travel-duration-page .city-info span { font-size: 11px; }
+    .ai-travel-duration-page .city-row, .ai-travel-duration-page .city-info strong, .ai-travel-duration-page .city-wx { font-size: 13px; }
+    .ai-travel-duration-page .city-num, .ai-travel-duration-page .city-duration, .ai-travel-duration-page .city-day { font-size: 11px; }
 
-    .c-card-title,
-    .tool-pad-btn,
-    .sec-kicker,
-    .tl-t,
-    .tl-badge,
-    .tl-tag,
-    .tl-route-label,
-    .tl-transit-toggle,
-    .tl-transit-note,
-    .reroute-drop p,
-    .b-name,
-    .b-val,
-    .meal-reroute-panel p,
-    .map-hd-btn,
-    .fc-ring-denom,
-    .fc-hint { font-size: 11px; }
-    .tool-pad-btn span { font-size: 18px; }
+    .ai-travel-duration-page .c-card-title, .ai-travel-duration-page .tool-pad-btn, .ai-travel-duration-page .sec-kicker, .ai-travel-duration-page .tl-t, .ai-travel-duration-page .tl-badge, .ai-travel-duration-page .tl-tag, .ai-travel-duration-page .tl-route-label, .ai-travel-duration-page .tl-transit-toggle, .ai-travel-duration-page .tl-transit-note, .ai-travel-duration-page .reroute-drop p, .ai-travel-duration-page .b-name, .ai-travel-duration-page .b-val, .ai-travel-duration-page .meal-reroute-panel p, .ai-travel-duration-page .map-hd-btn, .ai-travel-duration-page .fc-ring-denom, .ai-travel-duration-page .fc-hint { font-size: 11px; }
+    .ai-travel-duration-page .tool-pad-btn span { font-size: 18px; }
 
-    .sec-head h2 { font-size: 18px; }
-    .sec-desc,
-    .sec-action-btn,
-    .tl-card p,
-    .tl-expense label,
-    .tl-expense span,
-    .reroute-drop strong,
-    .rd-yes,
-    .rd-no,
-    .b-block-title,
-    .exp-input,
-    .exp-num,
-    .exp-cat-sel,
-    .exp-log-item,
-    .meal-reroute-panel strong,
-    .map-route-card span,
-    .map-btn,
-    .wx-cond,
-    .wx-outfit,
-    .wx-outfit strong,
-    .tl-transit-main strong,
-    .tl-transit-time,
-    .fc-btn,
-    .toast-msg,
-    .ta-btn,
-    .mi-emergency span,
-    .mi-safe span,
-    .mi-phrase button { font-size: 12px; }
-    .tl-transit-main span { font-size: 12px; }
-    .tl-transit-meta span { font-size: 11px; }
-    .tl-card h3,
-    .tl-expense input,
-    .tl-route-name,
-    .exp-add,
-    .map-hd-title,
-    .map-route-card strong,
-    .fc-title,
-    .fc-label,
-    .toast-title,
-    .mf,
-    .mi-row,
-    .mi-safe strong,
-    .mi-textarea { font-size: 14px; }
-    .tl-transport-label { font-size: 10px; }
-    .tl-transport-rec,
-    .mi-emergency strong { font-size: 15px; }
-    .fc-ring-num,
-    .toast-icon { font-size: 20px; }
-    .mi-result { font-size: 15px; }
+    .ai-travel-duration-page .sec-head h2 { font-size: 18px; }
+    .ai-travel-duration-page .sec-desc, .ai-travel-duration-page .sec-action-btn, .ai-travel-duration-page .tl-card p, .ai-travel-duration-page .tl-expense label, .ai-travel-duration-page .tl-expense span, .ai-travel-duration-page .reroute-drop strong, .ai-travel-duration-page .rd-yes, .ai-travel-duration-page .rd-no, .ai-travel-duration-page .b-block-title, .ai-travel-duration-page .exp-input, .ai-travel-duration-page .exp-num, .ai-travel-duration-page .exp-cat-sel, .ai-travel-duration-page .exp-log-item, .ai-travel-duration-page .meal-reroute-panel strong, .ai-travel-duration-page .map-route-card span, .ai-travel-duration-page .map-btn, .ai-travel-duration-page .wx-cond, .ai-travel-duration-page .wx-outfit, .ai-travel-duration-page .wx-outfit strong, .ai-travel-duration-page .tl-transit-main strong, .ai-travel-duration-page .tl-transit-time, .ai-travel-duration-page .fc-btn, .ai-travel-duration-page .toast-msg, .ai-travel-duration-page .ta-btn, .ai-travel-duration-page .mi-emergency span, .ai-travel-duration-page .mi-safe span, .ai-travel-duration-page .mi-phrase button { font-size: 12px; }
+    .ai-travel-duration-page .tl-transit-main span { font-size: 12px; }
+    .ai-travel-duration-page .tl-transit-meta span { font-size: 11px; }
+    .ai-travel-duration-page .tl-card h3, .ai-travel-duration-page .tl-expense input, .ai-travel-duration-page .tl-route-name, .ai-travel-duration-page .exp-add, .ai-travel-duration-page .map-hd-title, .ai-travel-duration-page .map-route-card strong, .ai-travel-duration-page .fc-title, .ai-travel-duration-page .fc-label, .ai-travel-duration-page .toast-title, .ai-travel-duration-page .mf, .ai-travel-duration-page .mi-row, .ai-travel-duration-page .mi-safe strong, .ai-travel-duration-page .mi-textarea { font-size: 14px; }
+    .ai-travel-duration-page .tl-transport-label { font-size: 10px; }
+    .ai-travel-duration-page .tl-transport-rec, .ai-travel-duration-page .mi-emergency strong { font-size: 15px; }
+    .ai-travel-duration-page .fc-ring-num, .ai-travel-duration-page .toast-icon { font-size: 20px; }
+    .ai-travel-duration-page .mi-result { font-size: 15px; }
 
     /* ─── RESPONSIVE ─── */
-    @media (max-width: 1100px) { .workspace { grid-template-columns: 180px minmax(0,1fr) 290px; } }
+    @media (max-width: 1100px) { .ai-travel-duration-page .workspace { grid-template-columns: 180px minmax(0,1fr) 290px; } }
     @media (max-width: 900px) {
-      .workspace { grid-template-columns: 1fr; }
-      .left-rail, .right-col { position: static; }
-      .budget-cols { grid-template-columns: 1fr; }
+      .ai-travel-duration-page .workspace { grid-template-columns: 1fr; }
+      .ai-travel-duration-page .left-rail, .ai-travel-duration-page .right-col { position: static; }
+      .ai-travel-duration-page .budget-cols { grid-template-columns: 1fr; }
     }
     @media (max-width: 580px) {
-      .dest-hero-inner { flex-direction: column; align-items: flex-start; }
-      .dest-right { align-items: flex-start; width: 100%; }
-      .budget-bar { width: 100%; }
-      .topbar-trip { display: none; }
-      .workspace { padding: 12px 14px 36px; }
-      .day-strip-wrap { padding: 12px 14px 0; }
-      .tl-route-flow { grid-template-columns: 1fr; }
-      .tl-route-mid { min-width: 0; align-items: flex-start; padding: 6px 10px; }
-      .tl-route-mid::before,
-      .tl-route-mid::after { display: none; }
-      .tl-transport-rec { justify-content: flex-start; }
+      .ai-travel-duration-page .dest-hero-inner { flex-direction: column; align-items: flex-start; }
+      .ai-travel-duration-page .dest-right { align-items: flex-start; width: 100%; }
+      .ai-travel-duration-page .budget-bar { width: 100%; }
+      .ai-travel-duration-page .topbar-trip { display: none; }
+      .ai-travel-duration-page .workspace { padding: 12px 14px 36px; }
+      .ai-travel-duration-page .day-strip-wrap { padding: 12px 14px 0; }
+      .ai-travel-duration-page .tl-route-flow { grid-template-columns: 1fr; }
+      .ai-travel-duration-page .tl-route-mid { min-width: 0; align-items: flex-start; padding: 6px 10px; }
+      .ai-travel-duration-page .tl-route-mid::before, .ai-travel-duration-page .tl-route-mid::after { display: none; }
+      .ai-travel-duration-page .tl-transport-rec { justify-content: flex-start; }
     }
   
+

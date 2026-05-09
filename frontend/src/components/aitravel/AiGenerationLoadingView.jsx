@@ -1,6 +1,6 @@
 export default function AiGenerationLoadingView() {
   return (
-    <>
+    <div className="ai-generation-loading-page">
       <main className="loading-page">
           <div className="cloud one"></div>
           <div className="cloud two"></div>
@@ -58,6 +58,6 @@ export default function AiGenerationLoadingView() {
             </aside>
           </section>
         </main>
-    </>
+    </div>
   )
 }

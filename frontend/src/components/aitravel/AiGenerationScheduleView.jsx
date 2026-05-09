@@ -1,6 +1,6 @@
 export default function AiGenerationScheduleView({ onTravelDurationClick }) {
   return (
-    <>
+    <div className="ai-generation-schedule-page">
       <div className="page">
           <header className="command">
             <div className="command-inner">
@@ -67,6 +67,6 @@ export default function AiGenerationScheduleView({ onTravelDurationClick }) {
             </aside>
           </main>
         </div>
-    </>
+    </div>
   )
 }

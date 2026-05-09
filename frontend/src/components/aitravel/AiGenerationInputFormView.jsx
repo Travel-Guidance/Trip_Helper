@@ -1,7 +1,7 @@
 import CalendarPicker from '../common/CalendarPicker'
 export default function AiGenerationInputFormView({ openCalendar, setOpenCalendar, dates, tomorrow, applyDate }) {
   return (
-    <>
+    <div className="ai-generation-input-form-page">
       <main className="shell">
           <aside className="cover">
             <div className="brand">
@@ -331,6 +331,6 @@ export default function AiGenerationInputFormView({ openCalendar, setOpenCalenda
             onClose={() => setOpenCalendar(null)}
           />
         )}
-    </>
+    </div>
   )
 }
