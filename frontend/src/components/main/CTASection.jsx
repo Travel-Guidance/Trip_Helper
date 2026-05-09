@@ -53,7 +53,7 @@ function CTACard() {
             당신만의 특별한 여행을 시작하세요
           </p>
           <button
-            onClick={() => navigate('/ai-travel')}
+            onClick={() => navigate('/ai-generation-inputform')}
             className="inline-flex items-center gap-2 bg-sky-500 text-white text-sm font-bold px-8 py-4 rounded-full shadow-lg shadow-sky-900/10 hover:bg-sky-400 hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-200 w-fit group"
           >
             <Sparkles className="w-4 h-4" />

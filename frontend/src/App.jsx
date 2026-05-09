@@ -2,6 +2,10 @@ import { BrowserRouter, Navigate, Routes, Route, useLocation } from 'react-route
 import { SearchProvider } from './store/SearchContext'
 import MainPage from './pages/MainPage'
 import AiTravelPage from './pages/AiTravelPage'
+import AiGenerationInputForm from './pages/AiGenerationInputForm'
+import AiGenerationLoading from './pages/AiGenerationLoading'
+import AiGenerationSchedule from './pages/AiGenerationSchedule'
+import AiTravelDuration from './pages/AiTravelDuration'
 import Home from './pages/Home'
 import SearchResults from './pages/SearchResults'
 import SeatSelection from './pages/SeatSelection'
@@ -30,6 +34,10 @@ export default function App() {
           <Route path="/" element={<LoginPage />} />
           <Route path="/home" element={<MainPage />} />
           <Route path="/ai-travel" element={<AiTravelPage />} />
+          <Route path="/ai-generation-inputform" element={<AiGenerationInputForm />} />
+          <Route path="/ai-generation-loading" element={<AiGenerationLoading />} />
+          <Route path="/ai-generation-schedule" element={<AiGenerationSchedule />} />
+          <Route path="/ai-travel-duration" element={<AiTravelDuration />} />
           <Route path="/flights" element={<Home />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/seats/:offerId" element={<SeatSelection />} />
