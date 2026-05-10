@@ -1,6 +1,21 @@
+'use strict';
+
 const { requireEnv } = require('../utils/env')
 const { createError } = require('../utils/errors')
 const { geocodePlace } = require('../services/geocodeService')
+
+const routeCache = new Map()
+const ROUTE_CACHE_TTL = 60 * 60 * 1000  // 1시간
+
+function getCachedRoute(key) {
+  const item = routeCache.get(key)
+  if (!item || item.expiresAt < Date.now()) { routeCache.delete(key); return null }
+  return item.value
+}
+function setCachedRoute(key, value) {
+  routeCache.set(key, { value, expiresAt: Date.now() + ROUTE_CACHE_TTL })
+  return value
+}
 
 const getEmbedUrl = (req, res, next) => {
   try {
@@ -48,32 +63,53 @@ const getRoute = async (req, res, next) => {
     const o = simplifyName(origin)
     const d = simplifyName(destination)
 
-    // transit 먼저 시도
-    let element = await queryMatrix(o, d, 'transit', key)
+    const cacheKey = `${o}||${d}`
+    const cached = getCachedRoute(cacheKey)
+    if (cached) return res.json(cached)
+
+    // transit과 driving을 동시에 시도해 더 빠른 것 선택
+    const [transitEl, drivingEl] = await Promise.all([
+      queryMatrix(o, d, 'transit', key),
+      queryMatrix(o, d, 'driving', key),
+    ])
+
+    let element = null
     let mode = 'transit'
 
-    if (element) {
-      // 1km 이하면 도보로 전환
-      if (element.distance?.value <= 1000) {
-        const walkEl = await queryMatrix(o, d, 'walking', key)
-        if (walkEl) { element = walkEl; mode = 'walking' }
+    if (transitEl && drivingEl) {
+      // 둘 다 성공 → 더 빠른 쪽 선택
+      if (drivingEl.duration.value < transitEl.duration.value) {
+        element = drivingEl; mode = 'driving'
+      } else {
+        element = transitEl; mode = 'transit'
       }
     } else {
-      // transit 실패 → driving → walking 순 폴백
-      for (const m of ['driving', 'walking']) {
-        element = await queryMatrix(o, d, m, key)
-        if (element) { mode = m; break }
-      }
+      element = transitEl || drivingEl
+      mode   = transitEl ? 'transit' : 'driving'
     }
 
-    if (!element) return res.json({ found: false })
+    // 1.5km 이하면 도보로 전환
+    if (element?.distance?.value <= 1500) {
+      const walkEl = await queryMatrix(o, d, 'walking', key)
+      if (walkEl) { element = walkEl; mode = 'walking' }
+    }
 
-    res.json({
-      found: true,
-      distance: element.distance?.text,
-      duration: element.duration?.text,
+    // 마지막 폴백
+    if (!element) {
+      const walkEl = await queryMatrix(o, d, 'walking', key)
+      if (walkEl) { element = walkEl; mode = 'walking' }
+    }
+
+    if (!element) return res.json(setCachedRoute(cacheKey, { found: false }))
+
+    const result = {
+      found:           true,
+      distance:        element.distance?.text,
+      duration:        element.duration?.text,
+      durationSeconds: element.duration?.value ?? null,
       mode,
-    })
+    }
+    res.json(setCachedRoute(cacheKey, result))
   } catch (err) {
     next(err)
   }

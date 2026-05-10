@@ -19,6 +19,18 @@ const toolDefinitions = [
           type: 'STRING',
           description: 'Optional category filter: landmark, nature, food, activity, transport, culture, shopping, accommodation, tips, itinerary, safety.',
         },
+        lat: {
+          type: 'NUMBER',
+          description: 'Latitude of the day\'s accommodation. Pass this to restrict results to nearby places.',
+        },
+        lon: {
+          type: 'NUMBER',
+          description: 'Longitude of the day\'s accommodation. Pass this to restrict results to nearby places.',
+        },
+        radiusKm: {
+          type: 'NUMBER',
+          description: 'Search radius in km from the accommodation (default 30). Increase for rural destinations.',
+        },
       },
       required: ['query'],
     },

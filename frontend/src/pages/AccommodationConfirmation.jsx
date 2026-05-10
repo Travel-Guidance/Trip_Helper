@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import Navbar from '../components/layout/Navbar'
 import BottomNav from '../components/layout/BottomNav'
@@ -20,11 +20,46 @@ function Row({ label, value, strong }) {
   )
 }
 
+function readQueueFromStorage() {
+  try {
+    const queue = JSON.parse(sessionStorage.getItem('accom_booking_queue') || 'null')
+    const idx = Number(sessionStorage.getItem('accom_booking_index') || '0')
+    return queue ? { items: queue, index: idx } : null
+  } catch { return null }
+}
+
 export default function AccommodationConfirmation() {
   const navigate = useNavigate()
   const location = useLocation()
   const { bookingRef } = useParams()
   const [booking, setBooking] = useState(location.state?.booking || null)
+  const [bookingQueue, setBookingQueue] = useState(() => readQueueFromStorage())
+
+  const remainingItems = bookingQueue
+    ? bookingQueue.items.slice(bookingQueue.index + 1)
+    : []
+
+  const goNextBooking = () => {
+    const current = readQueueFromStorage()
+    if (!current) return
+    const nextIndex = current.index + 1
+    if (nextIndex >= current.items.length) {
+      const returnUrl = sessionStorage.getItem('accom_return_url') || '/accommodation'
+      sessionStorage.removeItem('accom_booking_queue')
+      sessionStorage.removeItem('accom_booking_index')
+      sessionStorage.removeItem('accom_return_url')
+      navigate(returnUrl)
+      return
+    }
+    sessionStorage.setItem('accom_booking_index', String(nextIndex))
+    setBookingQueue({ items: current.items, index: nextIndex })
+    const { name: _n, ...next } = current.items[nextIndex]
+    navigate(`/accommodation/results?${new URLSearchParams(next)}`)
+  }
+
+  useEffect(() => {
+    setBookingQueue(readQueueFromStorage())
+  }, [bookingRef])
 
   useEffect(() => {
     if (booking) return
@@ -77,6 +112,20 @@ export default function AccommodationConfirmation() {
           <Row label="예약 상태" value="확정" strong />
         </section>
 
+        {remainingItems.length > 0 && (
+          <div className="acc-confirm-queue">
+            <p className="acc-confirm-queue-title">아직 예약하지 않은 숙소 ({remainingItems.length}곳)</p>
+            <ul className="acc-confirm-queue-list">
+              {remainingItems.map((item, i) => (
+                <li key={i}>{item.name}</li>
+              ))}
+            </ul>
+            <button className="acc-confirm-next-booking" onClick={goNextBooking}>
+              다음 숙소 예약하기 → {remainingItems[0]?.name}
+            </button>
+          </div>
+        )}
+
         <button className="acc-confirm-home" onClick={() => navigate('/home')}>홈으로 돌아가기</button>
         <div className="acc-confirm-note">테스트 모드 - 실제 Hotelbeds 예약 및 결제가 이루어지지 않습니다</div>
       </main>
@@ -84,5 +133,3 @@ export default function AccommodationConfirmation() {
     </div>
   )
 }
-
-

@@ -135,6 +135,7 @@ export default function AccommodationDetail() {
       const data = await createStayBooking({
         hotelCode: hotelId,
         hotelName: hotel.name || detail?.name,
+        coordinates: detail?.coordinates || hotel.coordinates || null,
         location: hotel.location || [detail?.zone, detail?.destination].filter(Boolean).join(' · ') || destination,
         country: countryKey,
         countryCode,
@@ -149,6 +150,11 @@ export default function AccommodationDetail() {
         image: selectedRoom.images?.[0] || uniqueGallery[0],
       })
       sessionStorage.setItem('stay_booking', JSON.stringify(data))
+      const bookings = JSON.parse(sessionStorage.getItem('stay_bookings') || '[]')
+      sessionStorage.setItem('stay_bookings', JSON.stringify([
+        ...bookings.filter(item => item.booking_reference !== data.booking_reference),
+        data,
+      ]))
       navigate(`/accommodation/confirmation/${data.booking_reference}`, { state: { booking: data } })
     } catch (err) {
       setBookingError(err.message || '숙소 예약 처리 중 오류가 발생했습니다.')

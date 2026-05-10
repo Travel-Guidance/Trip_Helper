@@ -53,6 +53,19 @@ const generalLimiter = rateLimit({
   },
 });
 
+// 지도 API: 분당 300회 (경로·지오코딩은 화면 로드마다 다수 발생)
+const mapsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: makeStore('rl:maps:'),
+  handler: (req, res) => {
+    console.warn(`[RateLimit] Maps limit reached: ${req.ip} -> ${req.originalUrl}`);
+    res.status(429).json({ error: '지도 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.' });
+  },
+});
+
 // AI 엔드포인트
 const aiLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -66,4 +79,4 @@ const aiLimiter = rateLimit({
   },
 });
 
-module.exports = { generalLimiter, aiLimiter };
+module.exports = { generalLimiter, mapsLimiter, aiLimiter };

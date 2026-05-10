@@ -48,6 +48,30 @@ export default function AccSearchResults() {
   const [error, setError] = useState('')
   const [sortBy, setSortBy] = useState('')
 
+  const [bookingQueue] = useState(() => {
+    try {
+      const queue = JSON.parse(sessionStorage.getItem('accom_booking_queue') || 'null')
+      const idx   = Number(sessionStorage.getItem('accom_booking_index') || '0')
+      return queue ? { items: queue, index: idx } : null
+    } catch { return null }
+  })
+
+  const goNextBooking = () => {
+    if (!bookingQueue) return
+    const nextIndex = bookingQueue.index + 1
+    if (nextIndex >= bookingQueue.items.length) {
+      const returnUrl = sessionStorage.getItem('accom_return_url') || '/accommodation'
+      sessionStorage.removeItem('accom_booking_queue')
+      sessionStorage.removeItem('accom_booking_index')
+      sessionStorage.removeItem('accom_return_url')
+      navigate(returnUrl)
+      return
+    }
+    sessionStorage.setItem('accom_booking_index', String(nextIndex))
+    const { name: _n, ...next } = bookingQueue.items[nextIndex]
+    navigate(`/accommodation/results?${new URLSearchParams(next)}`)
+  }
+
   useEffect(() => {
     if (!countryKey) {
       setError('여행지를 선택해주세요.')
@@ -55,7 +79,7 @@ export default function AccSearchResults() {
       return
     }
 
-    searchStays({ country: countryKey, countryCode, checkIn, checkOut, guests })
+    searchStays({ country: countryKey, countryCode, destination, checkIn, checkOut, guests })
       .then(data => {
         setHotels(data)
         setLoading(false)
@@ -135,6 +159,36 @@ export default function AccSearchResults() {
         <button className="asr-search-submit" onClick={() => navigate('/accommodation')}>숙소 검색</button>
       </div>
 
+      {bookingQueue && (
+        <div className="asr-queue-banner">
+          <div className="asr-queue-info">
+            <p className="asr-queue-label">
+              숙소 예약 진행 중 {bookingQueue.index + 1} / {bookingQueue.items.length}
+            </p>
+            <p className="asr-queue-name">
+              {bookingQueue.items[bookingQueue.index]?.name}
+            </p>
+          </div>
+          <div className="asr-queue-dots">
+            {bookingQueue.items.map((_, i) => (
+              <span
+                key={i}
+                className={`asr-queue-dot${i < bookingQueue.index ? ' done' : i === bookingQueue.index ? ' current' : ''}`}
+              />
+            ))}
+          </div>
+          {bookingQueue.index + 1 < bookingQueue.items.length ? (
+            <button className="asr-queue-next-btn" onClick={goNextBooking}>
+              다음 숙소 예약 →
+            </button>
+          ) : (
+            <button className="asr-queue-done-btn" onClick={goNextBooking}>
+              예약 완료
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="asr-filter-bar">
         <button className="asr-filter-pill"><SlidersHorizontal size={19} /> 필터</button>
         {sortOptions.map(option => (
@@ -178,13 +232,13 @@ export default function AccSearchResults() {
                 <div className="asr-empty">조건에 맞는 숙소가 없습니다.</div>
               ) : (
                 <div className="asr-list">
-                  {filtered.map(hotel => {
+                  {filtered.map((hotel, idx) => {
                     const amenities = compactAmenities(hotel.amenities)
                     const displayPrice = hotel.displayPrice || formatKrwPrice(hotel.price, hotel.currency)
                     const hasPreviousPrice = hasValue(hotel.previousPrice) && hotel.previousPrice !== displayPrice
 
                     return (
-                    <div key={hotel.id} className="asr-card" onClick={() => goDetail(hotel)}>
+                    <div key={`${hotel.id}_${idx}`} className="asr-card" onClick={() => goDetail(hotel)}>
                       <div className="asr-card-img-wrap">
                         {hotel.image
                           ? <img src={hotel.image} alt={hotel.name} className="asr-card-img" />
