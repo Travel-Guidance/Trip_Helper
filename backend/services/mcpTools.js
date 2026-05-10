@@ -13,7 +13,7 @@ const toolDefinitions = [
         },
         city: {
           type: 'STRING',
-          description: 'Optional city filter, such as Sydney, Melbourne, Gold Coast, Cairns, Uluru, or Brisbane.',
+          description: 'Optional city name to filter results (e.g. Sydney, Tokyo, Paris). Only useful when the knowledge base contains data for that city.',
         },
         category: {
           type: 'STRING',

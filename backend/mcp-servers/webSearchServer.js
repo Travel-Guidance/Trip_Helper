@@ -20,7 +20,8 @@ server.tool(
     query: z.string().describe('Search query, for example "Sydney Opera House tour price".'),
     country: z.string().optional().describe('Country context. Defaults to Australia.'),
   },
-  async ({ query, country = 'Australia' }) => {
+  async ({ query, country }) => {
+    const resolvedCountry = country || 'the destination country';
     if (!TAVILY_API_KEY) {
       return { content: [{ type: 'text', text: JSON.stringify(simulateFallback(query)) }] };
     }
@@ -31,7 +32,7 @@ server.tool(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           api_key: TAVILY_API_KEY,
-          query: `${query} ${country} travel guide`,
+          query: `${query} ${resolvedCountry} travel guide`,
           search_depth: 'basic',
           max_results: 5,
           include_answer: true,

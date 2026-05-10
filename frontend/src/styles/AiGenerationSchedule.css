@@ -306,6 +306,19 @@
 
     .ai-generation-schedule-page .route-index {
       padding: 14px;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #d1e4f5 transparent;
+    }
+
+    .ai-generation-schedule-page .route-index::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .ai-generation-schedule-page .route-index::-webkit-scrollbar-thumb {
+      background: #d1e4f5;
+      border-radius: 999px;
     }
 
     .ai-generation-schedule-page .route-index h3, .ai-generation-schedule-page .map-shell h3 {
@@ -710,5 +723,210 @@
         display: grid;
       }
     }
-  
 
+    /* ── 카드 클릭 호버 ── */
+    .ai-generation-schedule-page .node-card-clickable {
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+
+    .ai-generation-schedule-page .node-card-clickable:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(0, 153, 255, 0.14);
+      border-color: #bfdbfe;
+    }
+
+    /* ── 모달 ── */
+    .item-modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(7, 17, 31, 0.55);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      animation: overlay-in 0.18s ease;
+    }
+
+    @keyframes overlay-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    .item-modal {
+      width: 100%;
+      max-width: 560px;
+      background: #fff;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0, 0, 0, 0.22);
+      animation: modal-up 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes modal-up {
+      from { opacity: 0; transform: translateY(24px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .item-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px 0;
+    }
+
+    .item-modal-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .item-modal-time {
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .item-modal-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      color: #475569;
+      display: grid;
+      place-items: center;
+      transition: background 0.14s;
+    }
+
+    .item-modal-close:hover {
+      background: #e2e8f0;
+    }
+
+    .item-modal-title {
+      margin: 10px 20px 6px;
+      font-size: 22px;
+      font-weight: 950;
+      color: #0f172a;
+      line-height: 1.25;
+      word-break: keep-all;
+    }
+
+    .item-modal-note {
+      margin: 0 20px 16px;
+      color: #536173;
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 650;
+      word-break: keep-all;
+    }
+
+    .item-modal-map {
+      height: 280px;
+      width: 100%;
+    }
+
+    @media (max-width: 600px) {
+      .item-modal {
+        max-width: 100%;
+        border-radius: 20px 20px 0 0;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+      }
+
+      .item-modal-overlay {
+        align-items: flex-end;
+        padding: 0;
+      }
+
+      .item-modal-map {
+        height: 220px;
+      }
+    }
+
+    /* ── 이동시간 커넥터 ── */
+    .ai-generation-schedule-page .route-connector {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      column-gap: 12px;
+      align-items: center;
+      padding: 0 0 0 0;
+      margin: 0;
+    }
+
+    .ai-generation-schedule-page .route-connector-line {
+      grid-column: 2;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .ai-generation-schedule-page .route-connector {
+      grid-template-columns: 48px 1fr;
+      column-gap: 12px;
+    }
+
+    .ai-generation-schedule-page .time-grid .route-connector {
+      display: grid;
+      grid-template-columns: 48px 16px 1fr;
+      column-gap: 0;
+      align-items: center;
+      min-height: 32px;
+    }
+
+    .ai-generation-schedule-page .route-connector-line {
+      grid-column: 2;
+      width: 2px;
+      height: 32px;
+      background: repeating-linear-gradient(
+        to bottom,
+        #c7d9f0 0px,
+        #c7d9f0 4px,
+        transparent 4px,
+        transparent 8px
+      );
+      margin: 0 auto;
+    }
+
+    .ai-generation-schedule-page .route-connector-info {
+      grid-column: 3;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: #f0f6ff;
+      border: 1px solid #d5e6f7;
+      border-radius: 20px;
+      width: fit-content;
+      font-size: 12px;
+      color: #3a6699;
+    }
+
+    .ai-generation-schedule-page .route-mode-icon {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .ai-generation-schedule-page .route-duration {
+      font-weight: 700;
+      color: #0a5fd6;
+    }
+
+    .ai-generation-schedule-page .route-distance {
+      color: #687385;
+    }
+
+    .ai-generation-schedule-page .route-mode-label {
+      color: #687385;
+    }
+
+    .ai-generation-schedule-page .route-loading {
+      color: #aab5c4;
+      font-style: italic;
+    }

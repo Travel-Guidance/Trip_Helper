@@ -7,6 +7,8 @@ import {
   Users, DollarSign, Zap, Send, MessageCircle,
 } from 'lucide-react'
 import CalendarPicker from '../components/common/CalendarPicker'
+import AiGenerationScheduleView from '../components/aitravel/AiGenerationScheduleView'
+import TravelChatDrawer from '../components/aitravel/TravelChatDrawer'
 
 /* ──────────────────────────────────────────── 상수 */
 
@@ -1077,7 +1079,7 @@ function FriendJoinForm({ roomCode }) {
 ════════════════════════════════════════════ */
 const LOADING_MSGS = ['목적지 정보 분석', '관광 명소 선별', '동선 최적화', '맛집 추천', '일정 완성']
 
-function Loading({ info, onDone }) {
+function Loading({ info, onDone, onBack }) {
   const [step, setStep] = useState(0)
   const [error, setError] = useState(null)
   const dest = info.country || CONTINENTS.find(c => c.key === info.continent)?.label || '목적지'
@@ -1104,7 +1106,7 @@ function Loading({ info, onDone }) {
       <div className="text-center">
         <p className="text-white font-bold mb-2">일정 생성에 실패했어요</p>
         <p className="text-red-400 text-sm mb-6">{error}</p>
-        <button onClick={() => onDone(null)} className="text-zinc-400 underline text-sm hover:text-zinc-200 transition-colors">
+        <button onClick={onBack} className="text-zinc-400 underline text-sm hover:text-zinc-200 transition-colors">
           돌아가기
         </button>
       </div>
@@ -1144,276 +1146,15 @@ function Loading({ info, onDone }) {
 }
 
 /* ════════════════════════════════════════════
-   TRAVEL CHAT DRAWER (페르소나 챗봇)
-════════════════════════════════════════════ */
-const PERSONA_DEFAULTS = {
-  '호주':       { name: 'Matey',    emoji: '🦘', greeting: "G'day! 호주 여행이라면 뭐든 물어봐~ No worries!" },
-  '시드니':     { name: 'Matey',    emoji: '🦘', greeting: "G'day mate! 시드니 현지인 Matey야. 뭐든 물어봐!" },
-  '멜버른':     { name: 'Matey',    emoji: '☕', greeting: "G'day! 멜버른 커피는 세계 최고야. 뭐가 궁금해?" },
-  '골드코스트': { name: 'Matey',    emoji: '🏄', greeting: "No worries! 골드코스트 서퍼 Matey야~ 꿀팁 알려줄게!" },
-  '케언즈':     { name: 'Matey',    emoji: '🤿', greeting: "G'day! 그레이트 배리어 리프 다이버 Matey야. 물어봐!" },
-  '울루루':     { name: 'Matey',    emoji: '🪨', greeting: "No worries! 레드센터 Matey야. 뭐든 알려줄게!" },
-  '브리즈번':   { name: 'Matey',    emoji: '🐨', greeting: "G'day! 브리즈번 로컬 Matey야~ 뭐든 물어봐!" },
-  '일본':       { name: 'Yuki',     emoji: '⛩️', greeting: '안녕하세요! 일본 가이드 유키입니다. 무엇이든 물어보세요.' },
-  '도쿄':       { name: 'Yuki',     emoji: '🗼', greeting: '안녕하세요! 도쿄 로컬 유키입니다. 뭐든 도움드릴게요!' },
-  '프랑스':     { name: 'Sophie',   emoji: '🗼', greeting: 'Bonjour! 파리 현지인 Sophie예요. 뭐든 물어보세요~' },
-  '이탈리아':   { name: 'Marco',    emoji: '🏛️', greeting: 'Ciao! 이탈리아 가이드 Marco입니다. 뭐든 알려드려요!' },
-  '스페인':     { name: 'Isabella', emoji: '💃', greeting: '¡Hola! 스페인 현지인 Isabella야. 뭐든 물어봐!' },
-  '태국':       { name: 'Nam',      emoji: '🌴', greeting: 'Sawasdee! 태국 가이드 Nam이에요. 무엇이든 물어보세요!' },
-}
-const DEFAULT_PERSONA_FB = { name: 'Trip AI', emoji: '✈️', greeting: '안녕하세요! 여행에 대해 무엇이든 물어보세요!' }
-
-function TravelChatDrawer({ destination }) {
-  const [open, setOpen]       = useState(false)
-  const [msgs, setMsgs]       = useState([])
-  const [input, setInput]     = useState('')
-  const [loading, setLoading] = useState(false)
-  const [apiPersona, setApiPersona] = useState(null)
-  const bottomRef = useRef(null)
-
-  const basePersona = PERSONA_DEFAULTS[destination] || DEFAULT_PERSONA_FB
-  const persona     = apiPersona || basePersona
-
-  const handleToggle = () => {
-    if (!open && msgs.length === 0) {
-      setMsgs([{ role: 'bot', text: basePersona.greeting, isGreeting: true }])
-    }
-    setOpen(v => !v)
-  }
-
-  const send = async () => {
-    if (!input.trim() || loading) return
-    const userText = input.trim()
-    setInput('')
-
-    const next = [...msgs, { role: 'user', text: userText }]
-    setMsgs(next)
-    setLoading(true)
-
-    try {
-      const history = next
-        .slice(0, -1)
-        .filter(m => !m.isGreeting)
-        .map(m => ({
-          role: m.role === 'user' ? 'user' : 'model',
-          parts: [{ text: m.text }],
-        }))
-
-      const res = await apiPost('/ai-travel/chat', { message: userText, history, destination })
-
-      if (res.persona && !apiPersona) setApiPersona(res.persona)
-      setMsgs(prev => [...prev, { role: 'bot', text: res.reply }])
-    } catch {
-      setMsgs(prev => [...prev, { role: 'bot', text: '죄송해요, 잠시 후 다시 시도해주세요.' }])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [msgs, loading])
-
-  return (
-    <>
-      {/* FAB 버튼 */}
-      <button
-        onClick={handleToggle}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all active:scale-95 z-40"
-        style={{ background: open ? '#18181B' : '#2563EB' }}
-        title={open ? '닫기' : `${persona.name}에게 물어보기`}
-      >
-        {open
-          ? <X className="w-5 h-5 text-white" />
-          : <MessageCircle className="w-5 h-5 text-white" />
-        }
-      </button>
-
-      {/* 채팅 드로어 */}
-      {open && (
-        <div
-          className="fixed inset-x-0 bottom-0 z-30 flex flex-col bg-white rounded-t-2xl border-t border-zinc-200"
-          style={{ height: '70vh', maxWidth: '512px', margin: '0 auto', boxShadow: '0 -8px 40px rgba(0,0,0,0.12)' }}
-        >
-          {/* 헤더 */}
-          <div className="flex items-center gap-3 px-5 py-4 border-b border-zinc-100 flex-shrink-0">
-            <div className="w-9 h-9 rounded-full bg-zinc-100 flex items-center justify-center text-xl">{persona.emoji}</div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-zinc-900">{persona.name}</p>
-              <p className="text-xs text-zinc-400">{destination} 현지 가이드</p>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              <span className="text-[10px] text-zinc-400">온라인</span>
-            </div>
-          </div>
-
-          {/* 메시지 목록 */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
-            {msgs.map((m, i) => (
-              <div key={i} className={`flex items-end gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                {m.role === 'bot' && (
-                  <div className="w-7 h-7 rounded-full bg-zinc-100 flex items-center justify-center text-sm flex-shrink-0">{persona.emoji}</div>
-                )}
-                <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
-                  m.role === 'user'
-                    ? 'bg-blue-600 text-white rounded-br-sm'
-                    : 'bg-zinc-100 text-zinc-800 rounded-bl-sm'
-                }`}>
-                  {m.text}
-                </div>
-              </div>
-            ))}
-
-            {/* 타이핑 인디케이터 */}
-            {loading && (
-              <div className="flex items-end gap-2 justify-start">
-                <div className="w-7 h-7 rounded-full bg-zinc-100 flex items-center justify-center text-sm flex-shrink-0">{persona.emoji}</div>
-                <div className="bg-zinc-100 px-4 py-3 rounded-2xl rounded-bl-sm">
-                  <div className="flex gap-1 items-center h-4">
-                    {[0, 1, 2].map(j => (
-                      <div key={j} className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce"
-                        style={{ animationDelay: `${j * 0.15}s` }} />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={bottomRef} />
-          </div>
-
-          {/* 입력창 */}
-          <div className="px-4 py-3 border-t border-zinc-100 flex gap-2 flex-shrink-0">
-            <input
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-              placeholder={`${persona.name}에게 물어보기...`}
-              className="flex-1 h-10 px-4 text-sm bg-zinc-100 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-400 transition-all"
-            />
-            <button
-              onClick={send}
-              disabled={!input.trim() || loading}
-              className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center disabled:opacity-40 hover:bg-blue-700 active:scale-95 transition-all flex-shrink-0"
-            >
-              <Send className="w-4 h-4 text-white" />
-            </button>
-          </div>
-        </div>
-      )}
-    </>
-  )
-}
-
-/* ════════════════════════════════════════════
    RESULT
 ════════════════════════════════════════════ */
 function Result({ info, planData, onReset }) {
-  const [activeDay, setActiveDay] = useState(0)
   const dest = info.country || CONTINENTS.find(c => c.key === info.continent)?.label || '여행'
-  const theme = getDominantTheme(info.styles ?? [])
-  const isAustralia = AUSTRALIA_CITIES.has(info.country || '') || AUSTRALIA_CITIES.has(info.continent || '')
-  const mockPool = isAustralia ? MOCK_AUSTRALIA : MOCK_RESULTS
-  const fallback = mockPool[theme] ?? (isAustralia ? MOCK_AUSTRALIA.nature : MOCK_RESULTS_DEFAULT)
-  const source = planData ?? fallback
-  const days = source.days.slice(0, info.nights + 1)
-  const day = days[activeDay]
-  const diffLabel  = DIFFICULTY_OPTIONS.find(d => d.key === info.difficulty)
-  const budgetLabel = BUDGET_OPTIONS.find(b => b.key === info.budget)
-
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      {/* 상단 트립 카드 */}
-      <div className="px-5 pt-14 pb-6 border-b border-zinc-100">
-        <div className="max-w-lg mx-auto">
-          <div className="flex items-center gap-1.5 mb-4">
-            <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
-              <Check className="w-3 h-3 text-white" strokeWidth={3} />
-            </div>
-            <span className="text-xs font-semibold text-emerald-600">일정이 생성되었습니다</span>
-          </div>
-
-          <div className="flex items-start gap-4 mb-4">
-            <div className="w-14 h-14 rounded-xl bg-zinc-100 flex items-center justify-center text-2xl flex-shrink-0">
-              {CONTINENTS.find(c => c.key === info.continent)?.emoji || '🌍'}
-            </div>
-            <div>
-              <h2 className="text-xl font-black text-zinc-900">{dest} 여행</h2>
-              <p className="text-sm text-zinc-500 mt-0.5">
-                {info.startDate} — {info.endDate} · {info.nights}박 {info.nights + 1}일
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-1.5">
-            <span className="text-[11px] bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded-md font-medium">
-              성인 {info.adults}명{info.children > 0 ? ` · 어린이 ${info.children}명` : ''}
-            </span>
-            {budgetLabel && (
-              <span className="text-[11px] bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded-md font-medium">
-                {budgetLabel.emoji} {budgetLabel.label}
-              </span>
-            )}
-            {diffLabel && (
-              <span className="text-[11px] bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded-md font-medium">
-                {diffLabel.label}
-              </span>
-            )}
-            {info.mustVisit && (
-              <span className="text-[11px] bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md font-medium">
-                📍 {info.mustVisit}
-              </span>
-            )}
-            {info.styles?.slice(0, 3).map(s => (
-              <span key={s} className="text-[11px] bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded-md font-medium">{s}</span>
-            ))}
-          </div>
-
-          <button onClick={onReset} className="mt-4 text-xs text-zinc-400 hover:text-zinc-600 transition-colors underline underline-offset-2">
-            다시 만들기
-          </button>
-        </div>
-      </div>
-
-      {/* 일차 탭 */}
-      <div className="px-5 pt-4 pb-3 flex gap-2 max-w-lg mx-auto w-full border-b border-zinc-100">
-        {days.map((d, i) => (
-          <button key={i} onClick={() => setActiveDay(i)}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-              activeDay === i ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-            }`}>
-            {d.label}
-          </button>
-        ))}
-      </div>
-
-      {/* 타임라인 */}
-      <div className="flex-1 px-5 py-5 max-w-lg mx-auto w-full pb-28">
-        <p className="text-xs font-semibold text-zinc-400 mb-4 uppercase tracking-wider">{day.theme}</p>
-        {day.items.map((item, i) => (
-          <div key={i} className="flex gap-3">
-            <div className="flex flex-col items-center flex-shrink-0 w-9">
-              <div className={`w-2.5 h-2.5 rounded-full mt-3.5 flex-shrink-0 ${
-                item.isMeal ? 'bg-orange-400' : 'bg-zinc-300'
-              }`} />
-              {i < day.items.length - 1 && <div className="w-px flex-1 bg-zinc-100 mt-1" />}
-            </div>
-            <div className={`flex-1 mb-3 rounded-xl p-4 border ${
-              item.isMeal
-                ? 'bg-orange-50 border-orange-100'
-                : 'bg-white border-zinc-100'
-            }`} style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <p className="text-[11px] font-mono text-zinc-400 mb-1">{item.time}</p>
-              <p className={`text-sm font-bold mb-1 ${item.isMeal ? 'text-orange-900' : 'text-zinc-900'}`}>{item.name}</p>
-              <p className="text-xs text-zinc-500 leading-relaxed">{item.note}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* 페르소나 챗봇 */}
+    <>
+      <AiGenerationScheduleView planData={planData} tripInfo={info} onReset={onReset} />
       <TravelChatDrawer destination={dest} />
-    </div>
+    </>
   )
 }
 
@@ -1451,7 +1192,7 @@ export default function AiTravelPage() {
       {view === 'landing'      && <Landing onStart={() => setView('form')} />}
       {view === 'form'         && <TravelFormWizard onSubmit={handleFormSubmit} onBack={() => setView('landing')} />}
       {view === 'group-invite' && <GroupInvite roomCode={roomCode} friends={friends} tripInfo={tripInfo} onProceed={() => setView('loading')} />}
-      {view === 'loading'      && <Loading info={tripInfo} onDone={data => { if (data) setPlanData(data); setView('result') }} />}
+      {view === 'loading'      && <Loading info={tripInfo} onDone={data => { if (data) { setPlanData(data); setView('result') } }} onBack={() => setView('form')} />}
       {view === 'result'       && <Result info={tripInfo} planData={planData} onReset={handleReset} />}
     </div>
   )

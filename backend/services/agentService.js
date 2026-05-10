@@ -46,15 +46,23 @@ async function executeToolCalls(toolCalls) {
   );
 }
 
+const JSON_PROMPT = '지금까지 수집한 정보를 바탕으로 최종 여행 일정을 아래 JSON 형식으로만 반환하세요. 마크다운, 설명 문장, 코드블록 없이 순수 JSON만 출력하세요.\n{"days":[{"label":"1일차","theme":"테마","items":[{"time":"09:00","name":"장소명","note":"설명","isMeal":false}]}]}';
+
 async function resolveFinalText(chat, response) {
   const lastParts = response.response.candidates?.[0]?.content?.parts ?? [];
   const hasToolCall = lastParts.some(part => part.functionCall);
 
-  if (!hasToolCall) return response.response.text();
+  // 툴 호출 없이 텍스트로 끝난 경우
+  if (!hasToolCall) {
+    const text = response.response.text();
+    if (text.includes('{')) return text;
+    // JSON 없으면 명시적으로 재요청
+    const retry = await chat.sendMessage(JSON_PROMPT);
+    return retry.response.text();
+  }
 
-  const fallback = await chat.sendMessage(
-    '지금까지 수집한 정보를 바탕으로 최종 여행 일정 JSON만 반환해 주세요.'
-  );
+  // 툴 호출로 끝난 경우 — JSON 명시 요청
+  const fallback = await chat.sendMessage(JSON_PROMPT);
   return fallback.response.text();
 }
 

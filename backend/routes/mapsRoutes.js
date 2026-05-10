@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { getEmbedUrl } = require('../controllers/mapsController')
+const { getEmbedUrl, getRoute } = require('../controllers/mapsController')
 
 const router = Router()
 
@@ -30,5 +30,6 @@ const router = Router()
  *         $ref: '#/components/responses/Error'
  */
 router.get('/maps/embed-url', getEmbedUrl)
+router.get('/maps/route', getRoute)
 
 module.exports = router
