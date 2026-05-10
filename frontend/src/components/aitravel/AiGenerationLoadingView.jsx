@@ -1,4 +1,64 @@
-export default function AiGenerationLoadingView() {
+import { DEFAULT_TRIP, LOADING_MESSAGES, LOADING_PHASES, STAGE_LABELS } from '../../data/AiGenerationLoading'
+
+function dateText(value) {
+  if (!value) return ''
+  return new Intl.DateTimeFormat('ko-KR', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short',
+  }).format(new Date(value))
+}
+
+function travelerText(trip) {
+  const parts = [`성인 ${trip.adults || 1}명`]
+  if (trip.teens) parts.push(`청소년 ${trip.teens}명`)
+  if (trip.children) parts.push(`어린이 ${trip.children}명`)
+  if (trip.infants) parts.push(`유아 ${trip.infants}명`)
+  return parts.join(' · ')
+}
+
+function listText(items) {
+  return items && items.length ? items.join(', ') : '선택 안 함'
+}
+
+function buildFacts(trip) {
+  const days = Number(trip.nights || 0) + 1
+  return [
+    ['여행 기간', `${dateText(trip.startDate)} ~ ${dateText(trip.endDate)} · ${trip.nights || 0}박 ${days}일`],
+    ['인원', travelerText(trip)],
+    ['예산', trip.budget || '선택 안 함'],
+    ['여행 강도', trip.intensity || '선택 안 함'],
+    ['고정 장소', listText(trip.places)],
+    ['스타일', listText((trip.styles || []).map(style => `#${style}`))],
+  ]
+}
+
+function buildChips(trip) {
+  const days = Number(trip.nights || 0) + 1
+  return [
+    trip.destination,
+    `${trip.nights || 0}박 ${days}일`,
+    travelerText(trip),
+    ...(trip.places || []),
+    ...(trip.styles || []).map(style => `#${style}`),
+  ].filter(Boolean)
+}
+
+export default function AiGenerationLoadingView({
+  trip = DEFAULT_TRIP,
+  progress = 0,
+  messageIndex = 0,
+  isFinishing = false,
+}) {
+  const bounded = Math.min(100, Math.max(0, progress))
+  const activePhase = isFinishing
+    ? LOADING_PHASES[LOADING_PHASES.length - 1]
+    : LOADING_PHASES[Math.min(LOADING_PHASES.length - 1, Math.floor(bounded / 22))]
+  const activeStage = Math.min(STAGE_LABELS.length - 1, Math.floor(bounded / 25))
+  const facts = buildFacts(trip)
+  const chips = buildChips(trip)
+  const loadingMessage = LOADING_MESSAGES[messageIndex % LOADING_MESSAGES.length]
+
   return (
     <div className="ai-generation-loading-page">
       <main className="loading-page">
@@ -19,41 +79,62 @@ export default function AiGenerationLoadingView() {
               </div>
       
               <div className="main-copy">
-                <div className="eyebrow" id="currentPhase">목적지 해석 중</div>
+                <div className="eyebrow">{activePhase}</div>
                 <h1>입력한 조건으로<br />여행 일정을 다듬고 있어요.</h1>
                 <div className="message-wrap" aria-live="polite">
-                  <p className="loading-message" id="loadingMessage"></p>
+                  <p
+                    key={messageIndex}
+                    className="loading-message"
+                    dangerouslySetInnerHTML={{ __html: loadingMessage }}
+                  />
                 </div>
               </div>
       
               <section className="runway" aria-label="생성 진행률">
                 <div className="progress-top">
                   <p className="progress-label">Flight plan generation</p>
-                  <span className="progress-number" id="progressNumber">0%</span>
+                  <span className="progress-number">{Math.round(bounded)}%</span>
                 </div>
                 <div className="track">
-                  <div className="track-fill" id="trackFill"></div>
-                  <div className="plane" id="planeIcon" aria-hidden="true"><span>✈</span></div>
+                  <div className="track-fill" style={{ width: `${bounded}%` }}></div>
+                  <div className="plane" style={{ left: `${bounded}%` }} aria-hidden="true"><span>✈</span></div>
                 </div>
-                <div className="stage-row" id="stageRow"></div>
+                <div className="stage-row">
+                  {STAGE_LABELS.map((label, index) => (
+                    <div key={label} className={`stage-chip ${index <= activeStage ? 'active' : ''}`}>
+                      <span className="stage-dot"></span>
+                      <span>{label}</span>
+                    </div>
+                  ))}
+                </div>
               </section>
             </section>
       
             <aside className="detail-panel">
               <section className="trip-photo">
                 <p>YOUR NEXT TRIP</p>
-                <h2 id="tripTitle">도쿄 여행</h2>
+                <h2>{trip.destination || DEFAULT_TRIP.destination} 여행</h2>
               </section>
       
-              <dl className="fact-list" id="factList"></dl>
+              <dl className="fact-list">
+                {facts.map(([label, value]) => (
+                  <div className="fact" key={label}>
+                    <dt>{label}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
+              </dl>
       
               <section className="insight-box">
-                <p id="insightText">날짜, 여행지, 예산, 취향이 구체적일수록 이동 시간이 줄고 만족도가 높은 일정이 만들어집니다.</p>
+                <p>날짜, 여행지, 예산, 취향이 구체적일수록 이동 시간이 줄고 만족도가 높은 일정이 만들어집니다.</p>
               </section>
       
               <div className="ticker" aria-hidden="true">
-                <div className="ticker-track" id="tickerA"></div>
-                <div className="ticker-track" id="tickerB"></div>
+                {[0, 1].map(index => (
+                  <div className="ticker-track" key={index}>
+                    {chips.map(chip => <span className="mini-chip" key={`${index}-${chip}`}>{chip}</span>)}
+                  </div>
+                ))}
               </div>
             </aside>
           </section>
