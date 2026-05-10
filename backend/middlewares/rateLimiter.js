@@ -47,8 +47,10 @@ const generalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: makeStore('rl:gen:'),
-  handler: (_req, res) =>
-    res.status(429).json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }),
+  handler: (req, res) => {
+    console.warn(`[RateLimit] General limit reached: ${req.ip} -> ${req.originalUrl}`);
+    res.status(429).json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' });
+  },
 });
 
 // AI 엔드포인트
@@ -58,8 +60,10 @@ const aiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: makeStore('rl:ai:'),
-  handler: (_req, res) =>
-    res.status(429).json({ error: 'AI 요청 한도를 초과했습니다. 1분 후 다시 시도해주세요.' }),
+  handler: (req, res) => {
+    console.warn(`[RateLimit] AI limit reached: ${req.ip} -> ${req.originalUrl}`);
+    res.status(429).json({ error: 'AI 요청 한도를 초과했습니다. 1분 후 다시 시도해주세요.' });
+  },
 });
 
 module.exports = { generalLimiter, aiLimiter };

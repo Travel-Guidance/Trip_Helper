@@ -81,27 +81,33 @@ async function fetchRoute(origin, destination) {
   }
 }
 
+let _mapsReadyPromise = null
+
 function loadGoogleMaps() {
-  if (window.google?.maps) return Promise.resolve(window.google.maps)
+  if (window.google?.maps?.Map) return Promise.resolve(window.google.maps)
+  if (_mapsReadyPromise) return _mapsReadyPromise
 
-  const existing = document.getElementById(MAPS_SCRIPT_ID)
-  if (existing) {
-    return new Promise((resolve, reject) => {
-      existing.addEventListener('load', () => resolve(window.google.maps), { once: true })
-      existing.addEventListener('error', reject, { once: true })
-    })
-  }
-
-  return new Promise((resolve, reject) => {
+  _mapsReadyPromise = new Promise((resolve, reject) => {
+    const cbName = '__googleMapsReady__'
+    window[cbName] = () => {
+      delete window[cbName]
+      _mapsReadyPromise = null
+      resolve(window.google.maps)
+    }
     const script = document.createElement('script')
     script.id = MAPS_SCRIPT_ID
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_KEY}&loading=async`
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_KEY}&callback=${cbName}&loading=async`
     script.async = true
     script.defer = true
-    script.onload = () => resolve(window.google.maps)
-    script.onerror = reject
+    script.onerror = () => {
+      delete window[cbName]
+      _mapsReadyPromise = null
+      reject(new Error('Google Maps load failed'))
+    }
     document.head.appendChild(script)
   })
+
+  return _mapsReadyPromise
 }
 
 function pointFromItem(item) {
@@ -117,23 +123,23 @@ function clearMapOverlays(markersRef, polylineRef) {
   if (polylineRef.current) polylineRef.current.setMap(null)
 }
 
+function clearSpiderOverlays(spiderRef) {
+  if (!spiderRef.current) return
+  spiderRef.current.spiderMarkers.forEach(m => m.setMap(null))
+  spiderRef.current.spiderLines.forEach(l => l.setMap(null))
+  spiderRef.current = null
+}
+
 function spreadOverlappingPoints(points) {
   const seen = new Map()
-
   return points.map(point => {
     const key = `${point.lat.toFixed(5)},${point.lng.toFixed(5)}`
     const count = seen.get(key) || 0
     seen.set(key, count + 1)
-
     if (!count) return point
-
     const angle = count * 1.8
     const distance = 0.00018 * Math.ceil(count / 2)
-    return {
-      ...point,
-      lat: point.lat + Math.sin(angle) * distance,
-      lng: point.lng + Math.cos(angle) * distance,
-    }
+    return { ...point, lat: point.lat + Math.sin(angle) * distance, lng: point.lng + Math.cos(angle) * distance }
   })
 }
 
@@ -144,7 +150,6 @@ function markerIcon(maps, index) {
       <text x="21" y="27" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="800" fill="#ffffff">${index + 1}</text>
     </svg>
   `
-
   return {
     url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
     scaledSize: new maps.Size(32, 42),
@@ -152,33 +157,137 @@ function markerIcon(maps, index) {
   }
 }
 
-function drawRoute({ maps, map, points, markersRef, polylineRef }) {
-  clearMapOverlays(markersRef, polylineRef)
+function clusterIcon(maps, count) {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+      <circle cx="20" cy="20" r="18" fill="#ef4444" stroke="#fff" stroke-width="3"/>
+      <circle cx="20" cy="20" r="13" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+      <text x="20" y="25" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="800" fill="#fff">${count}</text>
+    </svg>
+  `
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new maps.Size(40, 40),
+    anchor: new maps.Point(20, 20),
+  }
+}
 
-  const bounds = new maps.LatLngBounds()
-  const displayPoints = spreadOverlappingPoints(points)
-  const path = displayPoints.map(point => {
-    const position = { lat: point.lat, lng: point.lng }
-    bounds.extend(position)
-    return position
+function computeClusters(map, points, threshold = 30) {
+  const proj = map.getProjection()
+  const scale = proj ? Math.pow(2, map.getZoom()) : 0
+  const toPixel = (lat, lng) => {
+    if (!proj) return { x: 0, y: 0 }
+    const p = proj.fromLatLngToPoint(new window.google.maps.LatLng(lat, lng))
+    return { x: p.x * scale, y: p.y * scale }
+  }
+
+  const px = points.map(p => toPixel(p.lat, p.lng))
+  const assigned = new Array(points.length).fill(false)
+  const clusters = []
+
+  for (let i = 0; i < points.length; i++) {
+    if (assigned[i]) continue
+    const members = [{ point: points[i], idx: i }]
+    assigned[i] = true
+
+    if (proj) {
+      for (let j = i + 1; j < points.length; j++) {
+        if (assigned[j]) continue
+        if (Math.hypot(px[i].x - px[j].x, px[i].y - px[j].y) <= threshold) {
+          members.push({ point: points[j], idx: j })
+          assigned[j] = true
+        }
+      }
+    }
+
+    const centroid = {
+      lat: members.reduce((s, m) => s + m.point.lat, 0) / members.length,
+      lng: members.reduce((s, m) => s + m.point.lng, 0) / members.length,
+    }
+    clusters.push({ centroid, members })
+  }
+
+  return clusters
+}
+
+function drawMarkersForClusters(maps, map, clusters, markersRef, spiderRef) {
+  markersRef.current.forEach(m => m.setMap(null))
+  markersRef.current = []
+
+  clusters.forEach(cluster => {
+    let marker
+    if (cluster.members.length === 1) {
+      const { point, idx } = cluster.members[0]
+      marker = new maps.Marker({
+        position: { lat: point.lat, lng: point.lng },
+        map,
+        icon: markerIcon(maps, idx),
+        title: point.title,
+      })
+    } else {
+      marker = new maps.Marker({
+        position: cluster.centroid,
+        map,
+        icon: clusterIcon(maps, cluster.members.length),
+        title: cluster.members.map(m => m.point.title).join(' · '),
+        zIndex: 5,
+      })
+      marker.addListener('click', () => {
+        const key = cluster.members.map(m => m.idx).sort().join(',')
+        if (spiderRef.current?.key === key) {
+          clearSpiderOverlays(spiderRef)
+        } else {
+          const group = cluster.members.map(m => ({ ...m.point, index: m.idx }))
+          openSpider(maps, map, cluster.centroid, group, key, spiderRef)
+        }
+      })
+    }
+    markersRef.current.push(marker)
+  })
+}
+
+function openSpider(maps, map, center, group, key, spiderRef) {
+  clearSpiderOverlays(spiderRef)
+  const count = group.length
+  const zoom = map.getZoom() || 13
+
+  // 줌레벨에 관계없이 화면에서 항상 ~70px 거리로 펼침
+  const metersPerPx = 156543.03392 * Math.cos(center.lat * Math.PI / 180) / Math.pow(2, zoom)
+  const spread = Math.max(0.001, (70 * metersPerPx) / 111319)
+
+  // 부채꼴: 150° 호를 위쪽(북) 방향으로 펼침
+  const FAN_ANGLE = (5 / 6) * Math.PI   // 150°
+  const FAN_CENTER = Math.PI / 2         // 북쪽(위)
+  const angleStart = FAN_CENTER - FAN_ANGLE / 2
+  const angleStep = count > 1 ? FAN_ANGLE / (count - 1) : 0
+
+  const spiderLines = []
+  const spiderMarkers = []
+
+  group.forEach((point, i) => {
+    const angle = count === 1 ? FAN_CENTER : angleStart + angleStep * i
+    const pos = {
+      lat: center.lat + spread * Math.sin(angle),
+      lng: center.lng + spread * Math.cos(angle),
+    }
+    spiderLines.push(new maps.Polyline({
+      path: [center, pos],
+      map,
+      strokeColor: '#64748b',
+      strokeOpacity: 0.6,
+      strokeWeight: 2,
+      zIndex: 5,
+    }))
+    spiderMarkers.push(new maps.Marker({
+      position: pos,
+      map,
+      icon: markerIcon(maps, point.index),
+      title: `${point.title} (${point.time})`,
+      zIndex: 20,
+    }))
   })
 
-  markersRef.current = displayPoints.map((point, index) => new maps.Marker({
-    position: { lat: point.lat, lng: point.lng },
-    map,
-    icon: markerIcon(maps, index),
-    title: point.title,
-  }))
-
-  polylineRef.current = new maps.Polyline({
-    path,
-    map,
-    strokeColor: '#0099ff',
-    strokeOpacity: 0.86,
-    strokeWeight: 4,
-  })
-
-  map.fitBounds(bounds)
+  spiderRef.current = { key, spiderMarkers, spiderLines }
 }
 
 async function geocodePlace(query) {
@@ -207,6 +316,9 @@ function RouteMap({ currentDay, activeDay, dest }) {
   const mapRef = useRef(null)
   const markersRef = useRef([])
   const polylineRef = useRef(null)
+  const spiderRef = useRef(null)
+  const mapClickListenerRef = useRef(null)
+  const idleListenerRef = useRef(null)
   const [useFallback, setUseFallback] = useState(false)
   const items = useMemo(() => currentDay?.items ?? [], [currentDay])
   const fallbackSrc = useMemo(() => buildPlaceSrc(items, dest), [items, dest])
@@ -253,7 +365,38 @@ function RouteMap({ currentDay, activeDay, dest }) {
           })
         }
 
-        drawRoute({ maps, map: mapRef.current, points, markersRef, polylineRef })
+        const map = mapRef.current
+
+        // 겹친 마커 제거 후 폴리라인 그리기
+        clearMapOverlays(markersRef, polylineRef)
+        clearSpiderOverlays(spiderRef)
+
+        const spreadPoints = spreadOverlappingPoints(points)
+        const bounds = new maps.LatLngBounds()
+        spreadPoints.forEach(p => bounds.extend({ lat: p.lat, lng: p.lng }))
+
+        polylineRef.current = new maps.Polyline({
+          path: spreadPoints.map(p => ({ lat: p.lat, lng: p.lng })),
+          map,
+          strokeColor: '#0099ff',
+          strokeOpacity: 0.86,
+          strokeWeight: 4,
+        })
+
+        // 지도 클릭 → 스파이더 닫기
+        if (mapClickListenerRef.current) maps.event.removeListener(mapClickListenerRef.current)
+        mapClickListenerRef.current = map.addListener('click', () => clearSpiderOverlays(spiderRef))
+
+        // idle 이벤트 → 줌 변경마다 클러스터 재계산
+        if (idleListenerRef.current) maps.event.removeListener(idleListenerRef.current)
+        idleListenerRef.current = map.addListener('idle', () => {
+          if (cancelled) return
+          clearSpiderOverlays(spiderRef)
+          const clusters = computeClusters(map, points)
+          drawMarkersForClusters(maps, map, clusters, markersRef, spiderRef)
+        })
+
+        map.fitBounds(bounds)
       })
       .catch(() => {
         if (!cancelled) setUseFallback(true)
@@ -264,6 +407,12 @@ function RouteMap({ currentDay, activeDay, dest }) {
 
   useEffect(() => () => {
     clearMapOverlays(markersRef, polylineRef)
+    clearSpiderOverlays(spiderRef)
+    if (window.google?.maps) {
+      if (mapClickListenerRef.current) window.google.maps.event.removeListener(mapClickListenerRef.current)
+      if (idleListenerRef.current) window.google.maps.event.removeListener(idleListenerRef.current)
+    }
+    mapRef.current = null
   }, [])
 
   if (useFallback && fallbackSrc) {
