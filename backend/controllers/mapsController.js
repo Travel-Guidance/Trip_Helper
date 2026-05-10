@@ -1,5 +1,6 @@
 const { requireEnv } = require('../utils/env')
 const { createError } = require('../utils/errors')
+const { geocodePlace } = require('../services/geocodeService')
 
 const getEmbedUrl = (req, res, next) => {
   try {
@@ -78,4 +79,18 @@ const getRoute = async (req, res, next) => {
   }
 }
 
-module.exports = { getEmbedUrl, getRoute }
+const geocode = async (req, res, next) => {
+  try {
+    const query = String(req.query.query || '').trim()
+    if (!query) throw createError('좌표를 찾을 장소명이 필요합니다.', 400)
+
+    const result = await geocodePlace(query)
+    if (!result) return res.json({ found: false })
+
+    res.json({ found: true, ...result })
+  } catch (err) {
+    next(err)
+  }
+}
+
+module.exports = { getEmbedUrl, getRoute, geocode }

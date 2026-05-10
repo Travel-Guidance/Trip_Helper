@@ -616,6 +616,11 @@
       background: linear-gradient(#dbeafe, #e0f2fe);
     }
 
+    .ai-generation-schedule-page .route-map-canvas {
+      width: 100%;
+      height: 100%;
+    }
+
     .ai-generation-schedule-page .map-fallback {
       height: 100%;
       display: grid;

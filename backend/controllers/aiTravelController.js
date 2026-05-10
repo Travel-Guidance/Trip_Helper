@@ -2,12 +2,14 @@
 
 const { chat } = require('../services/geminiService');
 const { buildPersonaSystem, getPersona } = require('../domains/aiTravel/persona');
+const { enrichPlanWithCoordinates } = require('../services/geocodeService');
 
 async function generatePlan(req, res, next) {
   try {
     const ragService = require('../services/ragService');
     const plan = await ragService.generateTravelPlan(req.body);
-    res.json({ success: true, data: plan });
+    const data = await enrichPlanWithCoordinates(plan, req.body);
+    res.json({ success: true, data });
   } catch (err) {
     next(err);
   }

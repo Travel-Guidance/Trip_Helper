@@ -12,6 +12,8 @@ const DEMO_PLAN = {
       name: node.title,
       note: node.body,
       isMeal: node.kind === 'meal',
+      lat: node.lat,
+      lng: node.lng,
     })),
   })),
 }

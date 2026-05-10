@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import '../../styles/AiGenerationSchedule.css'
 import { apiGet } from '../../api/apiClient'
 
 const MAPS_KEY = 'AIzaSyDaVmYg-OdmcaT1qDjLA-J-n5-df0XyWSw'
+const MAPS_SCRIPT_ID = 'google-maps-js-api'
 
 const DESTINATION_IMAGES = {
   '시드니':    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1800&q=88',
@@ -80,6 +81,207 @@ async function fetchRoute(origin, destination) {
   }
 }
 
+function loadGoogleMaps() {
+  if (window.google?.maps) return Promise.resolve(window.google.maps)
+
+  const existing = document.getElementById(MAPS_SCRIPT_ID)
+  if (existing) {
+    return new Promise((resolve, reject) => {
+      existing.addEventListener('load', () => resolve(window.google.maps), { once: true })
+      existing.addEventListener('error', reject, { once: true })
+    })
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.id = MAPS_SCRIPT_ID
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_KEY}&loading=async`
+    script.async = true
+    script.defer = true
+    script.onload = () => resolve(window.google.maps)
+    script.onerror = reject
+    document.head.appendChild(script)
+  })
+}
+
+function pointFromItem(item) {
+  const lat = Number(item?.lat)
+  const lng = Number(item?.lng)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+  return { lat, lng, title: item.name, time: item.time }
+}
+
+function clearMapOverlays(markersRef, polylineRef) {
+  markersRef.current.forEach(marker => marker.setMap(null))
+  markersRef.current = []
+  if (polylineRef.current) polylineRef.current.setMap(null)
+}
+
+function spreadOverlappingPoints(points) {
+  const seen = new Map()
+
+  return points.map(point => {
+    const key = `${point.lat.toFixed(5)},${point.lng.toFixed(5)}`
+    const count = seen.get(key) || 0
+    seen.set(key, count + 1)
+
+    if (!count) return point
+
+    const angle = count * 1.8
+    const distance = 0.00018 * Math.ceil(count / 2)
+    return {
+      ...point,
+      lat: point.lat + Math.sin(angle) * distance,
+      lng: point.lng + Math.cos(angle) * distance,
+    }
+  })
+}
+
+function markerIcon(maps, index) {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 42 54">
+      <path d="M21 2C10.5 2 2 10.5 2 21c0 14.7 19 31 19 31s19-16.3 19-31C40 10.5 31.5 2 21 2Z" fill="#ef4444" stroke="#ffffff" stroke-width="3"/>
+      <text x="21" y="27" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="800" fill="#ffffff">${index + 1}</text>
+    </svg>
+  `
+
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new maps.Size(32, 42),
+    anchor: new maps.Point(16, 40),
+  }
+}
+
+function drawRoute({ maps, map, points, markersRef, polylineRef }) {
+  clearMapOverlays(markersRef, polylineRef)
+
+  const bounds = new maps.LatLngBounds()
+  const displayPoints = spreadOverlappingPoints(points)
+  const path = displayPoints.map(point => {
+    const position = { lat: point.lat, lng: point.lng }
+    bounds.extend(position)
+    return position
+  })
+
+  markersRef.current = displayPoints.map((point, index) => new maps.Marker({
+    position: { lat: point.lat, lng: point.lng },
+    map,
+    icon: markerIcon(maps, index),
+    title: point.title,
+  }))
+
+  polylineRef.current = new maps.Polyline({
+    path,
+    map,
+    strokeColor: '#0099ff',
+    strokeOpacity: 0.86,
+    strokeWeight: 4,
+  })
+
+  map.fitBounds(bounds)
+}
+
+async function geocodePlace(query) {
+  try {
+    const data = await apiGet(`/maps/geocode?query=${encodeURIComponent(query)}`)
+    if (!data?.found) return null
+    return { lat: data.lat, lng: data.lng }
+  } catch {
+    return null
+  }
+}
+
+function buildPlaceSrc(items, dest) {
+  if (!items?.length) return null
+  const query = `${items.map(item => item.name).join(', ')}, ${dest}`
+  const params = new URLSearchParams({
+    key: MAPS_KEY,
+    q: query,
+    zoom: '14',
+  })
+  return `https://www.google.com/maps/embed/v1/search?${params}`
+}
+
+function RouteMap({ currentDay, activeDay, dest }) {
+  const mapElRef = useRef(null)
+  const mapRef = useRef(null)
+  const markersRef = useRef([])
+  const polylineRef = useRef(null)
+  const [useFallback, setUseFallback] = useState(false)
+  const items = useMemo(() => currentDay?.items ?? [], [currentDay])
+  const fallbackSrc = useMemo(() => buildPlaceSrc(items, dest), [items, dest])
+
+  useEffect(() => {
+    if (items.length < 2 || !mapElRef.current) return undefined
+
+    let cancelled = false
+    Promise.resolve().then(() => {
+      if (!cancelled) setUseFallback(false)
+    })
+
+    loadGoogleMaps()
+      .then(async maps => {
+        if (cancelled || !mapElRef.current) return
+
+        const fixedPoints = items.map(pointFromItem)
+        let points = fixedPoints.filter(Boolean)
+
+        if (points.length < 2) {
+          const resolved = await Promise.all(items.map(async item => {
+            const point = pointFromItem(item)
+            if (point) return point
+            const position = await geocodePlace(`${item.name}, ${dest}`)
+            return position ? { ...position, title: item.name, time: item.time } : null
+          }))
+          if (cancelled) return
+          points = resolved.filter(Boolean)
+        }
+
+        if (points.length < 2) {
+          setUseFallback(true)
+          return
+        }
+
+        if (!mapRef.current) {
+          mapRef.current = new maps.Map(mapElRef.current, {
+            center: points[0],
+            zoom: 12,
+            mapTypeId: 'roadmap',
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false,
+          })
+        }
+
+        drawRoute({ maps, map: mapRef.current, points, markersRef, polylineRef })
+      })
+      .catch(() => {
+        if (!cancelled) setUseFallback(true)
+      })
+
+    return () => { cancelled = true }
+  }, [items, activeDay, dest])
+
+  useEffect(() => () => {
+    clearMapOverlays(markersRef, polylineRef)
+  }, [])
+
+  if (useFallback && fallbackSrc) {
+    return (
+      <iframe
+        key={fallbackSrc}
+        src={fallbackSrc}
+        style={{ width: '100%', height: '100%', border: 0 }}
+        allowFullScreen
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+      />
+    )
+  }
+
+  return <div className="route-map-canvas" ref={mapElRef} />
+}
+
 export default function AiGenerationScheduleView({ planData, tripInfo, onReset, onTravelDurationClick }) {
   const [activeDay, setActiveDay] = useState(0)
   const [selectedItem, setSelectedItem] = useState(null)
@@ -93,10 +295,12 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
   const bgImage = getBgImage(dest)
 
   useEffect(() => {
-    setRouteInfos([])
     const items = currentDay?.items ?? []
     if (items.length < 2) return
     let cancelled = false
+    Promise.resolve().then(() => {
+      if (!cancelled) setRouteInfos([])
+    })
     const pairs = items.slice(0, -1).map((item, i) => [
       item.name + ', ' + dest,
       items[i + 1].name + ', ' + dest,
@@ -106,14 +310,6 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
     })
     return () => { cancelled = true }
   }, [activeDay, currentDay, dest])
-
-  const mapSrc = useMemo(() => {
-    if (!currentDay?.items?.length) return null
-    const q = encodeURIComponent(
-      currentDay.items.map(i => i.name).join(', ') + ', ' + dest
-    )
-    return `https://www.google.com/maps/embed/v1/search?key=${MAPS_KEY}&q=${q}&zoom=13`
-  }, [currentDay, dest])
 
   return (
     <div className="ai-generation-schedule-page">
@@ -256,18 +452,7 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
           <aside className="panel map-shell">
             <h3>{activeDay + 1}일차 Google Maps 동선</h3>
             <div className="map">
-              {mapSrc ? (
-                <iframe
-                  key={mapSrc}
-                  src={mapSrc}
-                  style={{ width: '100%', height: '100%', border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              ) : (
-                <div className="map-fallback">지도를 불러오는 중...</div>
-              )}
+              <RouteMap currentDay={currentDay} activeDay={activeDay} dest={dest} />
             </div>
             <ul className="map-focus">
               {currentDay?.items?.map((item, i) => (
