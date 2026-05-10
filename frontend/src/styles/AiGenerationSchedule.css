@@ -282,6 +282,76 @@
       font-size: 11px;
     }
 
+    .ai-generation-schedule-page .accom-card {
+      margin-top: 14px;
+    }
+
+    .ai-generation-schedule-page .accom-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .ai-generation-schedule-page .accom-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.86);
+    }
+
+    .ai-generation-schedule-page .accom-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .ai-generation-schedule-page .accom-name {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ai-generation-schedule-page .accom-location {
+      margin: 0;
+      font-size: 11px;
+      color: #74829a;
+      font-weight: 700;
+    }
+
+    .ai-generation-schedule-page .accom-dates {
+      margin: 0;
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .ai-generation-schedule-page .accom-book-btn {
+      flex-shrink: 0;
+      padding: 7px 14px;
+      border-radius: 10px;
+      background: #1e293b;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    .ai-generation-schedule-page .accom-book-btn:hover {
+      background: #334155;
+    }
+
     .ai-generation-schedule-page .workspace {
       max-width: 1440px;
       display: grid;

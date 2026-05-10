@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import '../../styles/AiGenerationSchedule.css'
 import { apiGet } from '../../api/apiClient'
 
@@ -432,6 +433,7 @@ function RouteMap({ currentDay, activeDay, dest }) {
 }
 
 export default function AiGenerationScheduleView({ planData, tripInfo, onReset, onTravelDurationClick }) {
+  const navigate = useNavigate()
   const [activeDay, setActiveDay] = useState(0)
   const [selectedItem, setSelectedItem] = useState(null)
   const [routeInfos, setRouteInfos] = useState([])
@@ -518,6 +520,31 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
               ))}
             </ul>
           </aside>
+
+          {planData?.accommodations?.length > 0 && (
+            <aside className="intel-card accom-card">
+              <h2>숙소 정보</h2>
+              <div className="accom-list">
+                {planData.accommodations.map((acc, i) => (
+                  <div key={i} className="accom-item">
+                    <div className="accom-info">
+                      <p className="accom-name">🏨 {acc.name}</p>
+                      <p className="accom-location">{acc.location}</p>
+                      {acc.checkIn && acc.checkOut && (
+                        <p className="accom-dates">{acc.checkIn} ~ {acc.checkOut}</p>
+                      )}
+                    </div>
+                    <button
+                      className="accom-book-btn"
+                      onClick={() => navigate(`/accommodation?destination=${encodeURIComponent(acc.searchQuery || acc.location)}&checkIn=${acc.checkIn || ''}&checkOut=${acc.checkOut || ''}`)}
+                    >
+                      예약하러 가기
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </aside>
+          )}
         </section>
 
         <main className="workspace">

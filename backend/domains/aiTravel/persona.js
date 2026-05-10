@@ -6,7 +6,7 @@ const PERSONA_MAP = {
   멜버른: { name: 'Matey', emoji: '☕', greeting: 'G\'day! 멜버른 커피와 골목 여행까지 알려줄게.' },
   골드코스트: { name: 'Matey', emoji: '🏄', greeting: 'No worries! 골드코스트 여행 팁을 알려줄게.' },
   케언즈: { name: 'Matey', emoji: '🐠', greeting: 'G\'day! 그레이트 배리어 리프 여행을 도와줄게.' },
-  울룰루: { name: 'Matey', emoji: '🏜️', greeting: 'No worries! 울룰루 여행 궁금한 걸 물어봐.' },
+  울루루: { name: 'Matey', emoji: '🏜️', greeting: 'No worries! 울루루 여행 궁금한 걸 물어봐.' },
   브리즈번: { name: 'Matey', emoji: '🌿', greeting: 'G\'day! 브리즈번 로컬 여행 팁을 알려줄게.' },
   퍼스: { name: 'Matey', emoji: '🌊', greeting: 'G\'day! 퍼스 여행을 실용적으로 도와줄게.' },
   애들레이드: { name: 'Matey', emoji: '🍷', greeting: 'G\'day! 애들레이드 와인과 근교 여행을 알려줄게.' },

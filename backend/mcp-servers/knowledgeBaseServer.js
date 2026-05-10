@@ -16,16 +16,22 @@ server.tool(
   'searchKnowledgeBase',
   'Search the Qdrant travel knowledge base by semantic query, city, and category.',
   {
-    query: z.string().describe('Search query, for example "Sydney seafood restaurants".'),
-    city: z.string().optional().describe('Optional city filter, for example "시드니" or "Sydney".'),
-    category: z.string().optional().describe('Optional category filter, for example "food" or "activity".'),
+    query:     z.string().describe('Search query, for example "Sydney seafood restaurants".'),
+    city:      z.string().optional().describe('Optional city filter, for example "시드니" or "Sydney".'),
+    category:  z.string().optional().describe('Optional category filter, for example "food" or "activity".'),
+    lat:       z.number().optional().describe('Latitude of the day\'s accommodation for proximity filtering.'),
+    lon:       z.number().optional().describe('Longitude of the day\'s accommodation for proximity filtering.'),
+    radiusKm:  z.number().optional().describe('Search radius in km around the accommodation (default 30).'),
   },
-  async ({ query, city, category }) => {
+  async ({ query, city, category, lat, lon, radiusKm }) => {
     try {
       const results = await searchKnowledge(query, {
-        city: city || null,
+        city:     city || null,
         category: category || null,
-        limit: 5,
+        limit:    5,
+        lat:      lat ?? null,
+        lon:      lon ?? null,
+        radiusKm: radiusKm ?? undefined,
       });
 
       return {
