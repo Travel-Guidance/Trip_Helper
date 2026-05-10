@@ -6,6 +6,30 @@ import { apiGet } from '../../api/apiClient'
 const MAPS_KEY = 'AIzaSyDaVmYg-OdmcaT1qDjLA-J-n5-df0XyWSw'
 const MAPS_SCRIPT_ID = 'google-maps-js-api'
 
+const CITY_COUNTRY_CODE = {
+  호주: 'AU', 시드니: 'AU', 멜버른: 'AU', 골드코스트: 'AU',
+  케언즈: 'AU', 울루루: 'AU', 브리즈번: 'AU', 퍼스: 'AU', 애들레이드: 'AU',
+  일본: 'JP', 도쿄: 'JP', 오사카: 'JP', 교토: 'JP', 후쿠오카: 'JP',
+  태국: 'TH', 방콕: 'TH', 치앙마이: 'TH', 푸켓: 'TH',
+  프랑스: 'FR', 파리: 'FR',
+  이탈리아: 'IT', 로마: 'IT', 밀라노: 'IT',
+  스페인: 'ES', 바르셀로나: 'ES', 마드리드: 'ES',
+  인도네시아: 'ID', 발리: 'ID',
+  싱가포르: 'SG',
+  미국: 'US', 뉴욕: 'US',
+  영국: 'GB', 런던: 'GB',
+  베트남: 'VN', 호치민: 'VN', 하노이: 'VN',
+  뉴질랜드: 'NZ',
+}
+
+function resolveCountryCode(location, fallback) {
+  if (!location) return CITY_COUNTRY_CODE[fallback] || ''
+  for (const [key, code] of Object.entries(CITY_COUNTRY_CODE)) {
+    if (location.includes(key)) return code
+  }
+  return CITY_COUNTRY_CODE[fallback] || ''
+}
+
 const DESTINATION_IMAGES = {
   '시드니':    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1800&q=88',
   '멜버른':    'https://images.unsplash.com/photo-1545044846-351ba102b6d5?auto=format&fit=crop&w=1800&q=88',
@@ -73,6 +97,143 @@ function ItemModal({ item, dest, onClose }) {
 const MODE_ICON = { transit: '🚌', driving: '🚗', walking: '🚶', bicycling: '🚲' }
 const MODE_LABEL = { transit: '대중교통', driving: '자동차', walking: '도보', bicycling: '자전거' }
 
+function parseMinutes(timeStr) {
+  if (!timeStr) return null
+  const [h, m] = timeStr.split(':').map(Number)
+  return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : null
+}
+
+function routeDurationMinutes(routeInfo) {
+  if (!routeInfo?.found) return null
+  // durationSeconds 우선, 없으면 한국어 텍스트 파싱 ("5시간 53분", "30분" 등)
+  if (routeInfo.durationSeconds) return routeInfo.durationSeconds / 60
+  const text = routeInfo.duration || ''
+  const h = text.match(/(\d+)\s*시간/)
+  const m = text.match(/(\d+)\s*분/)
+  const mins = (h ? parseInt(h[1]) * 60 : 0) + (m ? parseInt(m[1]) : 0)
+  return mins || null
+}
+
+function minsToTime(mins) {
+  if (mins == null) return null
+  const total = Math.round(mins)
+  const h = Math.floor(total / 60) % 24
+  const m = total % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+// routeInfos 기반으로 각 항목의 실제 도착 시간 재계산
+// null routeInfo(아웃라이어 건너뜀) = 원래 AI 시간 유지
+function buildAdjustedTimes(items, routeInfos) {
+  if (!items.length || !routeInfos.length) return items.map(it => it.time)
+  const MIN_STAY  = 30
+  const MIDNIGHT  = 24 * 60  // 1440분
+
+  const result = [parseMinutes(items[0].time)]
+
+  for (let i = 0; i < items.length - 1; i++) {
+    const prev = result[i]
+    if (prev == null) { result.push(parseMinutes(items[i + 1].time)); continue }
+
+    const info = routeInfos[i]
+    if (info === null) { result.push(parseMinutes(items[i + 1].time)); continue }
+
+    const travelMins = routeDurationMinutes(info) ?? 0
+    const origGap    = (parseMinutes(items[i + 1].time) ?? 0) - parseMinutes(items[i].time)
+    const stayMins   = Math.max(MIN_STAY, (origGap > 0 ? origGap : 90) - travelMins)
+    result.push(prev + stayMins + travelMins)
+  }
+
+  // 마지막 항목이 자정을 넘으면 전체 시간을 비례 압축
+  const last = result[result.length - 1]
+  if (last != null && last >= MIDNIGHT) {
+    const first = result[0] ?? 0
+    const span  = last - first
+    const cap   = MIDNIGHT - 1 - first  // 23:59까지
+    result.forEach((t, i) => {
+      if (t != null && i > 0) result[i] = Math.round(first + (t - first) * cap / span)
+    })
+  }
+
+  return result.map(minsToTime)
+}
+
+function itemToRoutePoint(item, dest) {
+  const lat = Number(item?.lat)
+  const lng = Number(item?.lng)
+  // 좌표가 있으면 "lat,lng" 형식으로 넘겨 지오코딩 오류를 방지
+  if (Number.isFinite(lat) && Number.isFinite(lng)) return `${lat},${lng}`
+  return `${item.name}, ${dest}`
+}
+
+function normalizeHotelCoordinates(coords) {
+  if (!coords) return null
+  const lat = Number(coords.lat ?? coords.latitude)
+  const lng = Number(coords.lng ?? coords.longitude)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+  return { lat, lng }
+}
+
+function parseDate(value) {
+  if (!value) return null
+  const date = new Date(`${value}T00:00:00`)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function addDays(dateValue, days) {
+  const date = parseDate(dateValue)
+  if (!date) return ''
+  date.setDate(date.getDate() + days)
+  return date.toISOString().slice(0, 10)
+}
+
+function readStoredStayBookings() {
+  if (typeof window === 'undefined') return []
+  try {
+    const many = JSON.parse(sessionStorage.getItem('stay_bookings') || '[]')
+    if (Array.isArray(many) && many.length) return many
+  } catch {}
+
+  try {
+    const one = JSON.parse(sessionStorage.getItem('stay_booking') || 'null')
+    return one ? [one] : []
+  } catch {
+    return []
+  }
+}
+
+function bookingCoversDate(booking, date) {
+  if (!date) return true
+  const checkIn = booking?.check_in || booking?.checkIn
+  const checkOut = booking?.check_out || booking?.checkOut
+  if (!checkIn || !checkOut) return true
+  return date >= checkIn && date < checkOut
+}
+
+function hotelPointFromBooking(booking, dest) {
+  const hotel = booking?.hotel || {}
+  const coordinates = normalizeHotelCoordinates(hotel.coordinates || booking?.coordinates)
+  const name = hotel.name || booking?.hotelName || '숙소'
+  const location = hotel.location || booking?.location || dest
+
+  return {
+    time: '08:30',
+    name,
+    note: `${location} 기준 동선`,
+    isHotel: true,
+    ...(coordinates || {}),
+  }
+}
+
+function buildRouteItemsWithHotel(items, hotelPoint) {
+  if (!hotelPoint || !items.length) return items
+  return [
+    { ...hotelPoint, time: items[0]?.time || '08:30', name: `${hotelPoint.name} 출발` },
+    ...items,
+    { ...hotelPoint, time: '22:00', name: `${hotelPoint.name} 복귀` },
+  ]
+}
+
 async function fetchRoute(origin, destination) {
   try {
     const params = new URLSearchParams({ origin, destination, mode: 'transit' })
@@ -129,6 +290,20 @@ function clearSpiderOverlays(spiderRef) {
   spiderRef.current.spiderMarkers.forEach(m => m.setMap(null))
   spiderRef.current.spiderLines.forEach(l => l.setMap(null))
   spiderRef.current = null
+}
+
+function filterOutliers(points) {
+  if (points.length < 3) return points
+  const centerLat = points.reduce((s, p) => s + p.lat, 0) / points.length
+  const centerLng = points.reduce((s, p) => s + p.lng, 0) / points.length
+  const distKm = (p) => {
+    const dlat = (p.lat - centerLat) * 111
+    const dlng = (p.lng - centerLng) * 111 * Math.cos(centerLat * Math.PI / 180)
+    return Math.sqrt(dlat * dlat + dlng * dlng)
+  }
+  // 중심에서 150km 초과 좌표는 AI가 잘못 생성한 것으로 간주해 제거
+  const filtered = points.filter(p => distKm(p) < 150)
+  return filtered.length >= 2 ? filtered : points
 }
 
 function spreadOverlappingPoints(points) {
@@ -312,7 +487,7 @@ function buildPlaceSrc(items, dest) {
   return `https://www.google.com/maps/embed/v1/search?${params}`
 }
 
-function RouteMap({ currentDay, activeDay, dest }) {
+function RouteMap({ routeItems, activeDay, dest }) {
   const mapElRef = useRef(null)
   const mapRef = useRef(null)
   const markersRef = useRef([])
@@ -321,7 +496,7 @@ function RouteMap({ currentDay, activeDay, dest }) {
   const mapClickListenerRef = useRef(null)
   const idleListenerRef = useRef(null)
   const [useFallback, setUseFallback] = useState(false)
-  const items = useMemo(() => currentDay?.items ?? [], [currentDay])
+  const items = useMemo(() => routeItems ?? [], [routeItems])
   const fallbackSrc = useMemo(() => buildPlaceSrc(items, dest), [items, dest])
 
   useEffect(() => {
@@ -337,7 +512,7 @@ function RouteMap({ currentDay, activeDay, dest }) {
         if (cancelled || !mapElRef.current) return
 
         const fixedPoints = items.map(pointFromItem)
-        let points = fixedPoints.filter(Boolean)
+        let points = filterOutliers(fixedPoints.filter(Boolean))
 
         if (points.length < 2) {
           const resolved = await Promise.all(items.map(async item => {
@@ -347,7 +522,7 @@ function RouteMap({ currentDay, activeDay, dest }) {
             return position ? { ...position, title: item.name, time: item.time } : null
           }))
           if (cancelled) return
-          points = resolved.filter(Boolean)
+          points = filterOutliers(resolved.filter(Boolean))
         }
 
         if (points.length < 2) {
@@ -444,23 +619,69 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
   const totalPlaces = days.reduce((sum, d) => sum + (d.items?.length ?? 0), 0)
   const mealCount = days.reduce((sum, d) => sum + (d.items?.filter(i => i.isMeal).length ?? 0), 0)
   const bgImage = getBgImage(dest)
+  const currentItems = currentDay?.items ?? []
+  const activeStayBooking = useMemo(() => {
+    const date = addDays(tripInfo?.startDate, activeDay)
+    return readStoredStayBookings().find(booking => bookingCoversDate(booking, date)) || null
+  }, [activeDay, tripInfo?.startDate])
+  const activeHotelPoint = useMemo(
+    () => activeStayBooking ? hotelPointFromBooking(activeStayBooking, dest) : null,
+    [activeStayBooking, dest]
+  )
+  const routeItems = useMemo(
+    () => buildRouteItemsWithHotel(currentItems, activeHotelPoint),
+    [currentItems, activeHotelPoint]
+  )
+  const hasHotelRoute = routeItems.length > currentItems.length
+  const placeRouteInfos = hasHotelRoute
+    ? routeInfos.slice(1, Math.max(1, currentItems.length))
+    : routeInfos
+
+  const adjustedTimes = useMemo(
+    () => buildAdjustedTimes(currentItems, placeRouteInfos),
+    [currentItems, placeRouteInfos]
+  )
 
   useEffect(() => {
-    const items = currentDay?.items ?? []
+    const items = routeItems
     if (items.length < 2) return
     let cancelled = false
     Promise.resolve().then(() => {
       if (!cancelled) setRouteInfos([])
     })
-    const pairs = items.slice(0, -1).map((item, i) => [
-      item.name + ', ' + dest,
-      items[i + 1].name + ', ' + dest,
-    ])
-    Promise.all(pairs.map(([o, d]) => fetchRoute(o, d))).then(results => {
+
+    // 지도 마커와 동일한 아웃라이어 기준으로 좌표 유효성 판별
+    const rawPoints = items.map(item => {
+      const lat = Number(item?.lat)
+      const lng = Number(item?.lng)
+      return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null
+    })
+    const validOnly = rawPoints.filter(Boolean)
+    const outlierIdx = new Set()
+    if (validOnly.length >= 3) {
+      const cLat = validOnly.reduce((s, p) => s + p.lat, 0) / validOnly.length
+      const cLng = validOnly.reduce((s, p) => s + p.lng, 0) / validOnly.length
+      const distKm = p => {
+        const dlat = (p.lat - cLat) * 111
+        const dlng = (p.lng - cLng) * 111 * Math.cos(cLat * Math.PI / 180)
+        return Math.sqrt(dlat * dlat + dlng * dlng)
+      }
+      rawPoints.forEach((p, i) => { if (!p || distKm(p) >= 150) outlierIdx.add(i) })
+    }
+
+    const pairs = items.slice(0, -1).map((item, i) => {
+      // 두 지점 중 하나라도 아웃라이어면 경로 계산 생략
+      if (outlierIdx.has(i) || outlierIdx.has(i + 1)) return null
+      return [itemToRoutePoint(item, dest), itemToRoutePoint(items[i + 1], dest)]
+    })
+
+    Promise.all(
+      pairs.map(pair => pair ? fetchRoute(pair[0], pair[1]) : Promise.resolve(null))
+    ).then(results => {
       if (!cancelled) setRouteInfos(results)
     })
     return () => { cancelled = true }
-  }, [activeDay, currentDay, dest])
+  }, [activeDay, routeItems, dest])
 
   return (
     <div className="ai-generation-schedule-page">
@@ -536,13 +757,49 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
                     </div>
                     <button
                       className="accom-book-btn"
-                      onClick={() => navigate(`/accommodation?destination=${encodeURIComponent(acc.searchQuery || acc.location)}&checkIn=${acc.checkIn || ''}&checkOut=${acc.checkOut || ''}`)}
+                      onClick={() => {
+                        const countryCode = resolveCountryCode(acc.location, dest)
+                        const params = new URLSearchParams({
+                          countryKey:  acc.location || dest,
+                          countryCode,
+                          destination: acc.searchQuery || acc.location || dest,
+                          checkIn:     acc.checkIn  || '',
+                          checkOut:    acc.checkOut || '',
+                          guests:      String(tripInfo?.adults  || 2),
+                          children:    String(tripInfo?.children || 0),
+                        })
+                        navigate(`/accommodation/results?${params}`)
+                      }}
                     >
                       예약하러 가기
                     </button>
                   </div>
                 ))}
               </div>
+              {planData.accommodations.length > 1 && (
+                <button
+                  className="accom-book-all-btn"
+                  onClick={() => {
+                    const queue = planData.accommodations.map(acc => ({
+                      name:        acc.name,
+                      countryKey:  acc.location || dest,
+                      countryCode: resolveCountryCode(acc.location, dest),
+                      destination: acc.searchQuery || acc.location || dest,
+                      checkIn:     acc.checkIn  || '',
+                      checkOut:    acc.checkOut || '',
+                      guests:      String(tripInfo?.adults  || 2),
+                      children:    String(tripInfo?.children || 0),
+                    }))
+                    sessionStorage.setItem('accom_booking_queue', JSON.stringify(queue))
+                    sessionStorage.setItem('accom_booking_index', '0')
+                    sessionStorage.setItem('accom_return_url', window.location.pathname + window.location.search)
+                    const { name: _n, ...first } = queue[0]
+                    navigate(`/accommodation/results?${new URLSearchParams(first)}`)
+                  }}
+                >
+                  전체 숙소 한번에 예약하기 ({planData.accommodations.length}곳)
+                </button>
+              )}
             </aside>
           )}
         </section>
@@ -582,7 +839,7 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
                   {currentDay.items?.map((item, i) => (
                     <React.Fragment key={i}>
                       <div className="node">
-                        <div className="node-time">{item.time}</div>
+                        <div className="node-time">{adjustedTimes[i] ?? item.time}</div>
                         <div className="node-line">
                           <span className={`node-dot${item.isMeal ? ' meal' : ''}`}></span>
                         </div>
@@ -603,14 +860,14 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
                         <div className="route-connector">
                           <div className="route-connector-line"></div>
                           <div className="route-connector-info">
-                            {routeInfos[i] === undefined ? (
+                            {placeRouteInfos[i] === undefined ? (
                               <span className="route-loading">이동시간 조회 중…</span>
-                            ) : routeInfos[i]?.found ? (
+                            ) : placeRouteInfos[i]?.found ? (
                               <>
-                                <span className="route-mode-icon">{MODE_ICON[routeInfos[i].mode] ?? '🚌'}</span>
-                                <span className="route-duration">{routeInfos[i].duration}</span>
-                                <span className="route-distance">· {routeInfos[i].distance}</span>
-                                <span className="route-mode-label">({MODE_LABEL[routeInfos[i].mode] ?? '이동'})</span>
+                                <span className="route-mode-icon">{MODE_ICON[placeRouteInfos[i].mode] ?? '🚌'}</span>
+                                <span className="route-duration">{placeRouteInfos[i].duration}</span>
+                                <span className="route-distance">· {placeRouteInfos[i].distance}</span>
+                                <span className="route-mode-label">({MODE_LABEL[placeRouteInfos[i].mode] ?? '이동'})</span>
                               </>
                             ) : (
                               <span className="route-loading">이동</span>
@@ -628,10 +885,10 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
           <aside className="panel map-shell">
             <h3>{activeDay + 1}일차 Google Maps 동선</h3>
             <div className="map">
-              <RouteMap currentDay={currentDay} activeDay={activeDay} dest={dest} />
+              <RouteMap routeItems={routeItems} activeDay={activeDay} dest={dest} />
             </div>
             <ul className="map-focus">
-              {currentDay?.items?.map((item, i) => (
+              {routeItems.map((item, i) => (
                 <li key={i} style={{ cursor: 'pointer' }} onClick={() => setSelectedItem(item)}>
                   <b>{i + 1}</b>
                   {item.name}

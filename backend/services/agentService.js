@@ -11,6 +11,7 @@ const {
   normalizePlanParams,
 } = require('../domains/aiTravel/promptBuilder');
 const { extractJsonObject } = require('../domains/aiTravel/responseParser');
+const { withRetry } = require('./geminiService');
 
 async function getRagContext(params) {
   try {
@@ -57,33 +58,36 @@ async function executeToolCalls(toolCalls) {
   );
 }
 
-const JSON_PROMPT = '지금까지 수집한 정보를 바탕으로 최종 여행 일정을 아래 JSON 형식으로만 반환하세요. 마크다운, 설명 문장, 코드블록 없이 순수 JSON만 출력하세요.\n{"accommodations":[{"name":"숙소명","location":"위치","checkIn":"YYYY-MM-DD","checkOut":"YYYY-MM-DD","searchQuery":"검색어"}],"days":[{"label":"1일차","theme":"테마","baseHotel":"숙소명","items":[{"time":"09:00","name":"장소명","note":"설명","isMeal":false}]}]}';
+// chat.sendMessage를 지수 백오프로 감싼 헬퍼
+function safeSend(chatSession, message) {
+  return withRetry(() => chatSession.sendMessage(message));
+}
 
-async function resolveFinalText(chat, response) {
+const JSON_PROMPT = '지금까지 수집한 정보를 바탕으로 최종 여행 일정을 아래 JSON 형식으로만 반환하세요. 마크다운, 설명 문장, 코드블록 없이 순수 JSON만 출력하세요.\n{"accommodations":[{"name":"숙소명","location":"위치","checkIn":"YYYY-MM-DD","checkOut":"YYYY-MM-DD","searchQuery":"검색어"}],"days":[{"label":"1일차","theme":"테마","baseHotel":"숙소명","items":[{"time":"09:00","name":"장소명","note":"설명","isMeal":false,"lat":37.5665,"lng":126.9780}]}]}';
+
+async function resolveFinalText(chatSession, response) {
   const lastParts = response.response.candidates?.[0]?.content?.parts ?? [];
   const toolCallParts = lastParts.filter(part => part.functionCall);
 
-  // 툴 호출 없이 텍스트로 끝난 경우
   if (!toolCallParts.length) {
     const text = response.response.text();
     if (text.includes('{')) return text;
-    const retry = await chat.sendMessage(JSON_PROMPT);
+    const retry = await safeSend(chatSession, JSON_PROMPT);
     return retry.response.text();
   }
 
-  // 툴 호출로 끝난 경우 — 더미 function response로 대화 프로토콜 정상 종료 후 JSON 요청
-  // (tool call 상태에서 텍스트 메시지를 보내면 Gemini가 빈 JSON을 반환하는 문제 방지)
+  // 툴 호출로 끝난 경우 — 더미 functionResponse로 프로토콜 정상 종료 후 JSON 요청
   const dummyResponses = toolCallParts.map(part => ({
     functionResponse: {
       name: part.functionCall.name,
       response: { content: JSON.stringify({ done: true, note: 'Sufficient data collected. Generate the final itinerary now.' }) },
     },
   }));
-  const closedResponse = await chat.sendMessage(dummyResponses);
+  const closedResponse = await safeSend(chatSession, dummyResponses);
   const closedText = closedResponse.response.text();
   if (closedText.includes('{')) return closedText;
 
-  const fallback = await chat.sendMessage(JSON_PROMPT);
+  const fallback = await safeSend(chatSession, JSON_PROMPT);
   return fallback.response.text();
 }
 
@@ -97,18 +101,18 @@ async function runAgent(params) {
     tools: [{ functionDeclarations: toolDefinitions }],
   });
 
-  const chat = model.startChat({ history: [] });
-  let response = await chat.sendMessage(initialPrompt);
+  const chatSession = model.startChat({ history: [] });
+  let response = await safeSend(chatSession, initialPrompt);
 
   for (let iteration = 0; iteration < MAX_AGENT_ITERATIONS; iteration++) {
     const toolCalls = getToolCalls(response);
     if (!toolCalls.length) break;
 
     const toolResults = await executeToolCalls(toolCalls);
-    response = await chat.sendMessage(toolResults);
+    response = await safeSend(chatSession, toolResults);
   }
 
-  const finalText = await resolveFinalText(chat, response);
+  const finalText = await resolveFinalText(chatSession, response);
   console.log('[agentService] finalText preview:', finalText.slice(0, 120));
   const plan = extractJsonObject(finalText);
   if (!Array.isArray(plan.days) || plan.days.length === 0) {

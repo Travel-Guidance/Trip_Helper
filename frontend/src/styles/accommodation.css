@@ -2287,6 +2287,54 @@
   font-weight: 900;
 }
 
+.acc-confirm-queue {
+  width: 100%;
+  margin-top: 20px;
+  background: #f0fdf4;
+  border: 1.5px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.acc-confirm-queue-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #15803d;
+  margin-bottom: 10px;
+}
+
+.acc-confirm-queue-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.acc-confirm-queue-list li {
+  font-size: 14px;
+  color: #374151;
+  padding: 6px 10px;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #d1fae5;
+}
+
+.acc-confirm-next-booking {
+  display: block;
+  width: 100%;
+  margin-top: 0;
+  border: none;
+  border-radius: 8px;
+  background: #16a34a;
+  color: #fff;
+  padding: 16px 38px;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
 .acc-confirm-home,
 .acc-confirm-empty button {
   margin-top: 12px;
@@ -2977,6 +3025,7 @@
   .asr-card-info {
     min-height: 170px;
     padding: 16px;
+
   }
 
   .asr-card-info-bottom {
@@ -2986,6 +3035,102 @@
 
   .asr-price-block {
     min-width: 150px;
+  }
+}
+
+/* ── 예약 대기열 배너 ── */
+.asr-queue-banner {
+  max-width: 1180px;
+  margin: 16px auto 0;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: #fff;
+}
+
+.asr-queue-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.asr-queue-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.asr-queue-name {
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.asr-queue-dots {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.asr-queue-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #475569;
+  transition: background 0.2s;
+}
+
+.asr-queue-dot.done {
+  background: #38bdf8;
+}
+
+.asr-queue-dot.current {
+  background: #fff;
+  box-shadow: 0 0 0 2px #38bdf8;
+}
+
+.asr-queue-next-btn {
+  flex-shrink: 0;
+  padding: 9px 18px;
+  border-radius: 10px;
+  background: #38bdf8;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.asr-queue-next-btn:hover {
+  background: #7dd3fc;
+}
+
+.asr-queue-done-btn {
+  flex-shrink: 0;
+  padding: 9px 18px;
+  border-radius: 10px;
+  background: #22c55e;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .asr-queue-banner {
+    flex-wrap: wrap;
+    margin: 10px 14px 0;
   }
 }
 

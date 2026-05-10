@@ -331,17 +331,18 @@ async function getStayOffers({ hotelId, checkIn, checkOut, guests = 2 }) {
     .filter(Boolean))
 }
 
-async function searchStays({ checkIn, checkOut, guests = 2, country, countryCode }) {
+async function searchStays({ checkIn, checkOut, guests = 2, country, countryCode, destination }) {
   const code = normalizeCountryCode(countryCode || country)
   if (!code) throw createError(`지원하지 않는 여행지입니다: ${countryCode || country}`, 400)
 
-  const cityName = COUNTRY_CITY[code]
+  const cityName = destination || COUNTRY_CITY[code]
   if (!cityName) throw createError(`지원하지 않는 여행지입니다: ${code}`, 400)
 
   const defaults = getDefaultDates()
-  const ci = checkIn || defaults.checkIn
-  const co = checkOut || defaults.checkOut
-  const cacheKey = `search:${code}:${ci}:${co}:${guests}`
+  const today = new Date().toISOString().slice(0, 10)
+  const ci = (checkIn && checkIn >= today) ? checkIn : defaults.checkIn
+  const co = (checkOut && checkOut > ci) ? checkOut : defaults.checkOut
+  const cacheKey = `search:${cityName}:${ci}:${co}:${guests}`
   const cached = getCached(cacheKey)
   if (cached) return cached
 
@@ -380,9 +381,15 @@ async function searchStays({ checkIn, checkOut, guests = 2, country, countryCode
     json.results,
   ].find(Array.isArray) || []
 
+  const seen = new Set()
   return setCached(cacheKey, listings
     .map(card => normalizeHotelCard(card, cityName))
     .filter(Boolean)
+    .filter(hotel => {
+      if (seen.has(hotel.id)) return false
+      seen.add(hotel.id)
+      return true
+    })
     .slice(0, 20))
 }
 
@@ -448,6 +455,7 @@ async function createMockStayBooking({
   email,
   hotelName,
   location,
+  coordinates,
   image,
   totalAmount,
   totalCurrency = 'KRW',
@@ -472,6 +480,7 @@ async function createMockStayBooking({
       id:       String(hotelCode),
       name:     hotelName || '',
       location: location || '',
+      coordinates: coordinates || null,
       image,
     },
     check_in:       checkIn,

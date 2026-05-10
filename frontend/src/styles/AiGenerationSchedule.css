@@ -352,6 +352,24 @@
       background: #334155;
     }
 
+    .ai-generation-schedule-page .accom-book-all-btn {
+      width: 100%;
+      margin-top: 14px;
+      padding: 11px 0;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #0ea5e9, #6366f1);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .ai-generation-schedule-page .accom-book-all-btn:hover {
+      opacity: 0.88;
+    }
+
     .ai-generation-schedule-page .workspace {
       max-width: 1440px;
       display: grid;
