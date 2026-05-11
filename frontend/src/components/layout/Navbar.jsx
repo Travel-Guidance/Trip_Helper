@@ -35,6 +35,14 @@ export default function Navbar() {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [showStartCard, setShowStartCard] = useState(false)
+  const [userName] = useState(() => {
+    const savedName = localStorage.getItem('tripHelperUserName') || ''
+    if (savedName === '카카오 사용자') {
+      localStorage.removeItem('tripHelperUserName')
+      return ''
+    }
+    return savedName
+  })
 
   const openStartCard = () => {
     setOpen(false)
@@ -63,7 +71,7 @@ export default function Navbar() {
               onClick={() => navigate('/login')}
               className="relative text-sm font-medium text-gray-600 px-3 py-1.5 rounded-lg transition-all duration-200 hover:text-gray-900 hover:bg-gray-50 ml-2"
             >
-              로그인
+              {userName || '로그인'}
             </button>
             <button
               onClick={openStartCard}
@@ -90,7 +98,7 @@ export default function Navbar() {
               onClick={() => navigate('/login')}
               className="text-left text-sm font-medium text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              로그인
+              {userName || '로그인'}
             </button>
             <button
               onClick={openStartCard}

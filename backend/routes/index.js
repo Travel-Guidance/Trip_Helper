@@ -9,6 +9,7 @@ const accommodationRoutes = require('./accommodationRoutes');
 const mapsRoutes         = require('./mapsRoutes');
 const tourRoutes         = require('./tourRoutes');
 const aiTravelRoutes     = require('./aiTravelRoutes');
+const authRoutes         = require('./authRoutes');
 
 const router = Router();
 
@@ -21,6 +22,7 @@ router.use(accommodationRoutes);
 router.use(mapsRoutes);
 router.use(tourRoutes);
 router.use(aiTravelRoutes);
+router.use(authRoutes);
 
 module.exports = router;
 

@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Smartphone, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import loginBg from '../assets/login_bg.png'
+import { API_BASE } from '../api/config'
 
 const DESTINATIONS = [
   { emoji: '🏖️', name: '보라카이', top: '12%',  right: '8%',  delay: '0s'   },
@@ -10,6 +11,8 @@ const DESTINATIONS = [
   { emoji: '⛵', name: '산토리니', top: '34%',  left: '4%',   delay: '2.2s' },
   { emoji: '🌊', name: '세부',     bottom: '42%', right: '5%', delay: '0.7s' },
 ]
+
+const KAKAO_AUTH_URL = `${API_BASE}/auth/kakao/start`
 
 function Seagull({ style }) {
   return (
@@ -39,6 +42,8 @@ export default function LoginPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    const userName = email.trim().split('@')[0] || '사용자'
+    localStorage.setItem('tripHelperUserName', userName)
     navigate('/home')
   }
 
@@ -215,7 +220,7 @@ export default function LoginPage() {
             {/* 소셜 버튼 */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
               {/* 카카오 — ocean glass */}
-              <a href="https://kauth.kakao.com/oauth/authorize?client_id=4416539a7e84ede4a15b526950b906a2&redirect_uri=http://localhost:5173/auth/kakao/callback&response_type=code">
+              <a href={KAKAO_AUTH_URL}>
               <button
                 type="button" className="social-btn"
                 style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, background: 'rgba(14,116,144,.13)', border: '1.5px solid rgba(14,116,144,.3)', borderRadius: 12, padding: '11px 0', color: '#0a3d52', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 2px 10px rgba(14,116,144,.12)' }}
