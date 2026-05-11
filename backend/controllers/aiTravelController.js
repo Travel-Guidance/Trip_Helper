@@ -5,6 +5,12 @@ const { buildPersonaSystem, getPersona } = require('../domains/aiTravel/persona'
 const { enrichPlanWithCoordinates } = require('../services/geocodeService');
 const pool = require('../config/database');
 
+function parsePlanData(planData) {
+  if (!planData) return {};
+  if (typeof planData === 'string') return JSON.parse(planData);
+  return planData;
+}
+
 async function generatePlan(req, res, next) {
   try {
     const ragService = require('../services/ragService');
@@ -14,10 +20,11 @@ async function generatePlan(req, res, next) {
     const userId = req.user?.id || null;
     let savedPlanId = null;
     if (userId) {
-      const { destination, nights, budget } = req.body;
+      const { destination, country, dest, continent, nights, budget } = req.body;
+      const destinationName = destination || country || dest || continent || '';
       const [result] = await pool.query(
         'INSERT INTO travel_plans (user_id, destination, plan_data, budget, nights) VALUES (?, ?, ?, ?, ?)',
-        [userId, destination || '', JSON.stringify(data), budget || '', nights || 0]
+        [userId, destinationName, JSON.stringify(data), budget || '', nights || 0]
       );
       savedPlanId = result.insertId;
     }
@@ -48,7 +55,7 @@ async function getPlanById(req, res, next) {
     );
     if (!rows.length) return res.status(404).json({ error: '일정을 찾을 수 없습니다.' });
     const plan = rows[0];
-    res.json({ ...plan, plan_data: JSON.parse(plan.plan_data || '{}') });
+    res.json({ ...plan, plan_data: parsePlanData(plan.plan_data) });
   } catch (err) {
     next(err);
   }

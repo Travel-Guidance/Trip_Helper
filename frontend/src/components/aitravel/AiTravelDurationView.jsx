@@ -31,10 +31,10 @@ export default function AiTravelDurationView() {
           <div className="dest-right">
             <div className="budget-badge">
               <div className="budget-label">예산 소진율</div>
-              <div className="budget-bar"><div className="budget-bar-fill" id="heroGaugeFill" style={{"width": "38%"}}></div></div>
+              <div className="budget-bar"><div className="budget-bar-fill" id="heroGaugeFill" style={{"width": "0%"}}></div></div>
               <div className="budget-nums">
-                <span className="budget-spent" id="heroSpent">₩849,660</span>
-                <span className="budget-total">/ ₩4,704,000</span>
+                <span className="budget-spent" id="heroSpent">₩0</span>
+                <span className="budget-total" id="heroTotal">/ ₩0</span>
               </div>
             </div>
           </div>
@@ -86,25 +86,22 @@ export default function AiTravelDurationView() {
             <div className="sec-head">
               <div>
                 <div className="sec-kicker">Live Budget</div>
-                <h2>지출 초과 → 식당만 재조회</h2>
-                <p className="sec-desc">관광 루트 유지. 현 위치 반경 내에서 예산 맞는 식당 후보만 다시 찾습니다.</p>
+                <h2>실시간 지출 관리</h2>
+                <p className="sec-desc">입력한 지출 금액을 기준으로 전체 예산 소진율과 카테고리별 비중을 계산합니다.</p>
               </div>
               <button className="sec-action-btn primary" data-action="focusBudget">지출 입력</button>
             </div>
             <div className="sec-body">
               <div className="budget-cols">
                 <div className="b-block">
-                  <div className="b-block-title">카테고리 예산</div>
-                  <div className="b-row"><span className="b-icon">🍽</span><span className="b-name">식사</span><div className="b-bar"><div className="b-fill" style={{"width": "82%", "background": "var(--amber)"}}></div></div><span className="b-val">₩361,620/₩441,000</span></div>
-                  <div className="b-row"><span className="b-icon">🚇</span><span className="b-name">교통</span><div className="b-bar"><div className="b-fill" style={{"width": "44%", "background": "var(--blue)"}}></div></div><span className="b-val">₩129,360/₩294,000</span></div>
-                  <div className="b-row"><span className="b-icon">🏛</span><span className="b-name">입장비</span><div className="b-bar"><div className="b-fill" style={{"width": "56%", "background": "var(--green)"}}></div></div><span className="b-val">₩246,960/₩441,000</span></div>
-                  <div className="b-row"><span className="b-icon">🛍</span><span className="b-name">쇼핑</span><div className="b-bar"><div className="b-fill" style={{"width": "38%", "background": "var(--purple)"}}></div></div><span className="b-val">₩111,720/₩294,000</span></div>
+                  <div className="b-block-title">카테고리별 지출 비중</div>
+                  <div id="budgetCategoryRows"></div>
                 </div>
                 <div className="b-block">
                   <div className="b-block-title">실시간 지출 입력</div>
                   <div className="exp-form">
                     <input className="exp-input" id="expName" placeholder="예: El Nacional 점심" aria-label="지출 내역" />
-                    <input className="exp-num" id="expAmt" placeholder="금액(EUR)" aria-label="지출 금액 현지 통화" type="number" inputMode="decimal" />
+                    <input className="exp-num" id="expAmt" placeholder="금액(원)" aria-label="지출 금액" type="number" inputMode="decimal" />
                     <select className="exp-cat-sel" id="expCat" aria-label="지출 카테고리">
                       <option value="meal">식사</option>
                       <option value="transport">교통</option>
@@ -113,10 +110,7 @@ export default function AiTravelDurationView() {
                     </select>
                     <button className="exp-add" id="addExp">+</button>
                   </div>
-                  <div className="exp-log" id="expLog">
-                    <div className="exp-log-item"><div className="exp-log-left"><span className="exp-cat-dot" style={{"background": "var(--amber)"}}></span><span className="exp-log-name">아침 카페</span></div><span className="exp-log-amt">₩17,640</span></div>
-                    <div className="exp-log-item"><div className="exp-log-left"><span className="exp-cat-dot" style={{"background": "var(--blue)"}}></span><span className="exp-log-name">지하철 L5</span></div><span className="exp-log-amt">₩3,528</span></div>
-                  </div>
+                  <div className="exp-log" id="expLog"></div>
                   <div className="meal-reroute-panel" id="mealReroute">
                     <strong>예산 초과 — 식당 대체 후보</strong>
                     <p>현재 루트 480m 이내, 평균 ₩26,460-₩32,340 식당으로만 재조회합니다. 관광 순서는 유지됩니다.</p>

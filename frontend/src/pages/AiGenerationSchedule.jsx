@@ -1,7 +1,9 @@
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { PLAN } from '../data/AiGenerationSchedule'
 import AiGenerationScheduleView from '../components/aitravel/AiGenerationScheduleView'
 import TravelChatDrawer from '../components/aitravel/TravelChatDrawer'
+import { getPlanDetail } from '../api/bookingApi'
 
 const DEMO_PLAN = {
   days: PLAN.map((day, i) => ({
@@ -38,11 +40,48 @@ function readResult() {
 
 export default function AiGenerationSchedule() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const planId = location.state?.planId
   const result = readResult()
+  const [savedResult, setSavedResult] = useState(null)
+  const [loading, setLoading] = useState(Boolean(planId))
+  const [error, setError] = useState('')
 
-  const planData = result?.planData ?? DEMO_PLAN
-  const tripInfo = result?.tripInfo
-    ? { ...result.tripInfo, nights: Number(result.tripInfo.nights) }
+  useEffect(() => {
+    if (!planId) return
+
+    let cancelled = false
+    setLoading(true)
+    setError('')
+
+    getPlanDetail(planId)
+      .then(plan => {
+        if (cancelled) return
+        const nextResult = {
+          planData: plan.plan_data,
+          tripInfo: {
+            country: plan.destination || result?.tripInfo?.country || '',
+            nights: Number(plan.nights) || 0,
+            budget: plan.budget || '',
+          },
+        }
+        setSavedResult(nextResult)
+        sessionStorage.setItem('aiPlanResult', JSON.stringify(nextResult))
+      })
+      .catch(err => {
+        if (!cancelled) setError(err.message || '저장된 일정을 불러오지 못했습니다.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => { cancelled = true }
+  }, [planId])
+
+  const displayResult = savedResult ?? result
+  const planData = displayResult?.planData ?? DEMO_PLAN
+  const tripInfo = displayResult?.tripInfo
+    ? { ...displayResult.tripInfo, nights: Number(displayResult.tripInfo.nights) }
     : DEMO_INFO
 
   function handleReset() {
@@ -53,6 +92,14 @@ export default function AiGenerationSchedule() {
   function handleTravelDuration() {
     sessionStorage.setItem('aiPlanResult', JSON.stringify({ planData, tripInfo }))
     navigate('/ai-travel-duration')
+  }
+
+  if (loading) {
+    return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>일정을 불러오는 중...</div>
+  }
+
+  if (error) {
+    return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>{error}</div>
   }
 
   return (

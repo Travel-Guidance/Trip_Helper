@@ -44,6 +44,7 @@
       max-width: 1320px; margin: 0 auto;
       display: flex; align-items: center; gap: 12px;
       padding: 0 24px; height: 58px;
+      min-width: 0;
     }
     .ai-travel-duration-page .brand {
       display: flex; align-items: center; gap: 8px;
@@ -59,33 +60,56 @@
       font-size: 12px; color: var(--muted); font-weight: 600;
       min-width: 0;
     }
-    .ai-travel-duration-page .topbar-trip strong { color: var(--text); font-weight: 700; }
+    .ai-travel-duration-page .topbar-trip strong {
+      color: var(--text); font-weight: 700;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
     .ai-travel-duration-page #topbarRoute {
+      flex: 1;
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .ai-travel-duration-page .sep { color: var(--dim); }
+    .ai-travel-duration-page .sep { color: var(--dim); flex-shrink: 0; }
     .ai-travel-duration-page .live-pill {
       display: inline-flex; align-items: center; gap: 5px;
       padding: 3px 10px; border-radius: 999px;
       background: rgba(41,171,226,.1); border: 1px solid rgba(41,171,226,.2);
       color: var(--blue); font-size: 11px; font-weight: 700;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
     .ai-travel-duration-page .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); animation: blink 1.6s ease infinite; flex-shrink: 0; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-    .ai-travel-duration-page .topbar-actions { display: flex; align-items: center; gap: 6px; }
+    .ai-travel-duration-page .topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .ai-travel-duration-page .t-btn {
-      display: flex; align-items: center; gap: 5px;
-      padding: 7px 13px; border-radius: 999px; font-size: 12px; font-weight: 700;
-      transition: opacity .15s, transform .12s;
+      min-height: 38px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 0 16px; border-radius: 12px; font-size: 12px; font-weight: 800;
+      background: var(--card);
+      border: 1px solid var(--border2);
+      color: var(--navy);
+      box-shadow: 0 3px 10px rgba(15,39,68,.06);
+      transition: background .15s, border-color .15s, color .15s, box-shadow .15s, transform .12s;
+      white-space: nowrap;
     }
-    .ai-travel-duration-page .t-btn:hover { opacity: .85; transform: translateY(-1px); }
-    .ai-travel-duration-page .t-btn.translate { background: var(--blue-g); color: #fff; box-shadow: 0 4px 14px rgba(41,171,226,.3); }
-    .ai-travel-duration-page .t-btn.map-btn { background: rgba(11,185,122,.1); border: 1px solid rgba(11,185,122,.25); color: var(--green); }
-    .ai-travel-duration-page .t-btn.ghost { background: var(--bg); border: 1px solid var(--border2); color: var(--muted); }
+    .ai-travel-duration-page .t-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(41,171,226,.35);
+      box-shadow: 0 6px 16px rgba(15,39,68,.1);
+    }
+    .ai-travel-duration-page .t-btn.translate { background: #EAF7FD; border-color: rgba(41,171,226,.3); color: var(--blue-d); }
+    .ai-travel-duration-page .t-btn.map-btn { background: #EAFBF5; border-color: rgba(11,185,122,.28); color: var(--green); }
+    .ai-travel-duration-page .t-btn.ghost {
+      width: 44px;
+      padding: 0;
+      background: #FFF7ED;
+      border-color: rgba(245,158,11,.3);
+      color: var(--amber);
+    }
 
     /* ─── HERO STRIP ─── */
     .ai-travel-duration-page .dest-hero {
@@ -466,6 +490,7 @@
     .ai-travel-duration-page .b-bar { flex: 1; height: 5px; border-radius: 999px; background: var(--border); overflow: hidden; }
     .ai-travel-duration-page .b-fill { height: 100%; border-radius: inherit; transition: width .5s ease; }
     .ai-travel-duration-page .b-val { font-family: "JetBrains Mono", monospace; font-size: 10px; font-weight: 700; color: var(--text); white-space: nowrap; }
+    .ai-travel-duration-page .b-empty { padding: 20px 8px; text-align: center; color: var(--muted); font-size: 12px; font-weight: 700; }
     .ai-travel-duration-page .exp-form { display: flex; gap: 5px; margin-top: 4px; }
     .ai-travel-duration-page .exp-input { flex: 1; min-width: 0; padding: 7px 9px; border-radius: 8px; background: var(--card); border: 1px solid var(--border2); color: var(--text); font-size: 11px; }
     .ai-travel-duration-page .exp-input:focus { border-color: var(--blue); outline: none; }
