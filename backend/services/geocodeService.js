@@ -127,7 +127,25 @@ async function enrichPlanWithCoordinates(plan, params = {}) {
     return { ...day, items };
   }));
 
-  return { ...plan, days };
+  const accommodations = Array.isArray(plan.accommodations)
+    ? await Promise.all(plan.accommodations.map(async acc => {
+        if (acc.coordinates) return acc;
+
+        const query = [acc.name, acc.location || destination].filter(Boolean).join(', ');
+        if (!query) return acc;
+
+        if (!cache.has(query)) {
+          cache.set(query, geocodePlace(query, key));
+        }
+
+        const result = await cache.get(query);
+        if (!result) return acc;
+
+        return { ...acc, coordinates: { lat: result.lat, lng: result.lng } };
+      }))
+    : plan.accommodations;
+
+  return { ...plan, days, accommodations };
 }
 
 module.exports = { geocodePlace, enrichPlanWithCoordinates };

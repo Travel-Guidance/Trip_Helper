@@ -57,10 +57,7 @@ function getBgImage(dest) {
 }
 
 function ItemModal({ item, dest, onClose }) {
-  const displayName = displayPlaceName(item.name)
-  const known = knownPlaceCoordinates(item.name)
-  const query = known ? `${known.lat},${known.lng}` : `${displayName}, ${dest}`
-  const mapSrc = `https://www.google.com/maps/embed/v1/search?key=${MAPS_KEY}&q=${encodeURIComponent(query)}&zoom=15`
+  const mapSrc = `https://www.google.com/maps/embed/v1/search?key=${MAPS_KEY}&q=${encodeURIComponent(item.name + ', ' + dest)}&zoom=15`
 
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose() }
@@ -79,7 +76,7 @@ function ItemModal({ item, dest, onClose }) {
           <button className="item-modal-close" onClick={onClose}>✕</button>
         </div>
 
-        <h2 className="item-modal-title">{displayName}</h2>
+        <h2 className="item-modal-title">{item.name}</h2>
         <p className="item-modal-note">{item.note}</p>
 
         <div className="item-modal-map">
@@ -97,8 +94,29 @@ function ItemModal({ item, dest, onClose }) {
   )
 }
 
-const MODE_ICON = { transit: '🚌', driving: '🚗', walking: '🚶', bicycling: '🚲' }
-const MODE_LABEL = { transit: '대중교통', driving: '자동차', walking: '도보', bicycling: '자전거' }
+const MODE_ICON = { transit: '🚌', driving: '🚗', walking: '🚶', bicycling: '🚲', flying: '✈️' }
+const MODE_LABEL = { transit: '대중교통', driving: '자동차', walking: '도보', bicycling: '자전거', flying: '항공' }
+
+// "골드코스트 출발 (항공 2.5시간)" → { found:true, mode:'flying', duration:'2시간 30분', durationSeconds:9000 }
+function extractFlightRouteFromName(name) {
+  const m = String(name || '').match(/항공\s*(\d+(?:\.\d+)?)\s*시간/)
+  if (!m) return null
+  const totalMins = Math.round(parseFloat(m[1]) * 60)
+  const h = Math.floor(totalMins / 60)
+  const min = totalMins % 60
+  const duration = h > 0 ? (min > 0 ? `${h}시간 ${min}분` : `${h}시간`) : `${min}분`
+  return { found: true, mode: 'flying', duration, distance: '', durationSeconds: totalMins * 60 }
+}
+
+// "약 6~7시간", "약 2시간" 등 → 최댓값(분) 반환
+function parseNoteStayMins(note) {
+  if (!note) return null
+  const range = note.match(/(\d+(?:\.\d+)?)\s*~\s*(\d+(?:\.\d+)?)\s*시간/)
+  if (range) return Math.round(parseFloat(range[2]) * 60)
+  const single = note.match(/약?\s*(\d+(?:\.\d+)?)\s*시간/)
+  if (single) return Math.round(parseFloat(single[1]) * 60)
+  return null
+}
 
 function parseMinutes(timeStr) {
   if (!timeStr) return null
@@ -162,40 +180,11 @@ function buildAdjustedTimes(items, routeInfos) {
 }
 
 function itemToRoutePoint(item, dest) {
-  const known = knownPlaceCoordinates(item?.name)
-  if (known) return `${known.lat},${known.lng}`
   const lat = Number(item?.lat)
   const lng = Number(item?.lng)
   // 좌표가 있으면 "lat,lng" 형식으로 넘겨 지오코딩 오류를 방지
   if (Number.isFinite(lat) && Number.isFinite(lng)) return `${lat},${lng}`
   return `${item.name}, ${dest}`
-}
-
-function cleanPlaceName(name) {
-  return String(name || '')
-    .trim()
-    .replace(/\s+(체크인|체크아웃|도착|출발|복귀|방문|관광|구경|산책|탐방)$/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function knownPlaceCoordinates(name) {
-  const text = cleanPlaceName(name).toLowerCase()
-  if (/four seasons hotel sydney|four seasons sydney|199 george st/.test(text)) {
-    return { lat: -33.8615815, lng: 151.2076503 }
-  }
-  if (/달링하버\s*(레스토랑|식당|맛집)|darling harbour\s*(restaurant|dining)/.test(text)) {
-    return { lat: -33.8722257, lng: 151.2020367 }
-  }
-  return null
-}
-
-function displayPlaceName(name) {
-  const text = cleanPlaceName(name).toLowerCase()
-  if (/달링하버\s*(레스토랑|식당|맛집)|darling harbour\s*(restaurant|dining)/.test(text)) {
-    return "Nick's Seafood Restaurant"
-  }
-  return name
 }
 
 function normalizeHotelCoordinates(coords) {
@@ -244,8 +233,8 @@ function bookingCoversDate(booking, date) {
 
 function hotelPointFromBooking(booking, dest) {
   const hotel = booking?.hotel || {}
+  const coordinates = normalizeHotelCoordinates(hotel.coordinates || booking?.coordinates)
   const name = hotel.name || booking?.hotelName || '숙소'
-  const coordinates = knownPlaceCoordinates(name) || normalizeHotelCoordinates(hotel.coordinates || booking?.coordinates)
   const location = hotel.location || booking?.location || dest
 
   return {
@@ -305,12 +294,10 @@ function loadGoogleMaps() {
 }
 
 function pointFromItem(item) {
-  const known = knownPlaceCoordinates(item?.name)
-  if (known) return { ...known, title: displayPlaceName(item.name), time: item.time }
   const lat = Number(item?.lat)
   const lng = Number(item?.lng)
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
-  return { lat, lng, title: displayPlaceName(item.name), time: item.time }
+  return { lat, lng, title: item.name, time: item.time }
 }
 
 function clearMapOverlays(markersRef, polylineRef) {
@@ -367,12 +354,13 @@ function markerIcon(maps, index) {
   }
 }
 
-function clusterIcon(maps, label) {
+function clusterIcon(maps, count) {
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
-      <circle cx="20" cy="20" r="18" fill="#ef4444" stroke="#fff" stroke-width="3"/>
+      <circle cx="20" cy="20" r="18" fill="#475569" stroke="#fff" stroke-width="3"/>
       <circle cx="20" cy="20" r="13" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
-      <text x="20" y="25" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" font-weight="800" fill="#fff">${label}</text>
+      <text x="20" y="17" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" font-weight="700" fill="rgba(255,255,255,0.8)">묶음</text>
+      <text x="20" y="28" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="800" fill="#fff">${count}곳</text>
     </svg>
   `
   return {
@@ -435,12 +423,10 @@ function drawMarkersForClusters(maps, map, clusters, markersRef, spiderRef) {
         title: point.title,
       })
     } else {
-      const orders = cluster.members.map(m => m.idx + 1).sort((a, b) => a - b)
-      const label = `${orders[0]}-${orders[orders.length - 1]}`
       marker = new maps.Marker({
         position: cluster.centroid,
         map,
-        icon: clusterIcon(maps, label),
+        icon: clusterIcon(maps, cluster.members.length),
         title: cluster.members.map(m => m.point.title).join(' · '),
         zIndex: 5,
       })
@@ -532,11 +518,12 @@ function RouteMap({ routeItems, activeDay, dest }) {
   const mapClickListenerRef = useRef(null)
   const idleListenerRef = useRef(null)
   const [useFallback, setUseFallback] = useState(false)
-  const items = useMemo(() => routeItems ?? [], [routeItems])
-  const fallbackSrc = useMemo(() => buildPlaceSrc(items, dest), [items, dest])
+  // 숙소 앵커(isHotel)는 시간 계산용이므로 지도 렌더링에서 제외
+  const spotItems = useMemo(() => (routeItems ?? []).filter(item => !item.isHotel), [routeItems])
+  const fallbackSrc = useMemo(() => buildPlaceSrc(spotItems, dest), [spotItems, dest])
 
   useEffect(() => {
-    if (items.length < 2 || !mapElRef.current) return undefined
+    if (spotItems.length < 2 || !mapElRef.current) return undefined
 
     let cancelled = false
     Promise.resolve().then(() => {
@@ -547,15 +534,15 @@ function RouteMap({ routeItems, activeDay, dest }) {
       .then(async maps => {
         if (cancelled || !mapElRef.current) return
 
-        const fixedPoints = items.map(pointFromItem)
+        const fixedPoints = spotItems.map(pointFromItem)
         let points = filterOutliers(fixedPoints.filter(Boolean))
 
         if (points.length < 2) {
-          const resolved = await Promise.all(items.map(async item => {
+          const resolved = await Promise.all(spotItems.map(async item => {
             const point = pointFromItem(item)
             if (point) return point
-            const position = await geocodePlace(`${displayPlaceName(item.name)}, ${dest}`)
-            return position ? { ...position, title: displayPlaceName(item.name), time: item.time } : null
+            const position = await geocodePlace(`${item.name}, ${dest}`)
+            return position ? { ...position, title: item.name, time: item.time } : null
           }))
           if (cancelled) return
           points = filterOutliers(resolved.filter(Boolean))
@@ -615,7 +602,7 @@ function RouteMap({ routeItems, activeDay, dest }) {
       })
 
     return () => { cancelled = true }
-  }, [items, activeDay, dest])
+  }, [spotItems, activeDay, dest])
 
   useEffect(() => () => {
     clearMapOverlays(markersRef, polylineRef)
@@ -660,10 +647,32 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
     const date = addDays(tripInfo?.startDate, activeDay)
     return readStoredStayBookings().find(booking => bookingCoversDate(booking, date)) || null
   }, [activeDay, tripInfo?.startDate])
-  const activeHotelPoint = useMemo(
-    () => activeStayBooking ? hotelPointFromBooking(activeStayBooking, dest) : null,
-    [activeStayBooking, dest]
-  )
+
+  const activeAiAccom = useMemo(() => {
+    const accoms = planData?.accommodations
+    if (!Array.isArray(accoms) || !accoms.length) return null
+    if (tripInfo?.startDate) {
+      const date = addDays(tripInfo.startDate, activeDay)
+      const match = accoms.find(acc => acc.coordinates && bookingCoversDate(acc, date))
+      if (match) return match
+    }
+    return accoms.find(acc => acc.coordinates) || null
+  }, [activeDay, planData?.accommodations, tripInfo?.startDate])
+
+  const activeHotelPoint = useMemo(() => {
+    if (activeStayBooking) return hotelPointFromBooking(activeStayBooking, dest)
+    if (activeAiAccom?.coordinates) {
+      return {
+        time: '08:30',
+        name: activeAiAccom.name || '숙소',
+        note: `${activeAiAccom.location || dest} 기준 동선`,
+        isHotel: true,
+        lat: activeAiAccom.coordinates.lat,
+        lng: activeAiAccom.coordinates.lng,
+      }
+    }
+    return null
+  }, [activeStayBooking, activeAiAccom, dest])
   const routeItems = useMemo(
     () => buildRouteItemsWithHotel(currentItems, activeHotelPoint),
     [currentItems, activeHotelPoint]
@@ -686,36 +695,16 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
       if (!cancelled) setRouteInfos([])
     })
 
-    // 지도 마커와 동일한 아웃라이어 기준으로 좌표 유효성 판별
-    const rawPoints = items.map(item => {
-      const lat = Number(item?.lat)
-      const lng = Number(item?.lng)
-      return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null
-    })
-    const validOnly = rawPoints.filter(Boolean)
-    const outlierIdx = new Set()
-    if (validOnly.length >= 3) {
-      const cLat = validOnly.reduce((s, p) => s + p.lat, 0) / validOnly.length
-      const cLng = validOnly.reduce((s, p) => s + p.lng, 0) / validOnly.length
-      const distKm = p => {
-        const dlat = (p.lat - cLat) * 111
-        const dlng = (p.lng - cLng) * 111 * Math.cos(cLat * Math.PI / 180)
-        return Math.sqrt(dlat * dlat + dlng * dlng)
-      }
-      rawPoints.forEach((p, i) => { if (!p || distKm(p) >= 150) outlierIdx.add(i) })
-    }
-
-    const pairs = items.slice(0, -1).map((item, i) => {
-      // 두 지점 중 하나라도 아웃라이어면 경로 계산 생략
-      if (outlierIdx.has(i) || outlierIdx.has(i + 1)) return null
-      return [itemToRoutePoint(item, dest), itemToRoutePoint(items[i + 1], dest)]
-    })
-
     Promise.all(
-      pairs.map(pair => pair ? fetchRoute(pair[0], pair[1]) : Promise.resolve(null))
+      items.slice(0, -1).map((item, i) => {
+        // 항목 이름에 명시된 항공 시간이 있으면 API 호출 없이 바로 사용
+        const flightInfo = extractFlightRouteFromName(item.name)
+        if (flightInfo) return Promise.resolve(flightInfo)
+        return fetchRoute(itemToRoutePoint(item, dest), itemToRoutePoint(items[i + 1], dest))
+      })
     ).then(results => {
-      if (!cancelled) setRouteInfos(results)
-    })
+        if (!cancelled) setRouteInfos(results)
+      })
     return () => { cancelled = true }
   }, [activeDay, routeItems, dest])
 
@@ -884,12 +873,22 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
                           onClick={() => setSelectedItem(item)}
                         >
                           <div className="node-top">
-                            <h3>{displayPlaceName(item.name)}</h3>
+                            <h3>{item.name}</h3>
                             <span className={`tag${item.isMeal ? ' meal' : ''}`}>
                               {item.isMeal ? '식사' : '명소'}
                             </span>
                           </div>
                           <p>{item.note}</p>
+                          {parseNoteStayMins(item.note) && (
+                            <span className="stay-duration-badge">
+                              ⏱ 체류 약 {(() => {
+                                const m = parseNoteStayMins(item.note)
+                                const h = Math.floor(m / 60)
+                                const min = m % 60
+                                return h > 0 ? (min > 0 ? `${h}시간 ${min}분` : `${h}시간`) : `${min}분`
+                              })()}
+                            </span>
+                          )}
                         </section>
                       </div>
                       {i < (currentDay.items.length - 1) && (
@@ -924,10 +923,10 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
               <RouteMap routeItems={routeItems} activeDay={activeDay} dest={dest} />
             </div>
             <ul className="map-focus">
-              {routeItems.map((item, i) => (
+              {routeItems.filter(item => !item.isHotel).map((item, i) => (
                 <li key={i} style={{ cursor: 'pointer' }} onClick={() => setSelectedItem(item)}>
                   <b>{i + 1}</b>
-                  {displayPlaceName(item.name)}
+                  {item.name}
                   <span>{item.time}</span>
                 </li>
               ))}

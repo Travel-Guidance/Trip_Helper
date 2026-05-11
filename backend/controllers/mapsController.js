@@ -43,6 +43,45 @@ function simplifyName(name) {
   return english ? english[1] + name.replace(/.*\)/, '') : name
 }
 
+function parseLatLng(str) {
+  const m = String(str).match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/)
+  return m ? { lat: parseFloat(m[1]), lng: parseFloat(m[2]) } : null
+}
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function formatMins(totalMins) {
+  const h = Math.floor(totalMins / 60)
+  const m = totalMins % 60
+  if (h === 0) return `약 ${m}분`
+  return m === 0 ? `약 ${h}시간` : `약 ${h}시간 ${m}분`
+}
+
+function estimateByDistance(km) {
+  if (km < 1.5) {
+    const mins = Math.max(5, Math.round(km * 15))
+    return { found: true, distance: `${Math.round(km * 1000)}m`, duration: formatMins(mins), durationSeconds: mins * 60, mode: 'walking', estimated: true }
+  }
+  if (km < 50) {
+    const mins = Math.round(km * 2 + 5)   // 대중교통 평균 30km/h + 환승 5분
+    return { found: true, distance: `${km.toFixed(1)}km`, duration: formatMins(mins), durationSeconds: mins * 60, mode: 'transit', estimated: true }
+  }
+  if (km < 400) {
+    const mins = Math.round(km / 80 * 60) // 자동차 평균 80km/h
+    return { found: true, distance: `${Math.round(km)}km`, duration: formatMins(mins), durationSeconds: mins * 60, mode: 'driving', estimated: true }
+  }
+  // 장거리 항공편: 800km/h + 공항 수속 2시간
+  const mins = Math.round(km / 800 * 60) + 120
+  return { found: true, distance: `${Math.round(km)}km`, duration: formatMins(mins), durationSeconds: mins * 60, mode: 'flying', estimated: true }
+}
+
 async function queryMatrix(origins, destinations, mode, key) {
   const params = new URLSearchParams({ origins, destinations, mode, key, language: 'ko' })
   const res = await fetch(`https://maps.googleapis.com/maps/api/distancematrix/json?${params}`)
@@ -100,7 +139,22 @@ const getRoute = async (req, res, next) => {
       if (walkEl) { element = walkEl; mode = 'walking' }
     }
 
-    if (!element) return res.json(setCachedRoute(cacheKey, { found: false }))
+    const oCoords = parseLatLng(o)
+    const dCoords = parseLatLng(d)
+
+    // 400km 초과 도로 결과는 실제로 비행이므로 직선거리 기반 항공 추정으로 전환
+    if (element?.distance?.value > 400000 && oCoords && dCoords) {
+      const km = haversineKm(oCoords.lat, oCoords.lng, dCoords.lat, dCoords.lng)
+      return res.json(setCachedRoute(cacheKey, estimateByDistance(km)))
+    }
+
+    if (!element) {
+      if (oCoords && dCoords) {
+        const km = haversineKm(oCoords.lat, oCoords.lng, dCoords.lat, dCoords.lng)
+        return res.json(setCachedRoute(cacheKey, estimateByDistance(km)))
+      }
+      return res.json(setCachedRoute(cacheKey, { found: false }))
+    }
 
     const result = {
       found:           true,
