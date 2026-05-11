@@ -57,8 +57,15 @@
     .ai-travel-duration-page .topbar-trip {
       flex: 1; display: flex; align-items: center; gap: 8px;
       font-size: 12px; color: var(--muted); font-weight: 600;
+      min-width: 0;
     }
     .ai-travel-duration-page .topbar-trip strong { color: var(--text); font-weight: 700; }
+    .ai-travel-duration-page #topbarRoute {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .ai-travel-duration-page .sep { color: var(--dim); }
     .ai-travel-duration-page .live-pill {
       display: inline-flex; align-items: center; gap: 5px;
@@ -164,12 +171,12 @@
     .ai-travel-duration-page .city-row.active .city-duration { background: #fff; color: var(--blue-d); border-color: rgba(41,171,226,.28); }
     .ai-travel-duration-page .city-wx { font-size: 12px; line-height: 1; opacity: .8; }
     .ai-travel-duration-page .city-days {
-      display: none; grid-template-columns: repeat(auto-fit, minmax(36px, 1fr)); gap: 4px;
+      display: none; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 5px;
       padding: 3px 2px 7px 37px;
     }
     .ai-travel-duration-page .city-days.open { display: grid; }
     .ai-travel-duration-page .city-day {
-      min-height: 26px; padding: 3px 5px; border-radius: 8px;
+      min-height: 30px; padding: 4px 6px; border-radius: 9px;
       font-family: "JetBrains Mono", monospace; font-size: 9px; font-weight: 700;
       background: var(--bg); border: 1px solid var(--border); color: var(--muted);
       cursor: pointer; transition: background .12s, color .12s, border-color .12s;
@@ -641,4 +648,3 @@
       .ai-travel-duration-page .tl-transport-rec { justify-content: flex-start; }
     }
   
-

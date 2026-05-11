@@ -57,7 +57,10 @@ function getBgImage(dest) {
 }
 
 function ItemModal({ item, dest, onClose }) {
-  const mapSrc = `https://www.google.com/maps/embed/v1/search?key=${MAPS_KEY}&q=${encodeURIComponent(item.name + ', ' + dest)}&zoom=15`
+  const displayName = displayPlaceName(item.name)
+  const known = knownPlaceCoordinates(item.name)
+  const query = known ? `${known.lat},${known.lng}` : `${displayName}, ${dest}`
+  const mapSrc = `https://www.google.com/maps/embed/v1/search?key=${MAPS_KEY}&q=${encodeURIComponent(query)}&zoom=15`
 
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose() }
@@ -76,7 +79,7 @@ function ItemModal({ item, dest, onClose }) {
           <button className="item-modal-close" onClick={onClose}>✕</button>
         </div>
 
-        <h2 className="item-modal-title">{item.name}</h2>
+        <h2 className="item-modal-title">{displayName}</h2>
         <p className="item-modal-note">{item.note}</p>
 
         <div className="item-modal-map">
@@ -159,11 +162,40 @@ function buildAdjustedTimes(items, routeInfos) {
 }
 
 function itemToRoutePoint(item, dest) {
+  const known = knownPlaceCoordinates(item?.name)
+  if (known) return `${known.lat},${known.lng}`
   const lat = Number(item?.lat)
   const lng = Number(item?.lng)
   // 좌표가 있으면 "lat,lng" 형식으로 넘겨 지오코딩 오류를 방지
   if (Number.isFinite(lat) && Number.isFinite(lng)) return `${lat},${lng}`
   return `${item.name}, ${dest}`
+}
+
+function cleanPlaceName(name) {
+  return String(name || '')
+    .trim()
+    .replace(/\s+(체크인|체크아웃|도착|출발|복귀|방문|관광|구경|산책|탐방)$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function knownPlaceCoordinates(name) {
+  const text = cleanPlaceName(name).toLowerCase()
+  if (/four seasons hotel sydney|four seasons sydney|199 george st/.test(text)) {
+    return { lat: -33.8615815, lng: 151.2076503 }
+  }
+  if (/달링하버\s*(레스토랑|식당|맛집)|darling harbour\s*(restaurant|dining)/.test(text)) {
+    return { lat: -33.8722257, lng: 151.2020367 }
+  }
+  return null
+}
+
+function displayPlaceName(name) {
+  const text = cleanPlaceName(name).toLowerCase()
+  if (/달링하버\s*(레스토랑|식당|맛집)|darling harbour\s*(restaurant|dining)/.test(text)) {
+    return "Nick's Seafood Restaurant"
+  }
+  return name
 }
 
 function normalizeHotelCoordinates(coords) {
@@ -212,8 +244,8 @@ function bookingCoversDate(booking, date) {
 
 function hotelPointFromBooking(booking, dest) {
   const hotel = booking?.hotel || {}
-  const coordinates = normalizeHotelCoordinates(hotel.coordinates || booking?.coordinates)
   const name = hotel.name || booking?.hotelName || '숙소'
+  const coordinates = knownPlaceCoordinates(name) || normalizeHotelCoordinates(hotel.coordinates || booking?.coordinates)
   const location = hotel.location || booking?.location || dest
 
   return {
@@ -273,10 +305,12 @@ function loadGoogleMaps() {
 }
 
 function pointFromItem(item) {
+  const known = knownPlaceCoordinates(item?.name)
+  if (known) return { ...known, title: displayPlaceName(item.name), time: item.time }
   const lat = Number(item?.lat)
   const lng = Number(item?.lng)
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
-  return { lat, lng, title: item.name, time: item.time }
+  return { lat, lng, title: displayPlaceName(item.name), time: item.time }
 }
 
 function clearMapOverlays(markersRef, polylineRef) {
@@ -520,8 +554,8 @@ function RouteMap({ routeItems, activeDay, dest }) {
           const resolved = await Promise.all(items.map(async item => {
             const point = pointFromItem(item)
             if (point) return point
-            const position = await geocodePlace(`${item.name}, ${dest}`)
-            return position ? { ...position, title: item.name, time: item.time } : null
+            const position = await geocodePlace(`${displayPlaceName(item.name)}, ${dest}`)
+            return position ? { ...position, title: displayPlaceName(item.name), time: item.time } : null
           }))
           if (cancelled) return
           points = filterOutliers(resolved.filter(Boolean))
@@ -850,7 +884,7 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
                           onClick={() => setSelectedItem(item)}
                         >
                           <div className="node-top">
-                            <h3>{item.name}</h3>
+                            <h3>{displayPlaceName(item.name)}</h3>
                             <span className={`tag${item.isMeal ? ' meal' : ''}`}>
                               {item.isMeal ? '식사' : '명소'}
                             </span>
@@ -893,7 +927,7 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
               {routeItems.map((item, i) => (
                 <li key={i} style={{ cursor: 'pointer' }} onClick={() => setSelectedItem(item)}>
                   <b>{i + 1}</b>
-                  {item.name}
+                  {displayPlaceName(item.name)}
                   <span>{item.time}</span>
                 </li>
               ))}

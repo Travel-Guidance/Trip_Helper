@@ -1,10 +1,164 @@
-import { CITY_DATA, CITY_GROUPS, EUR_TO_KRW, INITIAL_EXPENSES, SCHEDULE } from '../data/AiTravelDuration'
+import {
+  CITY_DATA as MOCK_CITY_DATA,
+  CITY_GROUPS as MOCK_CITY_GROUPS,
+  EUR_TO_KRW,
+  INITIAL_EXPENSES,
+  SCHEDULE as MOCK_SCHEDULE,
+} from '../data/AiTravelDuration'
 
 /* global google */
 const GOOGLE_MAP_SCRIPT_ID = 'google-maps-travel-duration-script'
 const GOOGLE_MAP_SCRIPT_SRC = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyDaVmYg-OdmcaT1qDjLA-J-n5-df0XyWSw&callback=initMap&loading=async'
 
+function readGeneratedPlanResult() {
+  try {
+    const stored = sessionStorage.getItem('aiPlanResult')
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function kindFromItem(item) {
+  if (item?.isMeal) return 'meal'
+  if (item?.isHotel) return 'rest'
+  return 'spot'
+}
+
+function pointFromGeneratedItem(item, index) {
+  const known = knownPlaceCoordinates(item?.name)
+  if (known) return known
+  const lat = Number(item?.lat)
+  const lng = Number(item?.lng)
+  if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng }
+  return { lat: 37.5665 + index * 0.006, lng: 126.978 + index * 0.006 }
+}
+
+function cleanPlaceName(name) {
+  return String(name || '')
+    .trim()
+    .replace(/\s+(체크인|체크아웃|도착|출발|복귀|방문|관광|구경|산책|탐방)$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function knownPlaceCoordinates(name) {
+  const text = cleanPlaceName(name).toLowerCase()
+  if (/four seasons hotel sydney|four seasons sydney|199 george st/.test(text)) {
+    return { lat: -33.8615815, lng: 151.2076503 }
+  }
+  if (/달링하버\s*(레스토랑|식당|맛집)|darling harbour\s*(restaurant|dining)/.test(text)) {
+    return { lat: -33.8722257, lng: 151.2020367 }
+  }
+  return null
+}
+
+function displayPlaceName(name) {
+  const text = cleanPlaceName(name).toLowerCase()
+  if (/달링하버\s*(레스토랑|식당|맛집)|darling harbour\s*(restaurant|dining)/.test(text)) {
+    return "Nick's Seafood Restaurant"
+  }
+  return name
+}
+
+function heroImageForDestination(destination) {
+  const images = {
+    호주: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1800&q=80',
+    시드니: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1800&q=80',
+    일본: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=1800&q=80',
+    도쿄: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=1800&q=80',
+    오사카: 'https://images.unsplash.com/photo-1590559899731-a382839e5549?auto=format&fit=crop&w=1800&q=80',
+    프랑스: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=1800&q=80',
+    파리: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=1800&q=80',
+    태국: 'https://images.unsplash.com/photo-1508009603885-50cf7c8dd0d5?auto=format&fit=crop&w=1800&q=80',
+    베트남: 'https://images.unsplash.com/photo-1528360983277-13d401cdc186?auto=format&fit=crop&w=1800&q=80',
+  }
+  const found = Object.entries(images).find(([key]) => destination.includes(key))
+  return found?.[1] || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1800&q=80'
+}
+
+function buildGeneratedTravelData() {
+  const result = readGeneratedPlanResult()
+  const days = result?.planData?.days
+  if (!Array.isArray(days) || days.length === 0) return null
+
+  const tripInfo = result?.tripInfo || {}
+  const destination = tripInfo.country || tripInfo.continent || 'AI 여행'
+  const schedule = days.map((day, index) => ({
+    day: index + 1,
+    city: destination,
+    wx: index === 0 ? '☀' : '🌤',
+    base: `generated-${index}`,
+    today: index === 0,
+  }))
+  const cityData = {}
+
+  days.forEach((day, index) => {
+    const stops = (day.items || []).map((item, itemIndex) => {
+      const known = knownPlaceCoordinates(item?.name)
+      return {
+        t: escapeHtml(item.time || (itemIndex === 0 ? '09:00' : '')),
+        name: escapeHtml(displayPlaceName(item.name || `일정 ${itemIndex + 1}`)),
+        badge: escapeHtml(item.isMeal ? '식사' : '명소'),
+        kind: kindFromItem(item),
+        now: index === 0 && itemIndex === 0,
+        desc: escapeHtml(item.note || 'AI가 생성한 여행 일정입니다.'),
+        tags: [item.isMeal ? '식사 포인트' : '방문 포인트'].map(escapeHtml),
+        safety: 'safe',
+        lat: known?.lat ?? Number(item?.lat),
+        lng: known?.lng ?? Number(item?.lng),
+      }
+    })
+
+    cityData[`generated-${index}`] = {
+      title: escapeHtml(day.theme || day.title || `${destination} ${index + 1}일차`),
+      desc: escapeHtml(`${destination} 여행 ${index + 1}일차 일정입니다.`),
+      stops,
+      mapPoints: (day.items || []).map(pointFromGeneratedItem),
+    }
+  })
+
+  return {
+    isGenerated: true,
+    destination,
+    schedule,
+    cityData,
+    cityGroups: [{
+      id: 'generated-trip',
+      name: destination,
+      wx: '✈',
+      range: `Day 1-${days.length}`,
+      indices: days.map((_, index) => index),
+    }],
+    activeIdx: 0,
+    heroTitle: destination,
+    routeText: days.map((day, index) => `${index + 1}일차 ${day.theme || day.title || ''}`.trim()).join(' → '),
+  }
+}
+
 export function initAiTravelDuration() {
+  const travelData = buildGeneratedTravelData() || {
+    isGenerated: false,
+    destination: '스페인',
+    schedule: MOCK_SCHEDULE,
+    cityData: MOCK_CITY_DATA,
+    cityGroups: MOCK_CITY_GROUPS,
+    activeIdx: 3,
+    heroTitle: 'Barcelona',
+    routeText: '바르셀로나 → 마드리드 → 세비야 외 7개 도시',
+  }
+  const schedule = travelData.schedule
+  const cityData = travelData.cityData
+  const cityGroups = travelData.cityGroups
   
   /* ── 도시 그룹 (accordion 단위) ── */
   /* ── 30일 일정 mock ── */
@@ -62,8 +216,28 @@ export function initAiTravelDuration() {
     }
   };
   
+  function syncTripChrome() {
+    const tripTitle = document.getElementById('topbarTripTitle')
+    const route = document.getElementById('topbarRoute')
+    const heroCity = document.getElementById('heroCity')
+    const heroTag1 = document.getElementById('heroTag1')
+    const heroTag2 = document.getElementById('heroTag2')
+
+    if (tripTitle) tripTitle.textContent = `${travelData.destination} 여행`
+    if (route) route.textContent = travelData.routeText
+    if (heroCity) heroCity.textContent = travelData.heroTitle
+    if (heroTag1) heroTag1.innerHTML = `<span class="live-dot"></span> Day ${String(schedule[activeIdx]?.day || 1).padStart(2, '0')} 진행 중`
+    if (heroTag2 && travelData.isGenerated) heroTag2.textContent = 'AI 생성 일정 기반으로 여행을 진행합니다'
+    if (travelData.isGenerated) {
+      const hero = document.querySelector('.ai-travel-duration-page .dest-hero')
+      if (hero) {
+        hero.style.background = `linear-gradient(to bottom, rgba(15,39,68,.08) 0%, rgba(15,39,68,.5) 60%, rgba(15,39,68,.88) 100%), url("${heroImageForDestination(travelData.destination)}") center/cover`
+      }
+    }
+  }
+
   /* ── state ── */
-  let activeIdx = 3; // Day 4 (오늘)
+  let activeIdx = travelData.activeIdx;
   let activeStopIdx = 0;
   let totalSpent = 578;
   const total = 3200;
@@ -89,6 +263,7 @@ export function initAiTravelDuration() {
     activeStopIdx = 0;
     selectedTravelMode = 'WALKING';
     activeTransitStepIdx = null;
+    syncTripChrome();
     renderCityAccordion();
     renderTL();
     refreshMap();
@@ -108,7 +283,7 @@ export function initAiTravelDuration() {
   }
   
   function getModeOptions(stop, i) {
-    const day = SCHEDULE[activeIdx].day;
+    const day = schedule[activeIdx].day;
     const walkLive = routeModeResults[modeResultKey(day, i, 'walk')];
     const taxiLive = routeModeResults[modeResultKey(day, i, 'taxi')];
     const transitLive = routeModeResults[modeResultKey(day, i, 'transit')];
@@ -159,7 +334,7 @@ export function initAiTravelDuration() {
   }
   
   function getTransitDemoOptions(stop, i) {
-    const key = transitPanelKey(SCHEDULE[activeIdx].day, i);
+    const key = transitPanelKey(schedule[activeIdx].day, i);
     const live = transitResults[key];
     if (transitLoadingKey === key) {
       return getModeOptions(stop, i).map(opt => opt.mode === 'transit' ? {
@@ -175,7 +350,7 @@ export function initAiTravelDuration() {
   }
   
   function getTransitDetailOptions(stop, i) {
-    const key = transitPanelKey(SCHEDULE[activeIdx].day, i);
+    const key = transitPanelKey(schedule[activeIdx].day, i);
     const live = transitResults[key];
     if (transitLoadingKey === key) {
       return [
@@ -217,6 +392,7 @@ export function initAiTravelDuration() {
   }
   
   function getMapPoints(base) {
+    if (cityData[base]?.mapPoints?.length) return cityData[base].mapPoints;
     const pts = {
       barcelona:[{lat:41.3932,lng:2.1699},{lat:41.3917,lng:2.1649},{lat:41.3915,lng:2.1686},{lat:41.3852,lng:2.1809},{lat:41.3927,lng:2.1587},{lat:41.3950,lng:2.1702}],
       madrid:[{lat:40.4128,lng:-3.7002},{lat:40.4138,lng:-3.6921},{lat:40.4154,lng:-3.7089},{lat:40.4153,lng:-3.6844},{lat:40.4169,lng:-3.7035}],
@@ -369,7 +545,7 @@ export function initAiTravelDuration() {
   }
   
   function requestSimpleRoute(stopIdx, mode) {
-    const s = SCHEDULE[activeIdx];
+    const s = schedule[activeIdx];
     const key = modeResultKey(s.day, stopIdx, mode);
     const p = getRouteSegment(s.base, stopIdx);
     if (!window.google || !google.maps?.DirectionsService || p.length < 2) return;
@@ -387,7 +563,7 @@ export function initAiTravelDuration() {
   }
   
   function requestTransitRoute(stopIdx) {
-    const s = SCHEDULE[activeIdx];
+    const s = schedule[activeIdx];
     const key = transitPanelKey(s.day, stopIdx);
     const p = getRouteSegment(s.base, stopIdx);
     if (!window.google || !google.maps?.DirectionsService || p.length < 2) {
@@ -432,12 +608,12 @@ export function initAiTravelDuration() {
   
   /* ── 도시 accordion 렌더 ── */
   function renderCityAccordion() {
-    const activeGroup = CITY_GROUPS.find(g => g.indices.includes(activeIdx));
-    const totalDays = SCHEDULE.length;
-    const activeDay = SCHEDULE[activeIdx].day;
+    const activeGroup = cityGroups.find(g => g.indices.includes(activeIdx));
+    const totalDays = schedule.length;
+    const activeDay = schedule[activeIdx].day;
     const progress = Math.round((activeDay / totalDays) * 100);
   
-    const cityHtml = CITY_GROUPS.map((g, gi) => {
+    const cityHtml = cityGroups.map((g, gi) => {
       const isOpen = g === activeGroup;
       const stayDays = g.indices.length;
       return `
@@ -452,7 +628,7 @@ export function initAiTravelDuration() {
           </button>
           <div class="city-days${isOpen ? ' open' : ''}">
             ${g.indices.map(idx => {
-              const s = SCHEDULE[idx];
+              const s = schedule[idx];
               const cls = ['city-day',
                 idx === activeIdx ? 'active' : '',
                 s.done  ? 'done'  : '',
@@ -468,7 +644,7 @@ export function initAiTravelDuration() {
       <div class="city-summary">
         <div class="city-summary-top">
           <div class="city-summary-day">D${String(activeDay).padStart(2,'0')} <span>/ ${totalDays}</span></div>
-          <div class="city-summary-copy">${CITY_GROUPS.length}개 구간</div>
+          <div class="city-summary-copy">${cityGroups.length}개 구간</div>
         </div>
         <div class="city-progress" aria-label="여행 진행률 ${progress}%">
           <div class="city-progress-fill" style="width:${progress}%"></div>
@@ -478,9 +654,9 @@ export function initAiTravelDuration() {
   
     document.querySelectorAll('[data-group]').forEach(btn => {
       btn.addEventListener('click', () => {
-        const g = CITY_GROUPS.find(g => g.id === btn.dataset.group);
+        const g = cityGroups.find(g => g.id === btn.dataset.group);
         if (!g) return;
-        const todayIdx = g.indices.find(i => SCHEDULE[i].today);
+        const todayIdx = g.indices.find(i => schedule[i].today);
         activeIdx = todayIdx !== undefined ? todayIdx : g.indices[0];
         syncDayView();
       });
@@ -496,8 +672,8 @@ export function initAiTravelDuration() {
   }
   
   function renderTL() {
-    const s = SCHEDULE[activeIdx];
-    const d = CITY_DATA[s.base];
+    const s = schedule[activeIdx];
+    const d = cityData[s.base];
     const statusLabel = s.today ? 'LIVE' : s.done ? 'DONE' : 'UPCOMING';
     document.getElementById('tlKicker').textContent = `DAY ${String(s.day).padStart(2,'0')} · ${statusLabel}`;
     document.getElementById('tlTitle').textContent = d.title;
@@ -745,7 +921,7 @@ export function initAiTravelDuration() {
       case 'restore':
         document.querySelectorAll('.reroute-drop').forEach(el => el.classList.remove('open'));
         document.getElementById('mealReroute').classList.remove('open');
-        updateActiveRouteSummary(getDayStops(CITY_DATA[SCHEDULE[activeIdx].base].stops));
+        updateActiveRouteSummary(getDayStops(cityData[schedule[activeIdx].base].stops));
         document.getElementById('toast').classList.remove('show'); break;
       case 'applyMeal':
         document.querySelectorAll('[id^="mrDrop"]').forEach(el => el.classList.remove('open'));
@@ -793,9 +969,9 @@ export function initAiTravelDuration() {
     const input = e.target.closest('[data-stop-expense]');
     if (!input) return;
     const amt = parseFloat(input.value) || 0;
-    const s = SCHEDULE[activeIdx];
+    const s = schedule[activeIdx];
     const stopIdx = parseInt(input.dataset.stopExpense);
-    const stop = CITY_DATA[s.base].stops[stopIdx];
+    const stop = cityData[s.base].stops[stopIdx];
     const key = stopExpenseKey(s.day, stopIdx);
     if (amt <= 0) {
       delete stopExpenses[key];
@@ -823,6 +999,7 @@ export function initAiTravelDuration() {
     if (ac) { handle(ac.dataset.action); return; }
   });
   
+  syncTripChrome();
   renderCityAccordion();
   renderTL();
   renderExp();
@@ -842,8 +1019,8 @@ export function initAiTravelDuration() {
     const el = document.getElementById(targetId);
     if (!el || !window.google) return;
     el.innerHTML = '';
-    const s = SCHEDULE[activeIdx];
-    const activeStop = getDayStops(CITY_DATA[s.base].stops)[activeStopIdx];
+    const s = schedule[activeIdx];
+    const activeStop = getDayStops(cityData[s.base].stops)[activeStopIdx];
     const selectedModeKey = selectedTravelMode === 'TAXI' ? 'taxi' : selectedTravelMode === 'WALKING' ? 'walk' : '';
     const modeRoute = selectedModeKey ? routeModeResults[modeResultKey(s.day, activeStopIdx, selectedModeKey)]?.route : null;
     const transitStep = activeTransitStepIdx !== null ? getTransitDetailOptions(activeStop, activeStopIdx)?.[activeTransitStepIdx]?.route : null;
@@ -929,3 +1106,4 @@ export function initAiTravelDuration() {
     if (window.initMap === initMap) delete window.initMap;
   };
 }
+

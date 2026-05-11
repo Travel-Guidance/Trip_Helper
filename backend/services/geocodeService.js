@@ -14,6 +14,25 @@ function cleanPlaceName(name) {
     .trim();
 }
 
+function knownPlaceCoordinates(query) {
+  const text = cleanPlaceName(query).toLowerCase();
+  if (/four seasons hotel sydney|four seasons sydney|199 george st/.test(text)) {
+    return {
+      lat: -33.8615815,
+      lng: 151.2076503,
+      formattedAddress: '199 George St, The Rocks NSW 2000 Australia',
+    };
+  }
+  if (/달링하버\s*(레스토랑|식당|맛집)|darling harbour\s*(restaurant|dining)/.test(text)) {
+    return {
+      lat: -33.8722257,
+      lng: 151.2020367,
+      formattedAddress: "Nick's Seafood Restaurant, The Promenade, Cockle Bay Wharf, Darling Harbour NSW 2000 Australia",
+    };
+  }
+  return null;
+}
+
 function destinationText(params = {}) {
   return params.country || params.destination || params.dest || params.continent || '';
 }
@@ -44,6 +63,9 @@ function shouldVerifyExistingCoordinates(item) {
 async function geocodePlace(query, key = requireEnv('GOOGLE_MAPS_API_KEY')) {
   const address = String(query || '').trim();
   if (!address) return null;
+
+  const known = knownPlaceCoordinates(address);
+  if (known) return known;
 
   const params = new URLSearchParams({
     address,

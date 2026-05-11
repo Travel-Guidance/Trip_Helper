@@ -6,7 +6,7 @@ export default function AiTravelDurationView() {
         <div className="topbar-in">
           <a className="brand" href="#"><span className="brand-icon">📱</span>폰가이즈</a>
           <div className="topbar-trip">
-            <strong>스페인 한달</strong><span className="sep">›</span>
+            <strong id="topbarTripTitle">스페인 한달</strong><span className="sep">›</span>
             <span id="topbarRoute">바르셀로나 → 마드리드 → 세비야 외 7개 도시</span><span className="sep">·</span>
             <span className="live-pill"><span className="live-dot"></span>Day 04 라이브</span>
           </div>

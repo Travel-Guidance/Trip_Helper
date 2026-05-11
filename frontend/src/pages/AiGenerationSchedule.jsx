@@ -50,13 +50,18 @@ export default function AiGenerationSchedule() {
     navigate('/ai-generation-inputform')
   }
 
+  function handleTravelDuration() {
+    sessionStorage.setItem('aiPlanResult', JSON.stringify({ planData, tripInfo }))
+    navigate('/ai-travel-duration')
+  }
+
   return (
     <>
       <AiGenerationScheduleView
         planData={planData}
         tripInfo={tripInfo}
         onReset={handleReset}
-        onTravelDurationClick={() => navigate('/ai-travel-duration')}
+        onTravelDurationClick={handleTravelDuration}
       />
       <TravelChatDrawer destination={tripInfo.country || tripInfo.continent || ''} />
     </>
