@@ -188,12 +188,14 @@ export default function AiGenerationInputFormView({ openCalendar, setOpenCalenda
                       </div>
                     </section>
                   </div>
-                  <div className="step-actions end">
+                  <div className="step-actions end has-back">
                     <p className="step-warning" id="step1Warning"></p>
                     <div className="collab-help" id="collabHelp" hidden={true}>동시에 여행 계획을 세울 수 있어요.</div>
-                    <button className="step-action collab-action" id="collabPlanBtn" type="button" hidden={true}>함께 계획하기</button>
                     <button className="step-action light" type="button" data-go-step="0">이전</button>
-                    <button className="step-action" type="button" data-go-step="2">예산 선택</button>
+                    <div className="step-action-group">
+                      <button className="step-action collab-action" id="collabPlanBtn" type="button" hidden={true}>함께 계획하기</button>
+                      <button className="step-action" type="button" data-go-step="2">예산 선택</button>
+                    </div>
                   </div>
                 </section>
       

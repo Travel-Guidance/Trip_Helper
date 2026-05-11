@@ -18,6 +18,8 @@ function readDraft(searchParams) {
     // fall through to shared URL params
   }
 
+  const places = searchParams.get('places')
+
   return {
     destination: searchParams.get('destination') || '',
     startDate: searchParams.get('startDate') || '',
@@ -26,6 +28,7 @@ function readDraft(searchParams) {
     teens: Number(searchParams.get('teens') || 0),
     children: Number(searchParams.get('children') || 0),
     infants: Number(searchParams.get('infants') || 0),
+    places: places ? places.split(',').map(place => place.trim()).filter(Boolean) : [],
   }
 }
 
@@ -35,10 +38,20 @@ function buildRoomUrl(roomId, memberCount, draft) {
     const value = draft?.[key]
     if (value !== undefined && value !== null && value !== '') params.set(key, String(value))
   })
+  if (Array.isArray(draft?.places) && draft.places.length) {
+    params.set('places', draft.places.join(','))
+  }
   return `${window.location.origin}/ai-collaboration-planning/${roomId}?${params.toString()}`
 }
 
 const BUDGET_ORDER = ['low', 'mid', 'high']
+
+function intensityToDifficulty(value) {
+  if (value <= 30) return 'relaxed'
+  if (value <= 55) return 'normal'
+  if (value <= 75) return 'active'
+  return 'intense'
+}
 
 function aggregatePreferences(preferences, draft) {
   const budgets = preferences.map(p => p.budget).filter(Boolean)
@@ -47,14 +60,16 @@ function aggregatePreferences(preferences, draft) {
     : 1
   const budget = BUDGET_ORDER[Math.max(0, Math.min(2, avgBudgetIdx))]
 
-  const avgIntensity = preferences.reduce((sum, p) => sum + (p.intensity ?? 50), 0) / preferences.length
-  const difficulty = avgIntensity <= 30 ? 'relaxed'
-    : avgIntensity <= 55 ? 'normal'
-    : avgIntensity <= 75 ? 'active'
-    : 'intense'
+  const avgIntensity = Math.round(
+    preferences.reduce((sum, p) => sum + Number(p.intensity ?? 50), 0) / Math.max(1, preferences.length)
+  )
+  const difficulty = intensityToDifficulty(avgIntensity)
 
   const styles = [...new Set(preferences.flatMap(p => p.styles || []))]
-  const places = [...new Set(preferences.flatMap(p => p.places || []))]
+  const places = [...new Set([
+    ...(Array.isArray(draft.places) ? draft.places : []),
+    ...preferences.flatMap(p => p.places || []),
+  ].map(place => String(place).trim()).filter(Boolean))]
 
   const nights = draft.startDate && draft.endDate
     ? Math.max(0, Math.round((new Date(draft.endDate) - new Date(draft.startDate)) / 86400000))
@@ -69,11 +84,15 @@ function aggregatePreferences(preferences, draft) {
     budget,
     styles,
     difficulty,
+    intensity: `${avgIntensity}/100 평균`,
+    places,
     adults: Number(draft.adults || 0) + Number(draft.teens || 0),
     children: Number(draft.children || 0) + Number(draft.infants || 0),
     mustVisit: places.join(', '),
     hasAccommodation: draft.hasAccommodation ?? null,
     accommodations: draft.accommodations || [],
+    isCollab: true,
+    memberCount: preferences.length,
   }
 }
 
@@ -121,6 +140,7 @@ export default function AiCollaborationPlanning() {
     ? Math.max(0, Math.round((new Date(draft.endDate) - new Date(draft.startDate)) / 86400000))
     : 0
   const completedCount = preferences.filter(p => p.budget && p.styles.length > 0).length
+  const isHost = assignedMemberIndex === 0
 
   const copyRoomUrl = async () => {
     await navigator.clipboard?.writeText(roomUrl)
@@ -177,10 +197,26 @@ export default function AiCollaborationPlanning() {
       if (message.type === 'preference_update' && typeof message.index === 'number' && message.preference) {
         setPreferences(prev => prev.map((item, index) => index === message.index ? message.preference : item))
       }
+
+      if (message.type === 'generation_started' && message.params) {
+        sessionStorage.setItem('aiCollabParams', JSON.stringify(message.params))
+        sessionStorage.setItem('aiCollabRoomId', roomId)
+        sessionStorage.setItem('aiCollabMemberCount', String(memberCount))
+        sessionStorage.setItem('aiCollabIsHost', 'false')
+        navigate('/ai-collab-loading')
+      }
+
+      if (message.type === 'room_state' && message.generationStarted && message.generatedParams) {
+        sessionStorage.setItem('aiCollabParams', JSON.stringify(message.generatedParams))
+        sessionStorage.setItem('aiCollabRoomId', roomId)
+        sessionStorage.setItem('aiCollabMemberCount', String(memberCount))
+        sessionStorage.setItem('aiCollabIsHost', 'false')
+        navigate('/ai-collab-loading')
+      }
     })
 
     return () => socket.close()
-  }, [memberCount, roomId])
+  }, [memberCount, navigate, roomId])
 
   const updatePreference = (index, patch) => {
     if (index !== assignedMemberIndex) return
@@ -227,8 +263,15 @@ export default function AiCollaborationPlanning() {
   }
 
   const handleGeneratePlan = () => {
+    if (!isHost) return
     const params = aggregatePreferences(preferences, draft)
     sessionStorage.setItem('aiCollabParams', JSON.stringify(params))
+    sessionStorage.setItem('aiCollabRoomId', roomId)
+    sessionStorage.setItem('aiCollabMemberCount', String(memberCount))
+    sessionStorage.setItem('aiCollabIsHost', 'true')
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({ type: 'generation_started', params }))
+    }
     navigate('/ai-collab-loading')
   }
 
@@ -516,10 +559,15 @@ export default function AiCollaborationPlanning() {
           <button
             type="button"
             className="collab-create-btn"
-            disabled={completedCount === 0}
+            disabled={!isHost || completedCount === 0}
             onClick={handleGeneratePlan}
+            title={isHost ? undefined : '방장만 AI 일정을 생성할 수 있습니다.'}
           >
-            {completedCount === memberCount ? 'AI 일정 생성하기' : `AI 일정 생성 준비 (${completedCount}/${memberCount}명 완료)`}
+            {!isHost
+              ? '방장이 일정 생성 가능'
+              : completedCount === memberCount
+                ? 'AI 일정 생성하기'
+                : `AI 일정 생성 준비 (${completedCount}/${memberCount}명 완료)`}
           </button>
         </footer>
       </main>

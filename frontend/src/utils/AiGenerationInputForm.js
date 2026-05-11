@@ -458,6 +458,9 @@ export function initAiGenerationInputForm() {
           const value = draft[key];
           if (value !== undefined && value !== null && value !== "") params.set(key, String(value));
         });
+        if (Array.isArray(draft.places) && draft.places.length) {
+          params.set("places", draft.places.join(","));
+        }
         collabRoomUrl = `${location.origin}/ai-collaboration-planning/${roomId}?${params.toString()}`;
         sessionStorage.setItem("aiTripDraft", JSON.stringify(draft));
         sessionStorage.setItem("aiCollabMemberCount", String(members));

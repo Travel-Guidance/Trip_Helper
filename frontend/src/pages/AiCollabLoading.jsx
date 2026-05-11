@@ -11,10 +11,13 @@ const DEFAULT_COLLAB_TRIP = {
   nights: 3,
   budget: 'mid',
   styles: [],
+  intensity: '50/100 평균',
+  places: [],
   adults: 2,
   children: 0,
   startDate: '',
   endDate: '',
+  isCollab: true,
 }
 
 function readCollabParams() {
@@ -30,13 +33,68 @@ function readCollabParams() {
   }
 }
 
+function readSessionFlag(key) {
+  return sessionStorage.getItem(key) === 'true'
+}
+
+function collaborationWsUrl(roomId, memberCount) {
+  const configured = import.meta.env.VITE_WS_BASE || import.meta.env.VITE_API_BASE
+  if (configured) {
+    return `${configured.replace(/^http/, 'ws').replace(/\/$/, '')}/ws/collaboration?roomId=${encodeURIComponent(roomId)}&members=${memberCount}`
+  }
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${window.location.hostname}:3001/ws/collaboration?roomId=${encodeURIComponent(roomId)}&members=${memberCount}`
+}
+
+function sendWhenOpen(socket, payload) {
+  if (!socket) return
+  const message = JSON.stringify(payload)
+  if (socket.readyState === WebSocket.OPEN) {
+    socket.send(message)
+    return
+  }
+  socket.addEventListener('open', () => socket.send(message), { once: true })
+}
+
 export default function AiCollabLoading() {
   const navigate = useNavigate()
   const calledRef = useRef(false)
+  const socketRef = useRef(null)
   const [progress, setProgress] = useState(6)
   const [messageIndex, setMessageIndex] = useState(0)
   const [isFinishing, setIsFinishing] = useState(false)
   const params = useMemo(() => readCollabParams(), [])
+  const roomId = useMemo(() => sessionStorage.getItem('aiCollabRoomId') || '', [])
+  const memberCount = useMemo(() => Number(sessionStorage.getItem('aiCollabMemberCount') || 2), [])
+  const isHost = useMemo(() => readSessionFlag('aiCollabIsHost'), [])
+
+  useEffect(() => {
+    if (!roomId) return undefined
+
+    const socket = new WebSocket(collaborationWsUrl(roomId, memberCount))
+    socketRef.current = socket
+
+    socket.addEventListener('message', event => {
+      let message
+      try {
+        message = JSON.parse(event.data)
+      } catch {
+        return
+      }
+
+      const planData = message.planData || message.generatedPlan
+      const tripInfo = message.params || message.generatedParams || params
+      if ((message.type === 'plan_generated' || message.type === 'room_state') && planData) {
+        sessionStorage.setItem('aiPlanResult', JSON.stringify({ planData, tripInfo }))
+        setIsFinishing(true)
+        setProgress(100)
+        setTimeout(() => navigate('/ai-generation-schedule'), 650)
+      }
+    })
+
+    return () => socket.close()
+  }, [memberCount, navigate, params, roomId])
 
   useEffect(() => {
     const messageTimer = setInterval(() => {
@@ -60,6 +118,7 @@ export default function AiCollabLoading() {
   useEffect(() => {
     if (calledRef.current) return
     calledRef.current = true
+    if (roomId && !isHost) return
 
     let cancelled = false
 
@@ -68,6 +127,7 @@ export default function AiCollabLoading() {
         if (cancelled) return
         if (json?.data) {
           sessionStorage.setItem('aiPlanResult', JSON.stringify({ planData: json.data, tripInfo: params }))
+          sendWhenOpen(socketRef.current, { type: 'plan_generated', planData: json.data, params })
         }
         setIsFinishing(true)
         setProgress(100)
@@ -81,7 +141,7 @@ export default function AiCollabLoading() {
       })
 
     return () => { cancelled = true }
-  }, [navigate, params])
+  }, [isHost, navigate, params, roomId])
 
   return (
     <AiGenerationLoadingView

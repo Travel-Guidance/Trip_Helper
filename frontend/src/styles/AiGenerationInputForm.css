@@ -433,6 +433,17 @@
       justify-content: flex-end;
     }
 
+    .ai-generation-input-form-page .step-actions.has-back {
+      justify-content: space-between;
+    }
+
+    .ai-generation-input-form-page .step-action-group {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
     .ai-generation-input-form-page .step-warning {
       display: none;
       position: absolute;
@@ -500,7 +511,6 @@
     }
 
     .ai-generation-input-form-page .step-action.collab-action {
-      margin-right: auto;
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -534,7 +544,7 @@
 
     .ai-generation-input-form-page .collab-help {
       position: absolute;
-      right: 118px;
+      right: 86px;
       bottom: calc(100% + 12px);
       z-index: 2;
       width: max-content;

@@ -21,25 +21,38 @@ function listText(items) {
   return items && items.length ? items.join(', ') : '선택 안 함'
 }
 
+function placesFromTrip(trip) {
+  if (Array.isArray(trip.places)) return trip.places
+  if (trip.mustVisit) {
+    return String(trip.mustVisit)
+      .split(',')
+      .map(place => place.trim())
+      .filter(Boolean)
+  }
+  return []
+}
+
 function buildFacts(trip) {
   const days = Number(trip.nights || 0) + 1
+  const places = placesFromTrip(trip)
   return [
     ['여행 기간', `${dateText(trip.startDate)} ~ ${dateText(trip.endDate)} · ${trip.nights || 0}박 ${days}일`],
     ['인원', travelerText(trip)],
     ['예산', trip.budget || '선택 안 함'],
-    ['여행 강도', trip.intensity || '선택 안 함'],
-    ['고정 장소', listText(trip.places)],
+    [trip.isCollab ? '평균 여행 강도' : '여행 강도', trip.intensity || '선택 안 함'],
+    ['고정 장소', listText(places)],
     ['스타일', listText((trip.styles || []).map(style => `#${style}`))],
   ]
 }
 
 function buildChips(trip) {
   const days = Number(trip.nights || 0) + 1
+  const places = placesFromTrip(trip)
   return [
     trip.destination,
     `${trip.nights || 0}박 ${days}일`,
     travelerText(trip),
-    ...(trip.places || []),
+    ...places,
     ...(trip.styles || []).map(style => `#${style}`),
   ].filter(Boolean)
 }
@@ -80,7 +93,7 @@ export default function AiGenerationLoadingView({
       
               <div className="main-copy">
                 <div className="eyebrow">{activePhase}</div>
-                <h1>입력한 조건으로<br />여행 일정을 다듬고 있어요.</h1>
+                <h1>{trip.isCollab ? '함께 입력한 취향으로' : '입력한 조건으로'}<br />여행 일정을 다듬고 있어요.</h1>
                 <div className="message-wrap" aria-live="polite">
                   <p
                     key={messageIndex}
