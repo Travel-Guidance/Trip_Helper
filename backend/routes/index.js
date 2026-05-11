@@ -12,9 +12,11 @@ const aiTravelRoutes     = require('./aiTravelRoutes');
 const authRoutes         = require('./authRoutes');
 const bookingRoutes      = require('./bookingRoutes');
 const exchangeRateRoutes = require('./exchangeRateRoutes');
+const healthRoutes       = require('./healthRoutes');
 
 const router = Router();
 
+router.use(healthRoutes);
 router.use(flightRoutes);
 router.use(orderRoutes);
 router.use(seatRoutes);

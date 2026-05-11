@@ -7,6 +7,29 @@ const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio
 const { z } = require('zod');
 const { searchKnowledge } = require('../rag/retrieval');
 
+const CITY_ALIASES = {
+  시드니: '시드니',
+  sydney: '시드니',
+  멜버른: '멜버른',
+  melbourne: '멜버른',
+  골드코스트: '골드코스트',
+  'gold coast': '골드코스트',
+  케언즈: '케언즈',
+  cairns: '케언즈',
+  브리즈번: '브리즈번',
+  brisbane: '브리즈번',
+  퍼스: '퍼스',
+  perth: '퍼스',
+  애들레이드: '애들레이드',
+  adelaide: '애들레이드',
+  울루루: '울루루',
+  uluru: '울루루',
+};
+
+function resolveCityFilter(city) {
+  return CITY_ALIASES[String(city || '').trim().toLowerCase()] || city || null;
+}
+
 const server = new McpServer({
   name: 'knowledge-base-server',
   version: '1.0.0',
@@ -25,8 +48,9 @@ server.tool(
   },
   async ({ query, city, category, lat, lon, radiusKm }) => {
     try {
+      const cityFilter = city ? resolveCityFilter(city) || city : null;
       const results = await searchKnowledge(query, {
-        city:     city || null,
+        city:     cityFilter,
         category: category || null,
         limit:    5,
         lat:      lat ?? null,
@@ -40,6 +64,7 @@ server.tool(
           text: JSON.stringify({
             found: results.length > 0,
             results,
+            city: cityFilter,
             message: results.length ? undefined : 'No related knowledge was found.',
           }),
         }],

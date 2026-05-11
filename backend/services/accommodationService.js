@@ -515,7 +515,7 @@ async function createMockStayBooking({
   }
 
   if (userId) {
-    pool.query(
+    await pool.query(
       `INSERT INTO stay_bookings
          (user_id, booking_reference, hotel_id, hotel_name, location, check_in, check_out, nights, guests, total_amount, total_currency, image_url)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -533,7 +533,7 @@ async function createMockStayBooking({
         bookingCurrency,
         image || null,
       ]
-    ).catch(err => console.error('stay_bookings save error:', err.message))
+    )
   }
 
   return booking

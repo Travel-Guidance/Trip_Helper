@@ -55,7 +55,7 @@ async function createOrder({ offer_id, passengers, services = [], userId = null 
   }
 
   if (userId) {
-    pool.query(
+    await pool.query(
       `INSERT INTO flight_bookings
          (user_id, booking_reference, offer_id, passengers, slices, total_amount, total_currency)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -68,7 +68,7 @@ async function createOrder({ offer_id, passengers, services = [], userId = null 
         orderData.total_amount || null,
         orderData.total_currency || 'USD',
       ]
-    ).catch(err => console.error('flight_bookings save error:', err.message));
+    );
   }
 
   return orderData;

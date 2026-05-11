@@ -23,7 +23,10 @@ async function getRagContext(params) {
     let lon = null;
     if (normalized.accommodations?.length > 0) {
       const coords = resolveCoords(normalized.accommodations[0].location);
-      if (coords) { lat = coords.lat; lon = coords.lon; }
+      if (coords) {
+        lat = coords.lat;
+        lon = coords.lon;
+      }
     }
 
     return retrieveContext(buildRagQuery(normalized), {
@@ -31,9 +34,18 @@ async function getRagContext(params) {
       budget: normalized.budget,
       lat,
       lon,
+      debug: true,
     });
-  } catch {
-    return '';
+  } catch (err) {
+    console.warn(`[RAG] error: ${err.message}`);
+    return {
+      context: '',
+      meta: {
+        enabled: false,
+        reason: 'error',
+        error: err.message,
+      },
+    };
   }
 }
 
@@ -58,12 +70,11 @@ async function executeToolCalls(toolCalls) {
   );
 }
 
-// chat.sendMessage를 지수 백오프로 감싼 헬퍼
 function safeSend(chatSession, message) {
   return withRetry(() => chatSession.sendMessage(message));
 }
 
-const JSON_PROMPT = '지금까지 수집한 정보를 바탕으로 최종 여행 일정을 아래 JSON 형식으로만 반환하세요. 마크다운, 설명 문장, 코드블록 없이 순수 JSON만 출력하세요.\n{"accommodations":[{"name":"숙소명","location":"위치","checkIn":"YYYY-MM-DD","checkOut":"YYYY-MM-DD","searchQuery":"검색어"}],"days":[{"label":"1일차","theme":"테마","baseHotel":"숙소명","items":[{"time":"09:00","name":"장소명","note":"설명","isMeal":false,"lat":37.5665,"lng":126.9780}]}]}';
+const JSON_PROMPT = '지금까지 수집한 정보를 바탕으로 최종 여행 일정을 순수 JSON으로만 반환하세요. 마크다운, 설명 문장, 코드블록은 쓰지 마세요.\n{"accommodations":[{"name":"숙소명","location":"위치","checkIn":"YYYY-MM-DD","checkOut":"YYYY-MM-DD","searchQuery":"검색어"}],"days":[{"label":"1일차","theme":"테마","baseHotel":"숙소명","items":[{"time":"09:00","name":"장소명","note":"설명","isMeal":false,"lat":-33.8568,"lng":151.2153}]}]}';
 
 async function resolveFinalText(chatSession, response) {
   const lastParts = response.response.candidates?.[0]?.content?.parts ?? [];
@@ -76,7 +87,6 @@ async function resolveFinalText(chatSession, response) {
     return retry.response.text();
   }
 
-  // 툴 호출로 끝난 경우 — 더미 functionResponse로 프로토콜 정상 종료 후 JSON 요청
   const dummyResponses = toolCallParts.map(part => ({
     functionResponse: {
       name: part.functionCall.name,
@@ -92,7 +102,9 @@ async function resolveFinalText(chatSession, response) {
 }
 
 async function runAgent(params) {
-  const ragContext = await getRagContext(params);
+  const ragResult = await getRagContext(params);
+  const ragContext = typeof ragResult === 'string' ? ragResult : ragResult.context;
+  const ragDebug = typeof ragResult === 'string' ? null : ragResult.meta;
   const initialPrompt = buildInitialPrompt(params, ragContext);
 
   const model = genAI.getGenerativeModel({
@@ -116,8 +128,9 @@ async function runAgent(params) {
   console.log('[agentService] finalText preview:', finalText.slice(0, 120));
   const plan = extractJsonObject(finalText);
   if (!Array.isArray(plan.days) || plan.days.length === 0) {
-    throw new Error('AI가 일정을 생성하지 못했습니다. 잠시 후 다시 시도해주세요.');
+    throw new Error('AI가 일정을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.');
   }
+  if (ragDebug) plan.ragDebug = ragDebug;
   return plan;
 }
 

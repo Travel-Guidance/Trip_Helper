@@ -11,8 +11,18 @@ const { attachCollaborationSocket } = require('./services/collaborationSocket');
 require('./config/database');
 
 const app = express();
+
+function getAllowedOrigins() {
+  const list = process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:5173';
+  return list.split(',').map(origin => origin.trim()).filter(Boolean);
+}
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin(origin, callback) {
+    if (!origin) return callback(null, true);
+    const allowed = getAllowedOrigins();
+    return callback(null, allowed.includes(origin));
+  },
 }));
 app.use(express.json());
 app.use(morgan('dev'));

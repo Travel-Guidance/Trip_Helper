@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
+    "db:migrate": "node scripts/migrate-db.js",
     "seed:vector": "node scripts/ingest.js --recreate",
     "seed:vector:upsert": "node scripts/ingest.js --upsert-only",
     "seed:vector:dry-run": "node scripts/ingest.js --dry-run",

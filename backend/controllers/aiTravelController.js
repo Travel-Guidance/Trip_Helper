@@ -19,6 +19,8 @@ async function generatePlan(req, res, next) {
   try {
     const ragService = require('../services/ragService');
     const plan = await ragService.generateTravelPlan(req.body);
+    const ragDebug = plan.ragDebug || null;
+    delete plan.ragDebug;
     const data = await enrichPlanWithCoordinates(plan, req.body);
 
     const userId = req.user?.id || null;
@@ -33,7 +35,12 @@ async function generatePlan(req, res, next) {
       savedPlanId = result.insertId;
     }
 
-    res.json({ success: true, data, planId: savedPlanId });
+    res.json({
+      success: true,
+      data,
+      planId: savedPlanId,
+      ...(req.body.includeDebug ? { debug: { rag: ragDebug } } : {}),
+    });
   } catch (err) {
     next(err);
   }
