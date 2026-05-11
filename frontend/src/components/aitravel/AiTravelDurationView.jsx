@@ -98,7 +98,7 @@ export default function AiTravelDurationView() {
                   <div className="b-block-title">실시간 지출 입력</div>
                   <div className="exp-form">
                     <input className="exp-input" id="expName" placeholder="예: El Nacional 점심" aria-label="지출 내역" />
-                    <input className="exp-num" id="expAmt" placeholder="금액(원)" aria-label="지출 금액" type="number" inputMode="decimal" />
+                    <input className="exp-num" id="expAmt" placeholder="금액" aria-label="지출 금액" type="number" inputMode="decimal" />
                     <select className="exp-cat-sel" id="expCat" aria-label="지출 카테고리">
                       <option value="meal">식사</option>
                       <option value="transport">교통</option>

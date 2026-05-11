@@ -11,6 +11,7 @@ const tourRoutes         = require('./tourRoutes');
 const aiTravelRoutes     = require('./aiTravelRoutes');
 const authRoutes         = require('./authRoutes');
 const bookingRoutes      = require('./bookingRoutes');
+const exchangeRateRoutes = require('./exchangeRateRoutes');
 
 const router = Router();
 
@@ -25,6 +26,7 @@ router.use(tourRoutes);
 router.use(aiTravelRoutes);
 router.use(authRoutes);
 router.use(bookingRoutes);
+router.use(exchangeRateRoutes);
 
 module.exports = router;
 

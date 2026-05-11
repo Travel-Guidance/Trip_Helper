@@ -4,6 +4,7 @@ import {
   EUR_TO_KRW,
   SCHEDULE as MOCK_SCHEDULE,
 } from '../data/AiTravelDuration'
+import { apiGet } from '../api/apiClient'
 
 /* global google */
 const GOOGLE_MAP_SCRIPT_ID = 'google-maps-travel-duration-script'
@@ -203,6 +204,18 @@ export function initAiTravelDuration() {
   function formatExpense(amount) {
     return formatKrw(amount);
   }
+  function formatLocalAmount(amount) {
+    const value = Number(amount) || 0;
+    if (exchangeRate.currency === 'KRW') return formatKrw(value);
+    return `${value.toLocaleString('ko-KR')} ${exchangeRate.currency}`;
+  }
+  function formatExpenseLogAmount(expense) {
+    if (expense.currency === 'KRW') return formatExpense(expense.amountKrw);
+    return `${formatLocalAmount(expense.amountLocal)} · ${formatExpense(expense.amountKrw)}`;
+  }
+  function localToKrw(amount) {
+    return Math.round((Number(amount) || 0) * exchangeRate.rateToKrw);
+  }
   function localizeMoneyText(text) {
     return String(text).replace(/€\s?([\d,.]+)(?:\s?-\s?([\d,.]+))?/g, (_, from, to) => {
       const start = parseFloat(from.replace(/,/g, ''));
@@ -292,6 +305,7 @@ export function initAiTravelDuration() {
   let activeTransitStepIdx = null;
   let expenses = [];
   let stopExpenses = {};
+  let exchangeRate = { currency: 'KRW', rateToKrw: 1, cached: true };
   let mapReady = false;
   let mapModalOpen = false;
   
@@ -370,21 +384,21 @@ export function initAiTravelDuration() {
   }
   
   function getStopExpenseTotal() {
-    return Object.values(stopExpenses).reduce((sum, e) => sum + e.amt, 0);
+    return Object.values(stopExpenses).reduce((sum, e) => sum + e.amountKrw, 0);
   }
   
   function getTotalSpent() {
-    return expenses.reduce((sum, e) => sum + e.amt, 0) + getStopExpenseTotal();
+    return expenses.reduce((sum, e) => sum + e.amountKrw, 0) + getStopExpenseTotal();
   }
 
   function getCategoryBreakdown() {
     const stopLogs = Object.values(stopExpenses);
     const allExpenses = [...expenses, ...stopLogs];
-    const spent = allExpenses.reduce((sum, e) => sum + e.amt, 0);
+    const spent = allExpenses.reduce((sum, e) => sum + e.amountKrw, 0);
     return BUDGET_CATEGORIES.map(category => {
       const amount = allExpenses
         .filter(expense => expense.cat === category.key)
-        .reduce((sum, expense) => sum + expense.amt, 0);
+        .reduce((sum, expense) => sum + expense.amountKrw, 0);
       return {
         ...category,
         amount,
@@ -871,8 +885,8 @@ export function initAiTravelDuration() {
             </div>
             <div class="tl-expense">
               <label for="stopExp${s.day}-${i}">지출액</label>
-              <input id="stopExp${s.day}-${i}" data-stop-expense="${i}" type="number" inputmode="decimal" min="0" placeholder="0" value="${stopExpenses[stopExpenseKey(s.day, i)] ? stopExpenses[stopExpenseKey(s.day, i)].amt : ''}">
-              <span>EUR</span>
+              <input id="stopExp${s.day}-${i}" data-stop-expense="${i}" type="number" inputmode="decimal" min="0" placeholder="0" value="${stopExpenses[stopExpenseKey(s.day, i)] ? stopExpenses[stopExpenseKey(s.day, i)].amountLocal : ''}">
+              <span>${exchangeRate.currency}</span>
               ${i < dayStops.length - 1 ? `<button class="tl-next-btn" type="button" data-next-stop="${i + 1}">다음 일정</button>` : ''}
             </div>
             ${stop.mealReroute?`<div class="reroute-drop" id="mrDrop${i}"><strong>식당 대체 후보</strong><p>루트 420m 이내, 평균 ${formatEurAsKrw(19)} 타파스 바로 변경.</p><div class="reroute-acts"><button class="rd-yes" data-action="applyMeal">적용</button><button class="rd-no" data-action="restore">기존 유지</button></div></div>`:''}
@@ -950,7 +964,7 @@ export function initAiTravelDuration() {
     const logs = [...stopLogs, ...expenses];
     document.getElementById('expLog').innerHTML = logs.length
       ? logs.map(e =>
-        `<div class="exp-log-item"><div class="exp-log-left"><span class="exp-cat-dot" style="background:${colors[e.cat]}"></span><span class="exp-log-name">${e.name}</span></div><span class="exp-log-amt${e.over?' over':''}">${formatExpense(e.amt)}</span></div>`
+        `<div class="exp-log-item"><div class="exp-log-left"><span class="exp-cat-dot" style="background:${colors[e.cat]}"></span><span class="exp-log-name">${e.name}</span></div><span class="exp-log-amt${e.over?' over':''}">${formatExpenseLogAmount(e)}</span></div>`
       ).join('')
       : '<div class="b-empty">아직 입력된 지출이 없습니다</div>';
   }
@@ -971,6 +985,29 @@ export function initAiTravelDuration() {
     document.getElementById('heroSpent').textContent = formatExpense(spent);
     document.getElementById('heroTotal').textContent = total ? `/ ${formatKrw(total)}` : '/ 예산 미설정';
     renderBudgetCategories();
+  }
+
+  function syncCurrencyUi() {
+    const amountInput = document.getElementById('expAmt');
+    if (amountInput) amountInput.placeholder = `금액(${exchangeRate.currency})`;
+  }
+
+  async function loadExchangeRate() {
+    try {
+      const query = encodeURIComponent(travelData.destination || '');
+      const data = await apiGet(`/exchange-rate?destination=${query}`);
+      exchangeRate = {
+        currency: data.currency || 'KRW',
+        rateToKrw: Number(data.rateToKrw) || 1,
+        cached: Boolean(data.cached),
+      };
+      syncCurrencyUi();
+      renderTL();
+      renderExp();
+      updateBudget();
+    } catch {
+      syncCurrencyUi();
+    }
   }
   
   function updateFatigue(v) {
@@ -1071,43 +1108,47 @@ export function initAiTravelDuration() {
   
   document.getElementById('addExp').addEventListener('click', () => {
     const name = document.getElementById('expName').value.trim();
-    const amt = parseFloat(document.getElementById('expAmt').value) || 0;
+    const amountLocal = parseFloat(document.getElementById('expAmt').value) || 0;
     const cat = document.getElementById('expCat').value;
-    if (!name || !amt) return;
-    const over = cat === 'meal' && total > 0 && getTotalSpent() + amt > total;
-    expenses.unshift({ name, cat, amt: Math.round(amt), over });
+    if (!name || !amountLocal) return;
+    const amountKrw = localToKrw(amountLocal);
+    const over = cat === 'meal' && total > 0 && getTotalSpent() + amountKrw > total;
+    expenses.unshift({ name, cat, amountLocal: +amountLocal.toFixed(2), amountKrw, currency: exchangeRate.currency, over });
     updateBudget();
     renderExp();
     document.getElementById('expName').value = '';
     document.getElementById('expAmt').value = '';
     if (over) {
       document.getElementById('mealReroute').classList.add('open');
-      showToast('⚠️',`${formatExpense(amt)} 식사 초과`,'예산 범위 내 근처 식당으로 재조회할까요?','warn',[
+      showToast('⚠️',`${formatLocalAmount(amountLocal)} 식사 초과`,'예산 범위 내 근처 식당으로 재조회할까요?','warn',[
         { label:'재조회', action:'_dismiss', primary:true },{ label:'무시', action:'_dismiss' }]);
     } else {
       const msg = total ? `남은 예산 ${formatExpense(Math.max(0, total - getTotalSpent()))}` : '카테고리 비중이 업데이트되었습니다';
-      showToast('✓',`${formatExpense(amt)} 입력됨`,msg,'ok');
+      showToast('✓',`${formatLocalAmount(amountLocal)} 입력됨`,msg,'ok');
     }
   });
   
   document.addEventListener('change', e => {
     const input = e.target.closest('[data-stop-expense]');
     if (!input) return;
-    const amt = parseFloat(input.value) || 0;
+    const amountLocal = parseFloat(input.value) || 0;
     const s = schedule[activeIdx];
     const stopIdx = parseInt(input.dataset.stopExpense);
     const stop = cityData[s.base].stops[stopIdx];
     const key = stopExpenseKey(s.day, stopIdx);
-    if (amt <= 0) {
+    if (amountLocal <= 0) {
       delete stopExpenses[key];
     } else {
       const cat = stop.kind === 'meal' ? 'meal' : stop.kind === 'spot' ? 'entry' : 'transport';
-      const spentWithoutThis = getTotalSpent() - (stopExpenses[key]?.amt || 0);
+      const amountKrw = localToKrw(amountLocal);
+      const spentWithoutThis = getTotalSpent() - (stopExpenses[key]?.amountKrw || 0);
       stopExpenses[key] = {
         name: `${stop.name} 지출`,
         cat,
-        amt: Math.round(amt),
-        over: cat === 'meal' && total > 0 && spentWithoutThis + amt > total
+        amountLocal: +amountLocal.toFixed(2),
+        amountKrw,
+        currency: exchangeRate.currency,
+        over: cat === 'meal' && total > 0 && spentWithoutThis + amountKrw > total
       };
     }
     updateBudget();
@@ -1130,6 +1171,8 @@ export function initAiTravelDuration() {
   renderTL();
   renderExp();
   updateBudget();
+  syncCurrencyUi();
+  loadExchangeRate();
   updateFatigue(6);
   
   function initMap() {
