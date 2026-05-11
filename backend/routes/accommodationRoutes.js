@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const { searchStays, getStayDetail, getStayOffers, createMockStayBooking } = require('../controllers/accommodationController');
+const optionalAuth = require('../middlewares/optionalAuth');
 
 const router = Router();
 
@@ -59,7 +60,7 @@ router.post('/stays/search', searchStays);
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.post('/stays/bookings', createMockStayBooking);
+router.post('/stays/bookings', optionalAuth, createMockStayBooking);
 
 router.get('/stays/:hotelCode/offers', getStayOffers);
 

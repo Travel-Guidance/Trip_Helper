@@ -43,7 +43,7 @@ router.post('/auth/signup', async (req, res, next) => {
       [email, name, passwordHash, 'email']
     );
 
-    const user = { id: result.insertId, email, name };
+    const user = { id: result.insertId, email, name, provider: 'email' };
     res.status(201).json({ token: signToken(user), user });
   } catch (err) {
     next(err);
@@ -72,7 +72,7 @@ router.post('/auth/login', async (req, res, next) => {
       return res.status(401).json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' });
     }
 
-    const user = { id: dbUser.id, email: dbUser.email, name: dbUser.name };
+    const user = { id: dbUser.id, email: dbUser.email, name: dbUser.name, provider: 'email' };
     res.json({ token: signToken(user), user });
   } catch (err) {
     next(err);
@@ -190,7 +190,7 @@ router.get('/auth/kakao/profile', async (req, res, next) => {
       dbUser = { id: result.insertId, email, name: nickname };
     }
 
-    const user = { id: dbUser.id, email: dbUser.email, name: dbUser.name };
+    const user = { id: dbUser.id, email: dbUser.email, name: dbUser.name, provider: 'kakao' };
     res.json({ token: signToken(user), user });
   } catch (err) {
     next(err);

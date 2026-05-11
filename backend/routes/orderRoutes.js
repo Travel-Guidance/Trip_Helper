@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const { createOrder, getOrder } = require('../controllers/orderController');
+const optionalAuth = require('../middlewares/optionalAuth');
 
 const router = Router();
 
@@ -38,7 +39,7 @@ const router = Router();
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.post('/orders', createOrder);
+router.post('/orders', optionalAuth, createOrder);
 
 /**
  * @swagger

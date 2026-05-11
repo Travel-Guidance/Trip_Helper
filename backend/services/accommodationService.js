@@ -2,6 +2,7 @@ const { BASE_URL, getHeaders } = require('../config/rapidapi')
 const { genStayBookingRef, sendStayBookingEmail } = require('./emailService')
 const { normalizeCountryCode } = require('../data/hotelCoords')
 const { createError } = require('../utils/errors')
+const pool = require('../config/database')
 
 const COUNTRY_CITY = {
   JP: 'Tokyo',          TH: 'Bangkok',        FR: 'Paris',         ID: 'Bali',
@@ -459,6 +460,7 @@ async function createMockStayBooking({
   image,
   totalAmount,
   totalCurrency = 'KRW',
+  userId = null,
 }) {
   if (!hotelCode || !checkIn || !checkOut || !email || !guestName) {
     throw createError('숙소 예약에 필요한 값이 누락되었습니다.', 400)
@@ -510,6 +512,28 @@ async function createMockStayBooking({
   } catch (err) {
     console.error('Stay email error:', err.message)
     booking.email_sent = false
+  }
+
+  if (userId) {
+    pool.query(
+      `INSERT INTO stay_bookings
+         (user_id, booking_reference, hotel_id, hotel_name, location, check_in, check_out, nights, guests, total_amount, total_currency, image_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userId,
+        bookingRef,
+        String(hotelCode),
+        hotelName || '',
+        location || '',
+        checkIn,
+        checkOut,
+        nights,
+        Number(guests),
+        bookingTotalAmount || null,
+        bookingCurrency,
+        image || null,
+      ]
+    ).catch(err => console.error('stay_bookings save error:', err.message))
   }
 
   return booking

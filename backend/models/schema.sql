@@ -106,6 +106,40 @@ CREATE TABLE IF NOT EXISTS travel_memories (
   FOREIGN KEY (plan_id) REFERENCES travel_plans(id) ON DELETE CASCADE
 );
 
+-- ─── 항공권 예약 내역 ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS flight_bookings (
+  id                BIGINT        AUTO_INCREMENT PRIMARY KEY,
+  user_id           BIGINT        NULL,
+  booking_reference VARCHAR(50)   NOT NULL,
+  offer_id          VARCHAR(200)  NOT NULL,
+  status            VARCHAR(20)   DEFAULT 'confirmed',
+  passengers        JSON          NOT NULL,
+  slices            JSON,
+  total_amount      DECIMAL(12,2),
+  total_currency    VARCHAR(10)   DEFAULT 'USD',
+  created_at        TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- ─── 숙소 예약 내역 ───────────────────────────────────────
+CREATE TABLE IF NOT EXISTS stay_bookings (
+  id                BIGINT        AUTO_INCREMENT PRIMARY KEY,
+  user_id           BIGINT        NULL,
+  booking_reference VARCHAR(50)   NOT NULL,
+  hotel_id          VARCHAR(100),
+  hotel_name        VARCHAR(255),
+  location          VARCHAR(255),
+  check_in          DATE,
+  check_out         DATE,
+  nights            INT,
+  guests            INT           DEFAULT 1,
+  total_amount      DECIMAL(12,2),
+  total_currency    VARCHAR(10)   DEFAULT 'KRW',
+  image_url         VARCHAR(500),
+  created_at        TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
 -- ─── Vector DB 시드 데이터 색인 추적 ─────────────────────
 CREATE TABLE IF NOT EXISTS knowledge_seeds (
   id           BIGINT        AUTO_INCREMENT PRIMARY KEY,

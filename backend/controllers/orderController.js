@@ -4,7 +4,8 @@ const flightService = require('../services/flightService');
 async function createOrder(req, res, next) {
   try {
     const { offer_id, passengers, services = [] } = req.body;
-    const orderData = await orderService.createOrder({ offer_id, passengers, services });
+    const userId = req.user?.id || null;
+    const orderData = await orderService.createOrder({ offer_id, passengers, services, userId });
     res.json(orderData);
   } catch (err) {
     const msg = err.errors?.[0]?.message || err.message || '예약 처리 중 오류가 발생했습니다';
