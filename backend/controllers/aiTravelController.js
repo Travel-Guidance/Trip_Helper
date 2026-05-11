@@ -24,10 +24,11 @@ async function generatePlan(req, res, next) {
     const userId = req.user?.id || null;
     let savedPlanId = null;
     if (userId) {
-      const { destination, nights, budget } = req.body;
+      const { destination, country, dest, continent, nights, budget } = req.body;
+      const destinationName = destination || country || dest || continent || '';
       const [result] = await pool.query(
         'INSERT INTO travel_plans (user_id, destination, plan_data, budget, nights) VALUES (?, ?, ?, ?, ?)',
-        [userId, destination || '', JSON.stringify(data), budget || '', nights || 0]
+        [userId, destinationName, JSON.stringify(data), budget || '', nights || 0]
       );
       savedPlanId = result.insertId;
     }

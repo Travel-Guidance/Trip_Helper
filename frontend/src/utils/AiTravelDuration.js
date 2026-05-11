@@ -2,13 +2,20 @@ import {
   CITY_DATA as MOCK_CITY_DATA,
   CITY_GROUPS as MOCK_CITY_GROUPS,
   EUR_TO_KRW,
-  INITIAL_EXPENSES,
   SCHEDULE as MOCK_SCHEDULE,
 } from '../data/AiTravelDuration'
+import { apiGet } from '../api/apiClient'
 
 /* global google */
 const GOOGLE_MAP_SCRIPT_ID = 'google-maps-travel-duration-script'
 const GOOGLE_MAP_SCRIPT_SRC = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyDaVmYg-OdmcaT1qDjLA-J-n5-df0XyWSw&callback=initMap&loading=async'
+const DAILY_BUDGET_WON = { low: 100000, mid: 300000, high: 500000 }
+const BUDGET_CATEGORIES = [
+  { key: 'meal', label: '식사', icon: '🍽', color: 'var(--amber)' },
+  { key: 'transport', label: '교통', icon: '🚇', color: 'var(--blue)' },
+  { key: 'entry', label: '입장비', icon: '🏛', color: 'var(--green)' },
+  { key: 'shop', label: '쇼핑', icon: '🛍', color: 'var(--purple)' },
+]
 
 function readGeneratedPlanResult() {
   try {
@@ -86,6 +93,26 @@ function heroImageForDestination(destination) {
   return found?.[1] || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1800&q=80'
 }
 
+function getTripDays(tripInfo, fallbackDays) {
+  const nights = Number(tripInfo?.nights)
+  if (Number.isFinite(nights) && nights >= 0) return nights + 1
+  return fallbackDays || 0
+}
+
+function getTravelerCount(tripInfo) {
+  const adults = Number(tripInfo?.adults) || 0
+  const teens = Number(tripInfo?.teens) || 0
+  const children = Number(tripInfo?.children) || 0
+  const infants = Number(tripInfo?.infants) || 0
+  return Math.max(1, adults + teens + children + infants)
+}
+
+function getTotalBudgetWon(tripInfo, fallbackDays) {
+  const dailyBudget = DAILY_BUDGET_WON[tripInfo?.budget]
+  if (!dailyBudget) return 0
+  return dailyBudget * getTripDays(tripInfo, fallbackDays) * getTravelerCount(tripInfo)
+}
+
 function buildGeneratedTravelData() {
   const result = readGeneratedPlanResult()
   const days = result?.planData?.days
@@ -142,6 +169,7 @@ function buildGeneratedTravelData() {
     activeIdx: 0,
     heroTitle: destination,
     routeText: days.map((day, index) => `${index + 1}일차 ${day.theme || day.title || ''}`.trim()).join(' → '),
+    totalBudgetWon: getTotalBudgetWon(tripInfo, days.length),
   }
 }
 
@@ -155,6 +183,7 @@ export function initAiTravelDuration() {
     activeIdx: 3,
     heroTitle: 'Barcelona',
     routeText: '바르셀로나 → 마드리드 → 세비야 외 7개 도시',
+    totalBudgetWon: 0,
   }
   const schedule = travelData.schedule
   const cityData = travelData.cityData
@@ -172,6 +201,22 @@ export function initAiTravelDuration() {
   function formatEurAsKrw(amount) {
     return formatKrw(eurToKrw(amount));
   }
+  function formatExpense(amount) {
+    return formatKrw(amount);
+  }
+  function formatLocalAmount(amount) {
+    const value = Number(amount) || 0;
+    if (!exchangeRate.currency) return value.toLocaleString('ko-KR');
+    if (exchangeRate.currency === 'KRW') return formatKrw(value);
+    return `${value.toLocaleString('ko-KR')} ${exchangeRate.currency}`;
+  }
+  function formatExpenseLogAmount(expense) {
+    if (expense.currency === 'KRW') return formatExpense(expense.amountKrw);
+    return `${formatLocalAmount(expense.amountLocal)} · ${formatExpense(expense.amountKrw)}`;
+  }
+  function localToKrw(amount) {
+    return Math.round((Number(amount) || 0) * exchangeRate.rateToKrw);
+  }
   function localizeMoneyText(text) {
     return String(text).replace(/€\s?([\d,.]+)(?:\s?-\s?([\d,.]+))?/g, (_, from, to) => {
       const start = parseFloat(from.replace(/,/g, ''));
@@ -179,6 +224,16 @@ export function initAiTravelDuration() {
       const end = parseFloat(to.replace(/,/g, ''));
       return `${formatEurAsKrw(start)}-${formatEurAsKrw(end)}`;
     });
+  }
+  function getBudgetModalHtml() {
+    const spent = getTotalSpent();
+    const remaining = Math.max(0, total - spent);
+    const pct = total > 0 ? Math.min(100, Math.round((spent / total) * 100)) : 0;
+    const categoryRows = getCategoryBreakdown()
+      .map(cat => `<div class="mi-row"><strong>${cat.icon} ${cat.label}</strong><span>${formatExpense(cat.amount)} · ${cat.pct}%</span></div>`)
+      .join('');
+
+    return `<div class="mi-row"><strong>총 지출</strong><span style="font-family:'JetBrains Mono',monospace;color:var(--gold)">${formatExpense(spent)} / ${total ? formatKrw(total) : '예산 미설정'}</span></div><div class="mi-row"><strong>예산 소진율</strong><span>${pct}%</span></div><div class="mi-row"><strong>남은 예산</strong><span style="color:var(--green)">${total ? formatExpense(remaining) : '예산을 선택하지 않음'}</span></div><div class="mi-row"><strong>카테고리 비중</strong><span>전체 지출 기준</span></div>${categoryRows || '<div class="mi-row"><strong>지출 내역</strong><span>아직 없음</span></div>'}`;
   }
   
   const modalData = {
@@ -200,7 +255,7 @@ export function initAiTravelDuration() {
     },
     budget: {
       title:"예산 분석",
-      html:`<div class="mi-row"><strong>총 지출</strong><span style="font-family:'JetBrains Mono',monospace;color:var(--gold)">${formatEurAsKrw(578)} / ${formatEurAsKrw(3200)}</span></div><div class="mi-row"><strong>오늘 지출</strong><span>${formatEurAsKrw(94)}</span></div><div class="mi-row"><strong>남은 예산</strong><span style="color:var(--green)">${formatEurAsKrw(2622)}</span></div><div class="mi-row"><strong>일 평균 예산</strong><span>${formatEurAsKrw(107)}</span></div><div class="mi-row"><strong>적용 환율</strong><span>1 EUR = ${formatKrw(EUR_TO_KRW)}</span></div><div class="mi-row"><strong>식사 위험도</strong><span style="color:var(--amber)">82% 소진 — 주의</span></div>`
+      html:getBudgetModalHtml
     },
     fatigue: {
       title:"피로도 상세",
@@ -222,11 +277,13 @@ export function initAiTravelDuration() {
     const heroCity = document.getElementById('heroCity')
     const heroTag1 = document.getElementById('heroTag1')
     const heroTag2 = document.getElementById('heroTag2')
+    const day = schedule[activeIdx]
+    const dayTitle = cityData[day?.base]?.title || travelData.routeText
 
     if (tripTitle) tripTitle.textContent = `${travelData.destination} 여행`
-    if (route) route.textContent = travelData.routeText
+    if (route) route.textContent = `Day ${String(day?.day || 1).padStart(2, '0')} · ${dayTitle}`
     if (heroCity) heroCity.textContent = travelData.heroTitle
-    if (heroTag1) heroTag1.innerHTML = `<span class="live-dot"></span> Day ${String(schedule[activeIdx]?.day || 1).padStart(2, '0')} 진행 중`
+    if (heroTag1) heroTag1.innerHTML = `<span class="live-dot"></span> Day ${String(day?.day || 1).padStart(2, '0')} 진행 중`
     if (heroTag2 && travelData.isGenerated) heroTag2.textContent = 'AI 생성 일정 기반으로 여행을 진행합니다'
     if (travelData.isGenerated) {
       const hero = document.querySelector('.ai-travel-duration-page .dest-hero')
@@ -239,8 +296,7 @@ export function initAiTravelDuration() {
   /* ── state ── */
   let activeIdx = travelData.activeIdx;
   let activeStopIdx = 0;
-  let totalSpent = 578;
-  const total = 3200;
+  const total = travelData.totalBudgetWon || 0;
   let fatigueVal = 6;
   let openTransitKey = '';
   let transitLoadingKey = '';
@@ -248,8 +304,9 @@ export function initAiTravelDuration() {
   let routeModeResults = {};
   let selectedTravelMode = 'WALKING';
   let activeTransitStepIdx = null;
-  let expenses = INITIAL_EXPENSES.map(expense => ({ ...expense }));
+  let expenses = [];
   let stopExpenses = {};
+  let exchangeRate = { currency: '', rateToKrw: 1, cached: true };
   let mapReady = false;
   let mapModalOpen = false;
   
@@ -265,6 +322,17 @@ export function initAiTravelDuration() {
     activeTransitStepIdx = null;
     syncTripChrome();
     renderCityAccordion();
+    renderTL();
+    refreshMap();
+    requestSimpleRoute(activeStopIdx, 'walk');
+  }
+
+  function selectStop(nextIdx) {
+    const dayStops = getDayStops(cityData[schedule[activeIdx].base].stops);
+    activeStopIdx = Math.max(0, Math.min(nextIdx, dayStops.length - 1));
+    selectedTravelMode = 'WALKING';
+    activeTransitStepIdx = null;
+    openTransitKey = '';
     renderTL();
     refreshMap();
     requestSimpleRoute(activeStopIdx, 'walk');
@@ -317,11 +385,27 @@ export function initAiTravelDuration() {
   }
   
   function getStopExpenseTotal() {
-    return Object.values(stopExpenses).reduce((sum, e) => sum + e.amt, 0);
+    return Object.values(stopExpenses).reduce((sum, e) => sum + e.amountKrw, 0);
   }
   
   function getTotalSpent() {
-    return totalSpent + getStopExpenseTotal();
+    return expenses.reduce((sum, e) => sum + e.amountKrw, 0) + getStopExpenseTotal();
+  }
+
+  function getCategoryBreakdown() {
+    const stopLogs = Object.values(stopExpenses);
+    const allExpenses = [...expenses, ...stopLogs];
+    const spent = allExpenses.reduce((sum, e) => sum + e.amountKrw, 0);
+    return BUDGET_CATEGORIES.map(category => {
+      const amount = allExpenses
+        .filter(expense => expense.cat === category.key)
+        .reduce((sum, expense) => sum + expense.amountKrw, 0);
+      return {
+        ...category,
+        amount,
+        pct: spent > 0 ? Math.round((amount / spent) * 100) : 0,
+      };
+    });
   }
   
   function getTransportPlan(stop, i) {
@@ -612,6 +696,45 @@ export function initAiTravelDuration() {
     const totalDays = schedule.length;
     const activeDay = schedule[activeIdx].day;
     const progress = Math.round((activeDay / totalDays) * 100);
+
+    if (travelData.isGenerated) {
+      document.getElementById('cityAccordion').innerHTML = `
+        <div class="city-summary">
+          <div class="city-summary-top">
+            <div class="city-summary-day">D${String(activeDay).padStart(2,'0')} <span>/ ${totalDays}</span></div>
+            <div class="city-summary-copy">전체 일정</div>
+          </div>
+          <div class="city-progress" aria-label="여행 진행률 ${progress}%">
+            <div class="city-progress-fill" style="width:${progress}%"></div>
+          </div>
+        </div>
+        <div class="day-nav-list">
+          ${schedule.map((s, idx) => {
+            const d = cityData[s.base];
+            const cls = ['day-nav-btn',
+              idx === activeIdx ? 'active' : '',
+              s.done ? 'done' : '',
+              s.today ? 'today' : '',
+            ].filter(Boolean).join(' ');
+            return `
+              <button class="${cls}" data-idx="${idx}">
+                <span class="day-nav-num">D${String(s.day).padStart(2,'0')}</span>
+                <span class="day-nav-info">
+                  <strong>${d.title}</strong>
+                  <span>${d.stops.length}개 일정</span>
+                </span>
+              </button>`;
+          }).join('')}
+        </div>`;
+
+      document.querySelectorAll('.day-nav-btn[data-idx]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          activeIdx = parseInt(btn.dataset.idx, 10);
+          syncDayView();
+        });
+      });
+      return;
+    }
   
     const cityHtml = cityGroups.map((g, gi) => {
       const isOpen = g === activeGroup;
@@ -693,7 +816,7 @@ export function initAiTravelDuration() {
       return `
       <div class="tl-node">
         <div class="tl-t">${stop.t}</div>
-        <div class="tl-axis"><span class="tl-dot ${stop.kind}${stop.now && s.today ? ' now' : ''}"></span></div>
+        <div class="tl-axis"><span class="tl-dot ${stop.kind}${i === activeStopIdx ? ' now' : ''}"></span></div>
         <div>
           <div class="tl-card${i === activeStopIdx ? ' active' : ''}${transitOpen ? ' transit-open' : ''}" data-stop-idx="${i}">
             <div class="tl-card-top">
@@ -763,8 +886,9 @@ export function initAiTravelDuration() {
             </div>
             <div class="tl-expense">
               <label for="stopExp${s.day}-${i}">지출액</label>
-              <input id="stopExp${s.day}-${i}" data-stop-expense="${i}" type="number" inputmode="decimal" min="0" placeholder="0" value="${stopExpenses[stopExpenseKey(s.day, i)] ? stopExpenses[stopExpenseKey(s.day, i)].amt : ''}">
-              <span>EUR</span>
+              <input id="stopExp${s.day}-${i}" data-stop-expense="${i}" type="number" inputmode="decimal" min="0" placeholder="0" value="${stopExpenses[stopExpenseKey(s.day, i)] ? stopExpenses[stopExpenseKey(s.day, i)].amountLocal : ''}">
+              <span>${exchangeRate.currency}</span>
+              ${i < dayStops.length - 1 ? `<button class="tl-next-btn" type="button" data-next-stop="${i + 1}">다음 일정</button>` : ''}
             </div>
             ${stop.mealReroute?`<div class="reroute-drop" id="mrDrop${i}"><strong>식당 대체 후보</strong><p>루트 420m 이내, 평균 ${formatEurAsKrw(19)} 타파스 바로 변경.</p><div class="reroute-acts"><button class="rd-yes" data-action="applyMeal">적용</button><button class="rd-no" data-action="restore">기존 유지</button></div></div>`:''}
             ${stop.safeReroute?`<div class="reroute-drop" id="srDrop${i}"><strong>안전 우회 경로</strong><p>6분 추가. 대로변, 사고 이력 없음.</p><div class="reroute-acts"><button class="rd-yes" data-action="safeRoute">우회 적용</button><button class="rd-no" data-action="restore">기존 유지</button></div></div>`:''}
@@ -778,12 +902,14 @@ export function initAiTravelDuration() {
     document.querySelectorAll('.tl-card[data-stop-idx]').forEach(card => {
       card.addEventListener('click', e => {
         if (e.target.closest('button, input, select, textarea')) return;
-        activeStopIdx = parseInt(card.dataset.stopIdx, 10);
-        selectedTravelMode = 'WALKING';
-        activeTransitStepIdx = null;
-        renderTL();
-        refreshMap();
-        requestSimpleRoute(activeStopIdx, 'walk');
+        selectStop(parseInt(card.dataset.stopIdx, 10));
+      });
+    });
+
+    document.querySelectorAll('[data-next-stop]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        selectStop(parseInt(btn.dataset.nextStop, 10));
       });
     });
   
@@ -834,18 +960,59 @@ export function initAiTravelDuration() {
   }
   
   function renderExp() {
-    const colors = { meal:'var(--amber)', transport:'var(--blue)', entry:'var(--green)', shop:'var(--purple)' };
+    const colors = Object.fromEntries(BUDGET_CATEGORIES.map(category => [category.key, category.color]));
     const stopLogs = Object.values(stopExpenses);
-    document.getElementById('expLog').innerHTML = [...stopLogs, ...expenses].map(e =>
-      `<div class="exp-log-item"><div class="exp-log-left"><span class="exp-cat-dot" style="background:${colors[e.cat]}"></span><span class="exp-log-name">${e.name}</span></div><span class="exp-log-amt${e.over?' over':''}">${formatEurAsKrw(e.amt)}</span></div>`
+    const logs = [...stopLogs, ...expenses];
+    document.getElementById('expLog').innerHTML = logs.length
+      ? logs.map(e =>
+        `<div class="exp-log-item"><div class="exp-log-left"><span class="exp-cat-dot" style="background:${colors[e.cat]}"></span><span class="exp-log-name">${e.name}</span></div><span class="exp-log-amt${e.over?' over':''}">${formatExpenseLogAmount(e)}</span></div>`
+      ).join('')
+      : '<div class="b-empty">아직 입력된 지출이 없습니다</div>';
+  }
+
+  function renderBudgetCategories() {
+    const rows = document.getElementById('budgetCategoryRows');
+    if (!rows) return;
+
+    rows.innerHTML = getCategoryBreakdown().map(cat =>
+      `<div class="b-row"><span class="b-icon">${cat.icon}</span><span class="b-name">${cat.label}</span><div class="b-bar"><div class="b-fill" style="width:${cat.pct}%;background:${cat.color}"></div></div><span class="b-val">${cat.pct}% · ${formatExpense(cat.amount)}</span></div>`
     ).join('');
   }
   
   function updateBudget() {
     const spent = getTotalSpent();
-    const pct = Math.min(100, (spent / total) * 100);
+    const pct = total > 0 ? Math.min(100, (spent / total) * 100) : 0;
     document.getElementById('heroGaugeFill').style.width = pct + '%';
-    document.getElementById('heroSpent').textContent = formatEurAsKrw(spent);
+    document.getElementById('heroSpent').textContent = formatExpense(spent);
+    document.getElementById('heroTotal').textContent = total ? `/ ${formatKrw(total)}` : '/ 예산 미설정';
+    renderBudgetCategories();
+  }
+
+  function syncCurrencyUi() {
+    const amountInput = document.getElementById('expAmt');
+    if (amountInput) amountInput.placeholder = exchangeRate.currency ? `금액(${exchangeRate.currency})` : '통화 확인 중';
+  }
+
+  async function loadExchangeRate() {
+    try {
+      const currency = readGeneratedPlanResult()?.tripInfo?.currency;
+      if (!currency) {
+        syncCurrencyUi();
+        return;
+      }
+      const data = await apiGet(`/exchange-rate?currency=${encodeURIComponent(currency)}`);
+      exchangeRate = {
+        currency: data.currency || 'KRW',
+        rateToKrw: Number(data.rateToKrw) || 1,
+        cached: Boolean(data.cached),
+      };
+      syncCurrencyUi();
+      renderTL();
+      renderExp();
+      updateBudget();
+    } catch {
+      syncCurrencyUi();
+    }
   }
   
   function updateFatigue(v) {
@@ -880,7 +1047,7 @@ export function initAiTravelDuration() {
     const d = modalData[key];
     if (!d) return;
     document.getElementById('modalTitle').textContent = d.title;
-    document.getElementById('modalContent').innerHTML = d.html;
+    document.getElementById('modalContent').innerHTML = typeof d.html === 'function' ? d.html() : d.html;
     document.getElementById('overlay').classList.add('show');
   }
   function closeModal() { document.getElementById('overlay').classList.remove('show'); }
@@ -946,42 +1113,47 @@ export function initAiTravelDuration() {
   
   document.getElementById('addExp').addEventListener('click', () => {
     const name = document.getElementById('expName').value.trim();
-    const amt = parseFloat(document.getElementById('expAmt').value) || 0;
+    const amountLocal = parseFloat(document.getElementById('expAmt').value) || 0;
     const cat = document.getElementById('expCat').value;
-    if (!name || !amt) return;
-    const over = cat === 'meal' && amt > 45;
-    expenses.unshift({ name, cat, amt: +amt.toFixed(1), over });
-    totalSpent += amt;
+    if (!name || !amountLocal) return;
+    const amountKrw = localToKrw(amountLocal);
+    const over = cat === 'meal' && total > 0 && getTotalSpent() + amountKrw > total;
+    expenses.unshift({ name, cat, amountLocal: +amountLocal.toFixed(2), amountKrw, currency: exchangeRate.currency, over });
     updateBudget();
     renderExp();
     document.getElementById('expName').value = '';
     document.getElementById('expAmt').value = '';
     if (over) {
       document.getElementById('mealReroute').classList.add('open');
-      showToast('⚠️',`${formatEurAsKrw(amt)} 식사 초과`,'예산 범위 내 근처 식당으로 재조회할까요?','warn',[
+      showToast('⚠️',`${formatLocalAmount(amountLocal)} 식사 초과`,'예산 범위 내 근처 식당으로 재조회할까요?','warn',[
         { label:'재조회', action:'_dismiss', primary:true },{ label:'무시', action:'_dismiss' }]);
     } else {
-      showToast('✓',`${formatEurAsKrw(amt)} 입력됨`,`남은 예산 ${formatEurAsKrw(total - getTotalSpent())}`,'ok');
+      const msg = total ? `남은 예산 ${formatExpense(Math.max(0, total - getTotalSpent()))}` : '카테고리 비중이 업데이트되었습니다';
+      showToast('✓',`${formatLocalAmount(amountLocal)} 입력됨`,msg,'ok');
     }
   });
   
   document.addEventListener('change', e => {
     const input = e.target.closest('[data-stop-expense]');
     if (!input) return;
-    const amt = parseFloat(input.value) || 0;
+    const amountLocal = parseFloat(input.value) || 0;
     const s = schedule[activeIdx];
     const stopIdx = parseInt(input.dataset.stopExpense);
     const stop = cityData[s.base].stops[stopIdx];
     const key = stopExpenseKey(s.day, stopIdx);
-    if (amt <= 0) {
+    if (amountLocal <= 0) {
       delete stopExpenses[key];
     } else {
       const cat = stop.kind === 'meal' ? 'meal' : stop.kind === 'spot' ? 'entry' : 'transport';
+      const amountKrw = localToKrw(amountLocal);
+      const spentWithoutThis = getTotalSpent() - (stopExpenses[key]?.amountKrw || 0);
       stopExpenses[key] = {
         name: `${stop.name} 지출`,
         cat,
-        amt: +amt.toFixed(1),
-        over: cat === 'meal' && amt > 45
+        amountLocal: +amountLocal.toFixed(2),
+        amountKrw,
+        currency: exchangeRate.currency,
+        over: cat === 'meal' && total > 0 && spentWithoutThis + amountKrw > total
       };
     }
     updateBudget();
@@ -1004,6 +1176,8 @@ export function initAiTravelDuration() {
   renderTL();
   renderExp();
   updateBudget();
+  syncCurrencyUi();
+  loadExchangeRate();
   updateFatigue(6);
   
   function initMap() {
