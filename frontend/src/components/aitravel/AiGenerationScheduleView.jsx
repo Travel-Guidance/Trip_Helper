@@ -333,12 +333,12 @@ function markerIcon(maps, index) {
   }
 }
 
-function clusterIcon(maps, count) {
+function clusterIcon(maps, label) {
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
       <circle cx="20" cy="20" r="18" fill="#ef4444" stroke="#fff" stroke-width="3"/>
       <circle cx="20" cy="20" r="13" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
-      <text x="20" y="25" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="800" fill="#fff">${count}</text>
+      <text x="20" y="25" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" font-weight="800" fill="#fff">${label}</text>
     </svg>
   `
   return {
@@ -401,10 +401,12 @@ function drawMarkersForClusters(maps, map, clusters, markersRef, spiderRef) {
         title: point.title,
       })
     } else {
+      const orders = cluster.members.map(m => m.idx + 1).sort((a, b) => a - b)
+      const label = `${orders[0]}-${orders[orders.length - 1]}`
       marker = new maps.Marker({
         position: cluster.centroid,
         map,
-        icon: clusterIcon(maps, cluster.members.length),
+        icon: clusterIcon(maps, label),
         title: cluster.members.map(m => m.point.title).join(' · '),
         zIndex: 5,
       })
