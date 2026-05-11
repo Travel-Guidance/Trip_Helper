@@ -5,10 +5,14 @@ const { buildPersonaSystem, getPersona } = require('../domains/aiTravel/persona'
 const { enrichPlanWithCoordinates } = require('../services/geocodeService');
 const pool = require('../config/database');
 
-function parsePlanData(planData) {
-  if (!planData) return {};
-  if (typeof planData === 'string') return JSON.parse(planData);
-  return planData;
+function normalizeJson(value, fallback) {
+  if (value == null) return fallback;
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
 }
 
 async function generatePlan(req, res, next) {
@@ -55,7 +59,7 @@ async function getPlanById(req, res, next) {
     );
     if (!rows.length) return res.status(404).json({ error: '일정을 찾을 수 없습니다.' });
     const plan = rows[0];
-    res.json({ ...plan, plan_data: parsePlanData(plan.plan_data) });
+    res.json({ ...plan, plan_data: normalizeJson(plan.plan_data, {}) });
   } catch (err) {
     next(err);
   }

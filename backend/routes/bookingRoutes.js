@@ -6,6 +6,16 @@ const requireAuth = require('../middlewares/requireAuth');
 
 const router = Router();
 
+function normalizeJson(value, fallback) {
+  if (value == null) return fallback;
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
 // GET /api/bookings — 내 예약 전체 (항공 + 숙소 + AI 일정)
 router.get('/bookings', requireAuth, async (req, res, next) => {
   try {
@@ -44,8 +54,8 @@ router.get('/bookings', requireAuth, async (req, res, next) => {
     res.json({
       flights: flights.map(f => ({
         ...f,
-        passengers: JSON.parse(f.passengers || '[]'),
-        slices:     JSON.parse(f.slices     || '[]'),
+        passengers: normalizeJson(f.passengers, []),
+        slices:     normalizeJson(f.slices, []),
       })),
       stays,
       plans,
