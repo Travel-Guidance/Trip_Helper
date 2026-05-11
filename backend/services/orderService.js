@@ -1,7 +1,8 @@
 const flightService = require('./flightService');
 const { genBookingRef, sendBookingEmail } = require('./emailService');
+const pool = require('../config/database');
 
-async function createOrder({ offer_id, passengers, services = [] }) {
+async function createOrder({ offer_id, passengers, services = [], userId = null }) {
   const offer = await flightService.getOffer(offer_id);
   const bookingRef = genBookingRef();
 
@@ -51,6 +52,23 @@ async function createOrder({ offer_id, passengers, services = [] }) {
       totalAmount: orderData.total_amount,
       totalCurrency: orderData.total_currency,
     }).catch(err => console.error('Email error:', err.message));
+  }
+
+  if (userId) {
+    pool.query(
+      `INSERT INTO flight_bookings
+         (user_id, booking_reference, offer_id, passengers, slices, total_amount, total_currency)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userId,
+        orderData.booking_reference,
+        offer_id,
+        JSON.stringify(orderData.passengers || passengers),
+        JSON.stringify(orderData.slices || []),
+        orderData.total_amount || null,
+        orderData.total_currency || 'USD',
+      ]
+    ).catch(err => console.error('flight_bookings save error:', err.message));
   }
 
   return orderData;

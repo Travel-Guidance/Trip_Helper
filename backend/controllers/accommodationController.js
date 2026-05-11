@@ -34,7 +34,8 @@ async function getStayOffers(req, res, next) {
 
 async function createMockStayBooking(req, res, next) {
   try {
-    const data = await accommodationService.createMockStayBooking(req.body);
+    const userId = req.user?.id || null;
+    const data = await accommodationService.createMockStayBooking({ ...req.body, userId });
     res.json(data);
   } catch (err) {
     next(err);

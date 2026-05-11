@@ -85,7 +85,7 @@ function UserMenu() {
             )}
           </div>
           <button
-            onClick={() => { setOpen(false); /* 내 정보 페이지 추후 구현 */ }}
+            onClick={() => { setOpen(false); navigate('/profile') }}
             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
           >
             <User className="w-4 h-4" />
@@ -164,7 +164,7 @@ export default function Navbar() {
                   {user.name}
                 </div>
                 <button
-                  onClick={() => { setOpen(false); /* 내 정보 페이지 추후 구현 */ }}
+                  onClick={() => { setOpen(false); navigate('/profile') }}
                   className="text-left text-sm font-medium text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   내 정보

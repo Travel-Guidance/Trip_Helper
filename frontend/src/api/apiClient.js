@@ -11,6 +11,11 @@ function parseJson(text) {
   }
 }
 
+function getAuthHeader() {
+  const token = localStorage.getItem('tripHelperToken')
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 export async function apiRequest(path, options = {}) {
   const {
     body,
@@ -23,6 +28,7 @@ export async function apiRequest(path, options = {}) {
     ...fetchOptions,
     headers: {
       ...(body != null ? { 'Content-Type': 'application/json' } : {}),
+      ...getAuthHeader(),
       ...headers,
     },
   }
@@ -48,4 +54,8 @@ export function apiGet(path, options) {
 
 export function apiPost(path, body, options) {
   return apiRequest(path, { ...options, method: 'POST', body })
+}
+
+export function apiDelete(path, options) {
+  return apiRequest(path, { ...options, method: 'DELETE' })
 }

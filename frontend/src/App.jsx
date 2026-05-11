@@ -22,6 +22,7 @@ import AccommodationDetail from './pages/AccommodationDetail'
 import AccommodationConfirmation from './pages/AccommodationConfirmation'
 import TourTicket from './pages/TourTicket'
 import TourTicketDetail from './pages/TourTicketDetail'
+import ProfilePage from './pages/ProfilePage'
 import { API_BASE } from './api/config'
 import OAuthCallback from './pages/OAuthCallback'
 
@@ -99,6 +100,7 @@ export default function App() {
           <Route path="/accomodation/*" element={<LegacyAccommodationRedirect />} />
           <Route path="/tour-ticket" element={<TourTicket />} />
           <Route path="/tour-ticket/:placeId" element={<TourTicketDetail />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/auth/kakao/callback" element={<OAuthCallback />} />
           <Route path="/auth/google/callback" element={<OAuthCallback />} />
         </Routes>

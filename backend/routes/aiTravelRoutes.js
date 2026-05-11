@@ -1,6 +1,8 @@
 const { Router } = require('express');
-const { generatePlan, chatbot } = require('../controllers/aiTravelController');
+const { generatePlan, chatbot, getUserPlans, getPlanById, deletePlan } = require('../controllers/aiTravelController');
 const { aiLimiter } = require('../middlewares/rateLimiter');
+const optionalAuth = require('../middlewares/optionalAuth');
+const requireAuth = require('../middlewares/requireAuth');
 
 const router = Router();
 
@@ -43,7 +45,11 @@ const router = Router();
  *       200:
  *         description: 생성된 여행 일정
  */
-router.post('/ai-travel/generate', aiLimiter, generatePlan);
+router.post('/ai-travel/generate', aiLimiter, optionalAuth, generatePlan);
+
+router.get('/ai-travel/plans', requireAuth, getUserPlans);
+router.get('/ai-travel/plans/:id', requireAuth, getPlanById);
+router.delete('/ai-travel/plans/:id', requireAuth, deletePlan);
 
 /**
  * @swagger
