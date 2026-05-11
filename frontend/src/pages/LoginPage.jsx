@@ -215,14 +215,17 @@ export default function LoginPage() {
             {/* 소셜 버튼 */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
               {/* 카카오 — ocean glass */}
+              <a href="https://kauth.kakao.com/oauth/authorize?client_id=4416539a7e84ede4a15b526950b906a2&redirect_uri=http://localhost:5173/auth/kakao/callback&response_type=code">
               <button
                 type="button" className="social-btn"
                 style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, background: 'rgba(14,116,144,.13)', border: '1.5px solid rgba(14,116,144,.3)', borderRadius: 12, padding: '11px 0', color: '#0a3d52', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 2px 10px rgba(14,116,144,.12)' }}
               >
                 <span style={{ fontSize: 16 }}>💬</span> 카카오로 시작하기
               </button>
+              </a>
 
               {/* 구글 — light glass */}
+              <a href="https://accounts.google.com/o/oauth2/v2/auth?client_id=615729581192-5us3n1of7mgnl6ns1ok91t45lctt0fcl.apps.googleusercontent.com&redirect_uri=http://localhost:5173/auth/google/callback&response_type=code&scope=email profile">
               <button
                 type="button" className="social-btn"
                 style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, background: 'rgba(255,255,255,.45)', border: '1.5px solid rgba(14,116,144,.2)', borderRadius: 12, padding: '11px 0', color: '#1a4a5e', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 2px 10px rgba(0,40,80,.08)' }}
@@ -235,6 +238,7 @@ export default function LoginPage() {
                 </svg>
                 구글로 시작하기
               </button>
+              </a>
             </div>
           </div>
 
