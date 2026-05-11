@@ -24,6 +24,7 @@ router.get('/auth/kakao/start', (req, res) => {
     client_id: clientId,
     redirect_uri: getKakaoRedirectUri(),
     response_type: 'code',
+    scope: 'profile_nickname',
   });
 
   res.redirect(`${KAKAO_AUTH_URL}?${params.toString()}`);
@@ -43,6 +44,7 @@ router.get('/auth/kakao/profile', async (req, res, next) => {
       redirect_uri: getKakaoRedirectUri(),
       code,
     });
+    console.log('[Kakao token redirect_uri]', getKakaoRedirectUri());
 
     if (process.env.KAKAO_CLIENT_SECRET) {
       tokenParams.set('client_secret', process.env.KAKAO_CLIENT_SECRET);
@@ -55,7 +57,9 @@ router.get('/auth/kakao/profile', async (req, res, next) => {
     });
 
     if (!tokenRes.ok) {
-      return res.status(502).json({ error: '카카오 토큰을 가져오지 못했습니다.' });
+      const errorText = await tokenRes.text();
+      console.error('[Kakao token error]', tokenRes.status, errorText);
+      return res.status(502).json({ error: '카카오 토큰을 가져오지 못했습니다.', detail: errorText });
     }
 
     const token = await tokenRes.json();
@@ -73,11 +77,15 @@ router.get('/auth/kakao/profile', async (req, res, next) => {
     });
 
     if (!profileRes.ok) {
-      return res.status(502).json({ error: '카카오 프로필을 가져오지 못했습니다.' });
+      const errorText = await profileRes.text();
+      console.error('[Kakao profile error]', profileRes.status, errorText);
+      return res.status(502).json({ error: '카카오 프로필을 가져오지 못했습니다.', detail: errorText });
     }
 
     const profile = await profileRes.json();
     const nickname = profile.kakao_account?.profile?.nickname || profile.properties?.nickname;
+    console.log('[Kakao profile]', JSON.stringify(profile, null, 2));
+    console.log('[Kakao nickname]', nickname || '(empty)');
     res.json({ userName: nickname || '' });
   } catch (err) {
     next(err);
