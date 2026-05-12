@@ -485,6 +485,8 @@
     }
 
     .ai-generation-schedule-page .legend-dot.meal { background: var(--orange); }
+    .ai-generation-schedule-page .legend-dot.hotel { background: var(--teal); }
+    .ai-generation-schedule-page .legend-dot.transit { background: #64748b; }
     .ai-generation-schedule-page .legend-dot.rest { background: var(--teal); }
 
     .ai-generation-schedule-page .feed {
@@ -613,6 +615,16 @@
       box-shadow: 0 0 0 2px #fed7aa;
     }
 
+    .ai-generation-schedule-page .node-dot.hotel {
+      background: var(--teal);
+      box-shadow: 0 0 0 2px #a7f3d0;
+    }
+
+    .ai-generation-schedule-page .node-dot.transit {
+      background: #64748b;
+      box-shadow: 0 0 0 2px #cbd5e1;
+    }
+
     .ai-generation-schedule-page .node-dot.rest {
       background: var(--teal);
       box-shadow: 0 0 0 2px #a7f3d0;
@@ -659,6 +671,16 @@
     .ai-generation-schedule-page .tag.meal {
       color: #9a3412;
       background: #fff7ed;
+    }
+
+    .ai-generation-schedule-page .tag.hotel {
+      color: #047857;
+      background: #ecfdf5;
+    }
+
+    .ai-generation-schedule-page .tag.transit {
+      color: #334155;
+      background: #f1f5f9;
     }
 
     .ai-generation-schedule-page .tag.rest {

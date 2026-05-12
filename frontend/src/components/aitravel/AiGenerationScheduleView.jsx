@@ -48,6 +48,20 @@ const DESTINATION_IMAGES = {
 }
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1800&q=88'
 
+function getItemType(item) {
+  if (item?.isMeal) return { label: '식사', className: ' meal' }
+
+  const text = `${item?.name || ''} ${item?.note || ''}`.toLowerCase()
+  if (/공항|airport|\b[a-z]{3}\b/.test(text)) {
+    return { label: '이동', className: ' transit' }
+  }
+  if (/숙소|호텔|hotel|resort|리조트|체크인|체크아웃|복귀/.test(text)) {
+    return { label: '숙소', className: ' hotel' }
+  }
+
+  return { label: '명소', className: '' }
+}
+
 function getBgImage(dest) {
   if (!dest) return DEFAULT_IMAGE
   for (const [key, url] of Object.entries(DESTINATION_IMAGES)) {
@@ -58,6 +72,7 @@ function getBgImage(dest) {
 
 function ItemModal({ item, dest, onClose }) {
   const mapSrc = `https://www.google.com/maps/embed/v1/search?key=${MAPS_KEY}&q=${encodeURIComponent(item.name + ', ' + dest)}&zoom=15`
+  const itemType = getItemType(item)
 
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose() }
@@ -70,7 +85,7 @@ function ItemModal({ item, dest, onClose }) {
       <div className="item-modal" onClick={e => e.stopPropagation()}>
         <div className="item-modal-header">
           <div className="item-modal-meta">
-            <span className={`tag${item.isMeal ? ' meal' : ''}`}>{item.isMeal ? '식사' : '명소'}</span>
+            <span className={`tag${itemType.className}`}>{itemType.label}</span>
             <span className="item-modal-time">{item.time}</span>
           </div>
           <button className="item-modal-close" onClick={onClose}>✕</button>
@@ -106,6 +121,28 @@ function extractFlightRouteFromName(name) {
   const min = totalMins % 60
   const duration = h > 0 ? (min > 0 ? `${h}시간 ${min}분` : `${h}시간`) : `${min}분`
   return { found: true, mode: 'flying', duration, distance: '', durationSeconds: totalMins * 60 }
+}
+
+function distanceTextToKm(distance) {
+  const text = String(distance || '').replace(/,/g, '')
+  const km = text.match(/(\d+(?:\.\d+)?)\s*km/i)
+  if (km) return Number(km[1]) || 0
+  const m = text.match(/(\d+(?:\.\d+)?)\s*m/i)
+  if (m) return (Number(m[1]) || 0) / 1000
+  return 0
+}
+
+function isAirportItem(item) {
+  return /공항|airport|\b[A-Z]{3}\b/i.test(`${item?.name || ''} ${item?.note || ''}`)
+}
+
+function normalizeRouteInfo(info, origin, destination) {
+  if (!info?.found) return info
+  const km = distanceTextToKm(info.distance)
+  if (km >= 500 && !isAirportItem(origin) && !isAirportItem(destination)) {
+    return { found: false, suppressed: true }
+  }
+  return info
 }
 
 // "약 6~7시간", "약 2시간" 등 → 최댓값(분) 반환
@@ -327,6 +364,14 @@ function filterOutliers(points) {
   return filtered.length >= 2 ? filtered : points
 }
 
+function dedupeSequentialPoints(points, minDistance = 0.0002) {
+  return points.filter((point, index) => {
+    const prev = points[index - 1]
+    if (!prev) return true
+    return Math.hypot(point.lat - prev.lat, point.lng - prev.lng) > minDistance
+  })
+}
+
 function spreadOverlappingPoints(points) {
   const seen = new Map()
   return points.map(point => {
@@ -518,8 +563,10 @@ function RouteMap({ routeItems, activeDay, dest }) {
   const mapClickListenerRef = useRef(null)
   const idleListenerRef = useRef(null)
   const [useFallback, setUseFallback] = useState(false)
-  // 숙소 앵커(isHotel)는 시간 계산용이므로 지도 렌더링에서 제외
-  const spotItems = useMemo(() => (routeItems ?? []).filter(item => !item.isHotel), [routeItems])
+  const spotItems = useMemo(
+    () => (routeItems ?? []).filter(item => !item.isHotel && getItemType(item).label !== '숙소'),
+    [routeItems]
+  )
   const fallbackSrc = useMemo(() => buildPlaceSrc(spotItems, dest), [spotItems, dest])
 
   useEffect(() => {
@@ -536,7 +583,6 @@ function RouteMap({ routeItems, activeDay, dest }) {
 
         const fixedPoints = spotItems.map(pointFromItem)
         let points = filterOutliers(fixedPoints.filter(Boolean))
-
         if (points.length < 2) {
           const resolved = await Promise.all(spotItems.map(async item => {
             const point = pointFromItem(item)
@@ -570,12 +616,16 @@ function RouteMap({ routeItems, activeDay, dest }) {
         clearMapOverlays(markersRef, polylineRef)
         clearSpiderOverlays(spiderRef)
 
-        const spreadPoints = spreadOverlappingPoints(points)
+        const orderedLinePoints = dedupeSequentialPoints(filterOutliers(
+          (routeItems ?? []).map(pointFromItem).filter(Boolean)
+        ))
+        const linePoints = orderedLinePoints.length >= 2 ? orderedLinePoints : points
+        const markerPoints = spreadOverlappingPoints(points)
         const bounds = new maps.LatLngBounds()
-        spreadPoints.forEach(p => bounds.extend({ lat: p.lat, lng: p.lng }))
+        linePoints.forEach(p => bounds.extend({ lat: p.lat, lng: p.lng }))
 
         polylineRef.current = new maps.Polyline({
-          path: spreadPoints.map(p => ({ lat: p.lat, lng: p.lng })),
+          path: linePoints.map(p => ({ lat: p.lat, lng: p.lng })),
           map,
           strokeColor: '#0099ff',
           strokeOpacity: 0.86,
@@ -591,7 +641,7 @@ function RouteMap({ routeItems, activeDay, dest }) {
         idleListenerRef.current = map.addListener('idle', () => {
           if (cancelled) return
           clearSpiderOverlays(spiderRef)
-          const clusters = computeClusters(map, points)
+          const clusters = computeClusters(map, markerPoints)
           drawMarkersForClusters(maps, map, clusters, markersRef, spiderRef)
         })
 
@@ -602,7 +652,7 @@ function RouteMap({ routeItems, activeDay, dest }) {
       })
 
     return () => { cancelled = true }
-  }, [spotItems, activeDay, dest])
+  }, [spotItems, activeDay, dest, routeItems])
 
   useEffect(() => () => {
     clearMapOverlays(markersRef, polylineRef)
@@ -701,6 +751,7 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
         const flightInfo = extractFlightRouteFromName(item.name)
         if (flightInfo) return Promise.resolve(flightInfo)
         return fetchRoute(itemToRoutePoint(item, dest), itemToRoutePoint(items[i + 1], dest))
+          .then(info => normalizeRouteInfo(info, item, items[i + 1]))
       })
     ).then(results => {
         if (!cancelled) setRouteInfos(results)
@@ -847,6 +898,7 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
             ))}
             <div className="legend">
               <div className="legend-row"><span className="legend-dot"></span>명소/이동</div>
+              <div className="legend-row"><span className="legend-dot transit"></span>공항/이동</div>
               <div className="legend-row"><span className="legend-dot meal"></span>식사</div>
             </div>
           </aside>
@@ -861,12 +913,14 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
                   </div>
                 </header>
                 <div className="time-grid">
-                  {currentDay.items?.map((item, i) => (
+                  {currentDay.items?.map((item, i) => {
+                    const itemType = getItemType(item)
+                    return (
                     <React.Fragment key={i}>
                       <div className="node">
                         <div className="node-time">{adjustedTimes[i] ?? item.time}</div>
                         <div className="node-line">
-                          <span className={`node-dot${item.isMeal ? ' meal' : ''}`}></span>
+                          <span className={`node-dot${itemType.className}`}></span>
                         </div>
                         <section
                           className="node-card node-card-clickable"
@@ -874,9 +928,7 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
                         >
                           <div className="node-top">
                             <h3>{item.name}</h3>
-                            <span className={`tag${item.isMeal ? ' meal' : ''}`}>
-                              {item.isMeal ? '식사' : '명소'}
-                            </span>
+                            <span className={`tag${itemType.className}`}>{itemType.label}</span>
                           </div>
                           <p>{item.note}</p>
                           {parseNoteStayMins(item.note) && (
@@ -911,7 +963,8 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
                         </div>
                       )}
                     </React.Fragment>
-                  ))}
+                    )
+                  })}
                 </div>
               </article>
             )}

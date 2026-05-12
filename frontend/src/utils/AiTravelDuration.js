@@ -379,7 +379,7 @@ export function initAiTravelDuration() {
       { mode:'taxi', icon:'🚕', title:'택시', desc:taxiLive?.desc || '가까운 승차 지점 호출 · 교통 상황 반영 예정', time:taxiLive?.time || '조회', minutes:taxiLive?.minutes ?? 999 }
     ];
   }
-  
+
   function getFastestMode(stop, i) {
     return getModeOptions(stop, i).reduce((best, opt) => opt.minutes < best.minutes ? opt : best);
   }
@@ -1305,4 +1305,3 @@ export function initAiTravelDuration() {
     if (window.initMap === initMap) delete window.initMap;
   };
 }
-
