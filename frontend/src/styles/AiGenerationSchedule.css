@@ -1103,3 +1103,75 @@
       font-weight: 600;
       color: #2563eb;
     }
+
+    /* ── 경고 카드 ── */
+    .ai-generation-schedule-page .warnings-card {
+      margin-top: 14px;
+      background: linear-gradient(145deg, #fffbeb, #fff7f0);
+      border-color: #fde68a;
+    }
+
+    .ai-generation-schedule-page .warnings-card h2 {
+      color: #92400e;
+    }
+
+    .ai-generation-schedule-page .warnings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .ai-generation-schedule-page .warning-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.86);
+    }
+
+    .ai-generation-schedule-page .warning-item.warning-cost {
+      border-left: 3px solid #f59e0b;
+    }
+
+    .ai-generation-schedule-page .warning-item.warning-logistics {
+      border-left: 3px solid #3b82f6;
+    }
+
+    .ai-generation-schedule-page .warning-item.warning-realism {
+      border-left: 3px solid #ef4444;
+    }
+
+    .ai-generation-schedule-page .warning-item.warning-tip {
+      border-left: 3px solid #10b981;
+    }
+
+    .ai-generation-schedule-page .warning-icon {
+      font-size: 20px;
+      line-height: 1;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .ai-generation-schedule-page .warning-body {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .ai-generation-schedule-page .warning-title {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 850;
+      color: #1e293b;
+    }
+
+    .ai-generation-schedule-page .warning-message {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 650;
+      color: #536173;
+      line-height: 1.6;
+      word-break: keep-all;
+    }

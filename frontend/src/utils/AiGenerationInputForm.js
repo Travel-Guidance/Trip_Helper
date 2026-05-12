@@ -1,4 +1,4 @@
-import { BUDGETS, CONTINENTS, INTENSITY_LABELS, STEP_DONE_GUIDES, STEP_GUIDES, STYLE_SUGGESTIONS } from '../data/AiGenerationInputForm'
+import { CONTINENTS, INTENSITY_LABELS, STEP_DONE_GUIDES, STEP_GUIDES, STYLE_SUGGESTIONS } from '../data/AiGenerationInputForm'
 
 export function initAiGenerationInputForm() {
       const state = {
@@ -11,10 +11,10 @@ export function initAiGenerationInputForm() {
         teens: 0,
         children: 0,
         infants: 0,
-        budget: "",
+        budgetText: "",
         intensity: 0,
-        budgetTouched: false,
         intensityTouched: false,
+        travelPreference: "",
         places: [],
         styles: []
       };
@@ -22,7 +22,7 @@ export function initAiGenerationInputForm() {
       const STEPS = [
         { icon: "🌍", title: "여행지", sub: "어디로", required: true, done: () => state.destinations.length > 0 },
         { icon: "📅", title: "일정", sub: "언제 누구와", required: true, done: () => Boolean(state.startDate && state.endDate && getNights() > 0) },
-        { icon: "💰", title: "예산", sub: "여행 밀도", required: false, done: () => false },
+        { icon: "💰", title: "예산", sub: "여행 예산", required: false, done: () => state.budgetText.trim().length > 0 },
         { icon: "⚡", title: "속도", sub: "여행 강도", required: false, done: () => false },
         { icon: "✨", title: "스타일", sub: "선택하면 정교해져요", required: false, done: () => state.styles.length > 0 }
       ];
@@ -142,16 +142,6 @@ export function initAiGenerationInputForm() {
         `).join("");
       }
   
-      function renderBudgets() {
-        $("budgetGrid").innerHTML = BUDGETS.map(item => `
-          <button class="budget ${state.budgetTouched && state.budget === item.key ? "active" : ""}" type="button" data-budget="${item.key}">
-            <div>${item.icon}</div>
-            <strong>${item.label}</strong>
-            <span>${item.sub}</span>
-          </button>
-        `).join("");
-        updateBudgetEstimate();
-      }
   
       function renderStyleSuggestions() {
         $("styleSuggestChips").innerHTML = STYLE_SUGGESTIONS.map(style => `
@@ -255,23 +245,8 @@ export function initAiGenerationInputForm() {
           summary.classList.remove("show");
           summary.innerHTML = "";
         }
-        updateBudgetEstimate();
       }
   
-      function updateBudgetEstimate() {
-        const days = getTripDays();
-        const selected = BUDGETS.find(item => item.key === state.budget);
-        const estimate = $("budgetEstimate");
-        if (state.budgetTouched && days && selected && selected.rate) {
-          const travelers = state.adults + state.teens + state.children;
-          const total = selected.rate * days * travelers;
-          estimate.innerHTML = `<span>예상 경비 (항공 제외)</span><strong>약 ${total.toLocaleString("ko-KR")}원</strong>`;
-          estimate.classList.add("show");
-        } else {
-          estimate.classList.remove("show");
-          estimate.innerHTML = "";
-        }
-      }
   
       function destinationLabel() {
         if (!state.destinations.length) return "";
@@ -281,18 +256,20 @@ export function initAiGenerationInputForm() {
   
       function summaryChips() {
         const nights = getNights();
-        const budget = BUDGETS.find(item => item.key === state.budget);
         const chips = [];
         const showDefaults = currentStep > 0;
-  
+
         if (state.destinations.length) chips.push(destinationLabel());
         if (state.places.length) chips.push(`고정 장소 ${state.places.length}곳`);
         if (nights > 0) chips.push(`${nights}박 ${nights + 1}일`);
         if (showDefaults) chips.push(`${state.adults + state.teens + state.children + state.infants}명`);
-        if (state.budgetTouched && budget) chips.push(budget.label);
+        if (state.budgetText.trim()) {
+          const label = state.budgetText.trim();
+          chips.push(label.length > 14 ? label.slice(0, 14) + '…' : label);
+        }
         if (state.intensityTouched) chips.push(`강도 ${state.intensity}/100`);
         state.styles.forEach(style => chips.push(`#${style}`));
-  
+
         return chips;
       }
   
@@ -300,7 +277,7 @@ export function initAiGenerationInputForm() {
         const done = [
           hasDates,
           hasDestination,
-          state.budgetTouched,
+          state.budgetText.trim().length > 0,
           state.intensityTouched,
           hasStyle
         ];
@@ -377,21 +354,20 @@ export function initAiGenerationInputForm() {
   
       function confirmRows() {
         const nights = getNights();
-        const budget = BUDGETS.find(item => item.key === state.budget);
         const rows = [
           ["여행지", destinationLabel()],
           ["여행 기간", `${formatDate(state.startDate)} ~ ${formatDate(state.endDate)} (${nights}박 ${nights + 1}일)`],
           ["인원", travelerText()],
           ["꼭 갈 장소", state.places.length ? state.places.join(", ") : "선택 안 함"],
-          ["예산", state.budgetTouched && budget ? `${budget.label} (${budget.sub})` : "선택 안 함"],
+          ["예산", state.budgetText.trim() || "선택 안 함"],
           ["여행 강도", state.intensityTouched ? `${state.intensity}/100 · ${$("intDesc").textContent}` : "선택 안 함"],
-          ["여행 스타일", state.styles.length ? state.styles.map(style => `#${style}`).join(" ") : "선택 안 함"]
+          ["여행 스타일", state.styles.length ? state.styles.map(style => `#${style}`).join(" ") : "선택 안 함"],
+          ["여행 선호 방식", state.travelPreference.trim() || "선택 안 함"]
         ];
         return rows;
       }
   
       function tripDraft() {
-        const budget = BUDGETS.find(item => item.key === state.budget);
         return {
           destination: destinationLabel(),
           destinations: [...state.destinations],
@@ -403,8 +379,9 @@ export function initAiGenerationInputForm() {
           teens: state.teens,
           children: state.children,
           infants: state.infants,
-          budget: state.budgetTouched && budget ? `${budget.label} (${budget.sub})` : "",
+          budgetText: state.budgetText.trim(),
           intensity: state.intensityTouched ? `${state.intensity}/100 · ${$("intDesc").textContent}` : "",
+          travelPreference: state.travelPreference.trim(),
           places: [...state.places],
           styles: [...state.styles]
         };
@@ -525,7 +502,7 @@ export function initAiGenerationInputForm() {
   
         if (ready) {
           const detailParts = [];
-          if (state.budgetTouched) detailParts.push("예산 반영");
+          if (state.budgetText.trim()) detailParts.push("예산 반영");
           if (state.intensityTouched) detailParts.push(`강도 ${state.intensity}/100`);
           if (hasStyle) detailParts.push(`스타일 ${state.styles.length}개 반영`);
           const detail = detailParts.length
@@ -582,15 +559,6 @@ export function initAiGenerationInputForm() {
           renderCountries();
           renderDestinations();
           clearStepWarnings();
-          validate();
-          return;
-        }
-  
-        const budgetButton = event.target.closest("[data-budget]");
-        if (budgetButton) {
-          state.budget = budgetButton.dataset.budget;
-          state.budgetTouched = true;
-          renderBudgets();
           validate();
           return;
         }
@@ -691,6 +659,15 @@ export function initAiGenerationInputForm() {
         }
       });
   
+      $("budgetInput")?.addEventListener("input", event => {
+        state.budgetText = event.target.value;
+        validate();
+      });
+
+      $("preferenceInput")?.addEventListener("input", event => {
+        state.travelPreference = event.target.value;
+      });
+
       $("startDate").addEventListener("change", event => {
         state.startDate = event.target.value;
         if (state.endDate && state.endDate <= state.startDate) {
@@ -780,7 +757,6 @@ export function initAiGenerationInputForm() {
       renderContinents();
       renderCountries();
       renderDestinations();
-      renderBudgets();
       renderStyleSuggestions();
       renderCounters();
       renderPlaces();

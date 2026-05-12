@@ -1,5 +1,8 @@
-import { useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Music, Pause } from 'lucide-react'
+
+const YOUTUBE_MUSIC_URL =
+  'https://www.youtube.com/embed/j8FoJxLv-JI?enablejsapi=1&autoplay=1&loop=1&playlist=j8FoJxLv-JI&playsinline=1'
 
 export default function MusicPlayer() {
   const [playing, setPlaying] = useState(false)
@@ -12,6 +15,12 @@ export default function MusicPlayer() {
       '*'
     )
   }
+
+  useEffect(() => {
+    if (!started || !playing) return
+    const timer = setTimeout(() => sendCommand('playVideo'), 500)
+    return () => clearTimeout(timer)
+  }, [started, playing])
 
   const toggle = () => {
     if (!started) {
@@ -28,10 +37,15 @@ export default function MusicPlayer() {
       {started && (
         <iframe
           ref={iframeRef}
-          src="https://www.youtube.com/embed/3ssL8vx7Xhg?autoplay=1&enablejsapi=1&list=PLbO6DZoHB7rQwNeinHBM_2bV2B6hR3Xx4&loop=1&controls=0"
-          allow="autoplay"
-          style={{ position: 'fixed', top: -9999, left: -9999, width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
-          title="bgm"
+          src={YOUTUBE_MUSIC_URL}
+          title="Background music player"
+          className="fixed w-px h-px opacity-0 pointer-events-none"
+          allow="autoplay; encrypted-media"
+          referrerPolicy="strict-origin-when-cross-origin"
+          allowFullScreen
+          onLoad={() => {
+            if (playing) sendCommand('playVideo')
+          }}
         />
       )}
 

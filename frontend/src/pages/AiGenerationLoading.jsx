@@ -5,7 +5,6 @@ import AiGenerationLoadingView from '../components/aitravel/AiGenerationLoadingV
 import { apiPost } from '../api/apiClient'
 import { DEFAULT_TRIP, LOADING_MESSAGES } from '../data/AiGenerationLoading'
 
-const BUDGET_MAP = { '알뜰': 'low', '보통': 'mid', '적정': 'mid', '프리미엄': 'high', '럭셔리': 'high' }
 const DIFFICULTY_MAP = { '여유': 'relaxed', '여유롭게': 'relaxed', '보통': 'normal', '활동적': 'active', '빡빡': 'intense' }
 
 function parseIntensityScore(value) {
@@ -29,13 +28,12 @@ function difficultyFromIntensity(value) {
 }
 
 function buildApiParams(trip) {
-  const budgetKey = Object.keys(BUDGET_MAP).find(k => (trip.budget || '').includes(k)) || '보통'
   const intensityScore = parseIntensityScore(trip.intensity)
 
   return {
     country: trip.destination || trip.dest || '도쿄',
     nights: Number(trip.nights) || 3,
-    budget: BUDGET_MAP[budgetKey] || 'mid',
+    budgetText: trip.budgetText || '',
     difficulty: difficultyFromIntensity(trip.intensity),
     intensityScore,
     styles: trip.styles || [],
@@ -44,6 +42,7 @@ function buildApiParams(trip) {
     mustVisit: trip.places?.join(', ') || '',
     startDate: trip.startDate || '',
     endDate: trip.endDate || '',
+    travelPreference: trip.travelPreference || '',
   }
 }
 

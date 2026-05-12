@@ -858,6 +858,23 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
             </ul>
           </aside>
 
+          {planData?.warnings?.length > 0 && (
+            <aside className="intel-card warnings-card">
+              <h2>여행 전 꼭 확인하세요</h2>
+              <div className="warnings-list">
+                {planData.warnings.map((w, i) => (
+                  <div key={i} className={`warning-item warning-${w.type}`}>
+                    <span className="warning-icon">{w.icon}</span>
+                    <div className="warning-body">
+                      <p className="warning-title">{w.title}</p>
+                      <p className="warning-message">{w.message}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </aside>
+          )}
+
           {planData?.accommodations?.length > 0 && (
             <aside className="intel-card accom-card">
               <h2>숙소 정보</h2>

@@ -202,7 +202,7 @@ export default function AiGenerationInputFormView({ openCalendar, setOpenCalenda
                 <section className="step-panel" data-step-panel="2">
                   <div className="step-hero">
                     <p>Step 03</p>
-                    <h3>예산 범위를 선택해주세요.</h3>
+                    <h3>예산을 직접 입력해주세요.</h3>
                   </div>
                   <div>
                     <section className="panel">
@@ -210,12 +210,21 @@ export default function AiGenerationInputFormView({ openCalendar, setOpenCalenda
                         <div className="title-wrap">
                           <span className="icon">💰</span>
                           <div>
-                            <h3>예산 범위</h3>
-                            <p className="panel-note">1인 기준, 하루 예상 지출입니다.</p>
+                            <h3>여행 예산</h3>
+                            <p className="panel-note">1인 기준 하루 예산, 총 예산 등 편한 방식으로 적어주세요.</p>
                           </div>
                         </div>
+                        <span className="badge">선택</span>
                       </div>
-                      <div className="budget-grid" id="budgetGrid"></div>
+                      <div className="input-row">
+                        <input
+                          className="input"
+                          id="budgetInput"
+                          type="text"
+                          placeholder="예: 1인 하루 10만원, 총 여행 예산 150만원"
+                        />
+                      </div>
+                      <p className="hint">항공권 제외 금액을 자유롭게 입력하세요.</p>
                       <div className="notice" id="budgetEstimate"></div>
                     </section>
                   </div>
@@ -286,6 +295,25 @@ export default function AiGenerationInputFormView({ openCalendar, setOpenCalenda
                       <div className="purpose-grid" id="styleSuggestChips"></div>
                     </div>
                     <div className="tags chips" id="styleTags"></div>
+                  </section>
+
+                  <section className="panel" style={{marginTop: '14px'}}>
+                    <div className="panel-head">
+                      <div className="title-wrap">
+                        <span className="icon">💬</span>
+                        <div>
+                          <h3>여행 선호 방식</h3>
+                          <p className="panel-note">어떤 식으로 여행하는 걸 좋아하는지 자유롭게 적어주세요.</p>
+                        </div>
+                      </div>
+                      <span className="badge">선택</span>
+                    </div>
+                    <textarea
+                      id="preferenceInput"
+                      className="preference-textarea"
+                      placeholder="예: 아침 일찍 출발해서 저녁엔 느긋하게 즐겨요. 식사에 많은 시간을 투자하고 싶어요. 걷는 걸 좋아해서 대중교통 선호해요."
+                      rows={4}
+                    />
                     <div className="action-bar">
                       <div className="bar-copy">
                         <p className="bar-title" id="barTitle">여행 조건을 입력해주세요</p>
