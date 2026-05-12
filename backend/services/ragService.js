@@ -56,7 +56,7 @@ function buildDebug({ enabled, reason, dest, query, city, count = 0 }) {
 
 async function retrieveContext(
   query,
-  { limit = 6, dest = null, budget = null, category = null, lat = null, lon = null, debug = false } = {},
+  { limit = 6, dest = null, budget = null, category = null, styles = [], lat = null, lon = null, debug = false } = {},
 ) {
   const city = resolveCityFilter(dest);
 
@@ -67,7 +67,7 @@ async function retrieveContext(
   }
 
   const priceRange = budget ? PRICE_RANGE_MAP[budget] : null;
-  const results = await searchKnowledge(query, { city, category, priceRange, limit, lat, lon });
+  const results = await searchKnowledge(query, { city, category, priceRange, styles, limit, lat, lon });
   const context = formatContext(results);
   const meta = buildDebug({
     enabled: true,

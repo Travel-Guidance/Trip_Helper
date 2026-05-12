@@ -6,13 +6,13 @@ const { filterByRadius, GEO_RADIUS_KM } = require('./geo');
 
 async function searchKnowledge(
   query,
-  { city = null, category = null, priceRange = null, limit = 6, lat = null, lon = null, radiusKm = GEO_RADIUS_KM } = {},
+  { city = null, category = null, priceRange = null, styles = [], limit = 6, lat = null, lon = null, radiusKm = GEO_RADIUS_KM } = {},
 ) {
   const vector = await embed(query);
 
   // 좌표 필터 시 충분한 후보를 가져와 거리 필터 후 limit 맞춤
   const fetchLimit = lat != null && lon != null ? limit * 4 : limit;
-  const results = await store.search(vector, { city, category, priceRange, limit: fetchLimit });
+  const results = await store.search(vector, { city, category, priceRange, styles, limit: fetchLimit });
 
   const mapped = results.map(result => ({
     score:       result.score,

@@ -47,14 +47,22 @@ async function search(vector, limit = 5, filter = null) {
   return result.result;
 }
 
-async function searchByParams(vector, { limit = 5, city = null, category = null, priceRange = null } = {}) {
+async function searchByParams(vector, { limit = 5, city = null, category = null, priceRange = null, styles = [] } = {}) {
   const must = [];
 
   if (city) must.push({ key: 'city', match: { any: [city, '공통'] } });
   if (category) must.push({ key: 'category', match: { value: category } });
   if (priceRange) must.push({ key: 'price_range', match: { value: priceRange } });
 
-  return search(vector, limit, must.length ? { must } : null);
+  const filter = must.length ? { must } : null;
+
+  // styles는 must가 있을 때만 should로 추가 (scoring boost)
+  // must 없이 should만 있으면 Qdrant가 최소 1개 매칭을 강제해 결과가 줄어들 수 있음
+  if (must.length > 0 && styles.length > 0) {
+    filter.should = styles.map(style => ({ key: 'tags', match: { value: style } }));
+  }
+
+  return search(vector, limit, filter);
 }
 
 module.exports = {

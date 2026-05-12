@@ -13,8 +13,8 @@ async function upsertBatch(points) {
   return qdrant.upsert(points);
 }
 
-async function search(vector, { city = null, category = null, priceRange = null, limit = 6 } = {}) {
-  return qdrant.searchByParams(vector, { limit, city, category, priceRange });
+async function search(vector, { city = null, category = null, priceRange = null, styles = [], limit = 6 } = {}) {
+  return qdrant.searchByParams(vector, { limit, city, category, priceRange, styles });
 }
 
 module.exports = { ensureCollection, upsertBatch, search };

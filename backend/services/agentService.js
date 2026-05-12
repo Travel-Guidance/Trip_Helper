@@ -36,6 +36,7 @@ async function getRagContext(params) {
     return retrieveContext(buildRagQuery(normalized), {
       dest: normalized.dest,
       budget: normalized.budget,
+      styles: normalized.styles,
       lat,
       lon,
       debug: true,
@@ -144,6 +145,38 @@ async function runAgent(params) {
   if (!Array.isArray(plan.days) || plan.days.length === 0) {
     throw new Error('AI가 일정을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.');
   }
+
+  const expectedDays = normalizePlanParams(params).days;
+  const MAX_FILL_ATTEMPTS = 3;
+  let fillAttempts = 0;
+  while (plan.days.length < expectedDays && fillAttempts < MAX_FILL_ATTEMPTS) {
+    fillAttempts++;
+    const missingFrom = plan.days.length + 1;
+    console.warn(`[agentService] days 부족: ${plan.days.length}/${expectedDays}일, ${missingFrom}일차부터 재요청 (시도 ${fillAttempts}/${MAX_FILL_ATTEMPTS})`);
+    const missingPrompt = `일정이 ${plan.days.length}일차에서 끊겼습니다. ${missingFrom}일차부터 ${expectedDays}일차까지 나머지 days 배열만 {"days":[...]} 형식의 순수 JSON으로 출력하세요.`;
+    try {
+      const missingResponse = await safeSend(chatSession, missingPrompt);
+      const missingText = await resolveFinalText(chatSession, missingResponse);
+      const missingPlan = extractJsonObject(missingText);
+      if (!Array.isArray(missingPlan.days) || missingPlan.days.length === 0) break;
+
+      const existingLabels = new Set(plan.days.map(d => d.label));
+      const newDays = missingPlan.days.filter(d => !existingLabels.has(d.label));
+      if (newDays.length === 0) break;
+
+      plan.days = [...plan.days, ...newDays];
+      console.log(`[agentService] days 복구 중: ${plan.days.length}/${expectedDays}일`);
+    } catch (e) {
+      console.warn(`[agentService] days 복구 실패 (시도 ${fillAttempts}):`, e.message);
+      break;
+    }
+  }
+  if (plan.days.length < expectedDays) {
+    console.warn(`[agentService] days 복구 완료 (부분): ${plan.days.length}/${expectedDays}일`);
+  } else {
+    console.log(`[agentService] days 복구 완료: ${plan.days.length}/${expectedDays}일`);
+  }
+
   if (ragDebug) plan.ragDebug = ragDebug;
   return plan;
 }
