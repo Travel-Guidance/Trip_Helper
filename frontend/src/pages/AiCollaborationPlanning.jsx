@@ -10,14 +10,7 @@ function hasDraftInfo(draft) {
   return Boolean(draft?.destination || draft?.startDate || draft?.endDate)
 }
 
-function readDraft(searchParams) {
-  try {
-    const stored = JSON.parse(sessionStorage.getItem('aiTripDraft') || '{}')
-    if (hasDraftInfo(stored)) return stored
-  } catch {
-    // fall through to shared URL params
-  }
-
+function draftFromSearchParams(searchParams) {
   const places = searchParams.get('places')
 
   return {
@@ -30,6 +23,20 @@ function readDraft(searchParams) {
     infants: Number(searchParams.get('infants') || 0),
     places: places ? places.split(',').map(place => place.trim()).filter(Boolean) : [],
   }
+}
+
+function readDraft(searchParams) {
+  const sharedDraft = draftFromSearchParams(searchParams)
+  if (hasDraftInfo(sharedDraft)) return sharedDraft
+
+  try {
+    const stored = JSON.parse(sessionStorage.getItem('aiTripDraft') || '{}')
+    if (hasDraftInfo(stored)) return stored
+  } catch {
+    // fall through to empty shared draft
+  }
+
+  return sharedDraft
 }
 
 function buildRoomUrl(roomId, memberCount, draft) {
