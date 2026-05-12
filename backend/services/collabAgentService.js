@@ -362,12 +362,14 @@ async function runCollabAgent(params) {
   }
   let plan = extractJsonObject(finalText);
 
-  const routeCheck = validateAustraliaItinerary(plan, params);
-  if (!routeCheck.valid) {
+  for (let repairAttempt = 1; repairAttempt <= 2; repairAttempt++) {
+    const routeCheck = validateAustraliaItinerary(plan, params);
+    if (routeCheck.valid) break;
+
     console.warn('[collabAgentService] itinerary route violations:', routeCheck.violations.map(v => v.message).join(' | '));
     const repairResponse = await safeSend(chatSession, buildItineraryRepairPrompt(plan, routeCheck.violations));
     finalText = await resolveFinalText(chatSession, repairResponse);
-    console.log('[collabAgentService] repaired finalText preview:', finalText.slice(0, 120));
+    console.log(`[collabAgentService] repaired finalText preview (${repairAttempt}/2):`, finalText.slice(0, 120));
     plan = extractJsonObject(finalText);
   }
 

@@ -197,6 +197,23 @@ function buildRagQuery({ dest, styles, mustVisit }) {
   return `${dest} 호주 여행 ${styles.join(' ')} ${mustVisit || ''}`.trim();
 }
 
+function australiaRegionPacing(days) {
+  const tripDays = Number(days || 0);
+  if (tripDays <= 4) {
+    return { maxRegions: 1, maxDomesticTransfers: 0, minNightsPerRegion: 2 };
+  }
+  if (tripDays <= 6) {
+    return { maxRegions: 2, maxDomesticTransfers: 1, minNightsPerRegion: 2 };
+  }
+  if (tripDays <= 9) {
+    return { maxRegions: 3, maxDomesticTransfers: 2, minNightsPerRegion: 2 };
+  }
+  if (tripDays <= 12) {
+    return { maxRegions: 4, maxDomesticTransfers: 3, minNightsPerRegion: 2 };
+  }
+  return { maxRegions: 5, maxDomesticTransfers: 4, minNightsPerRegion: 2 };
+}
+
 function buildAustraliaOptimizationSection({ dest, nights, days, mustVisit }) {
   const destination = String(dest || '').trim().toLowerCase();
   const requestedPlaces = String(mustVisit || '').toLowerCase();
@@ -207,13 +224,23 @@ function buildAustraliaOptimizationSection({ dest, nights, days, mustVisit }) {
 
   if (!isAustralia) return '';
 
+  const pacing = australiaRegionPacing(days);
+
   return `
 
 [Australia route feasibility rules — HARD CONSTRAINTS]
+STEP 0 — Trip pacing before region selection:
+  - For this ${nights} nights / ${days} days trip, use at most ${pacing.maxRegions} Australian region(s).
+  - Use at most ${pacing.maxDomesticTransfers} domestic long-distance transfer day(s). A transfer day means domestic flight/train/long drive between Australian regions.
+  - Prefer fewer regions with deeper stays over many regions with frequent flights. Do not add a city just because it is famous.
+  - Each selected region should usually have at least ${pacing.minNightsPerRegion} nights. A 1-night region is allowed only for arrival/departure logistics or an explicit mustVisit.
+  - If requested places exceed this pacing limit, include the most efficient set and put the rest in omittedPlaces with a clear reason.
+
 STEP 1 — Region clustering (do this before writing any day):
   - Classify every requested place into a region: Sydney, Melbourne, Cairns/Great Barrier Reef, Brisbane/Gold Coast, Uluru, Perth, Adelaide, or Tasmania.
   - Group consecutive days by region. Never spread one region's sightseeing across non-consecutive days.
   - If the trip length (${nights} nights / ${days} days) cannot fit all regions, put skipped regions in omittedPlaces with a reason.
+  - Once you leave a region, do not return to it later in the same itinerary unless the user explicitly requires a round trip.
 
 STEP 2 — Day type assignment:
   - Assign each day one of three types BEFORE writing items:
@@ -226,11 +253,14 @@ STEP 3 — Same-day region lock (ABSOLUTE RULE):
   - FORBIDDEN example: Day 1 baseHotel is in Sydney, but items include a Melbourne hotel check-in or any place with Melbourne coordinates.
   - FORBIDDEN example: Sightseeing day in Brisbane, but one item has Gold Coast + another has Sydney coordinates.
   - If you see yourself writing items from two different cities on one day → STOP. Split into separate days or move one group to another day.
+  - Exclude long-distance attractions unless the day is an accommodation-transfer day. A normal sightseeing day must not include any attraction more than 120km one-way from the day's base region.
+  - Day tours are allowed only when a coach/bus round trip can realistically finish within 6 hours total. If the round trip is longer, omit the place or move accommodation to that region.
 
 STEP 4 — Transfer day structure:
   - A transfer day contains ONLY: [previous-city hotel departure] → [airport or station] → [flight/train] → [new-city airport or station] → [new-city hotel check-in].
   - Do not add any tourist attraction, restaurant, or museum to a transfer day.
   - The transfer day's baseHotel is the NEW city's hotel (you sleep there that night).
+  - Never schedule domestic flights on back-to-back days. Keep sightseeing days together inside the same region before moving on.
 
 STEP 5 — Accommodation bookkeeping:
   - Add a separate accommodations[] entry for each region/city stay with correct checkIn/checkOut dates.

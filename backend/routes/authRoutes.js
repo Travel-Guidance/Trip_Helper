@@ -98,6 +98,10 @@ const KAKAO_AUTH_URL = 'https://kauth.kakao.com/oauth/authorize';
 const KAKAO_TOKEN_URL = 'https://kauth.kakao.com/oauth/token';
 const KAKAO_PROFILE_URL = 'https://kapi.kakao.com/v2/user/me';
 
+function getKakaoClientId() {
+  return (process.env.KAKAO_CLIENT_ID || '').trim();
+}
+
 function getFrontendUrl() {
   return (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
 }
@@ -107,7 +111,14 @@ function getKakaoRedirectUri() {
 }
 
 router.get('/auth/kakao/start', (req, res) => {
-  const clientId = process.env.KAKAO_CLIENT_ID || '4416539a7e84ede4a15b526950b906a2';
+  const clientId = getKakaoClientId();
+  if (!clientId) {
+    return res.status(500).json({
+      error: 'Kakao login is not configured.',
+      detail: 'Set KAKAO_CLIENT_ID in backend/.env to your Kakao REST API key.',
+    });
+  }
+
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: getKakaoRedirectUri(),
@@ -119,9 +130,15 @@ router.get('/auth/kakao/start', (req, res) => {
 router.get('/auth/kakao/profile', async (req, res, next) => {
   try {
     const { code } = req.query;
-    const clientId = process.env.KAKAO_CLIENT_ID || '4416539a7e84ede4a15b526950b906a2';
-    if (!code || !clientId) {
+    const clientId = getKakaoClientId();
+    if (!code) {
       return res.status(400).json({ error: '카카오 인증 코드가 없습니다.' });
+    }
+    if (!clientId) {
+      return res.status(500).json({
+        error: 'Kakao login is not configured.',
+        detail: 'Set KAKAO_CLIENT_ID in backend/.env to your Kakao REST API key.',
+      });
     }
 
     // 1. 액세스 토큰 발급
@@ -143,7 +160,12 @@ router.get('/auth/kakao/profile', async (req, res, next) => {
     if (!tokenRes.ok) {
       const errBody = await tokenRes.text();
       console.error('[Kakao] token exchange failed', tokenRes.status, errBody);
-      return res.status(502).json({ error: '카카오 토큰을 가져오지 못했습니다.', detail: errBody });
+      return res.status(502).json({
+        error: 'Failed to exchange Kakao authorization code for an access token.',
+        detail: errBody,
+        hint: 'Check that KAKAO_CLIENT_ID is the Kakao REST API key, KAKAO_CLIENT_SECRET matches if client secret is enabled, and KAKAO_REDIRECT_URI exactly matches the Kakao console redirect URI.',
+        redirectUri: getKakaoRedirectUri(),
+      });
     }
     const kakaoToken = await tokenRes.json();
 
