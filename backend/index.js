@@ -1,4 +1,5 @@
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -31,6 +32,7 @@ app.use('/api', generalLimiter);    // 나머지 전체 (60/min)
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api', apiRoutes);
 
 app.use(errorHandler);

@@ -229,6 +229,12 @@ export default function ProfilePage() {
         <div className="profile-provider-badge">
           {providerLabel.emoji} {providerLabel.text}
         </div>
+        <button
+          className="pf-photobook-btn"
+          onClick={() => navigate('/photobook')}
+        >
+          📖 포토북 보기
+        </button>
       </div>
 
       {/* 탭 */}

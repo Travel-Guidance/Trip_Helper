@@ -55,6 +55,25 @@
   color: #fff;
 }
 
+.pf-photobook-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  padding: 7px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.pf-photobook-btn:hover {
+  background: rgba(255, 255, 255, 0.34);
+}
+
 /* ── 탭 ──────────────────────────────────────────────── */
 .profile-tabs {
   background: var(--white);

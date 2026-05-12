@@ -6,17 +6,17 @@ const SAME_DAY_RETURN_KM = 250;
 const REGION_MOVE_KM = 350;
 
 const AUSTRALIA_REGIONS = [
-  { key: 'sydney', label: 'Sydney', aliases: ['sydney', '시드니'], lat: -33.8688, lng: 151.2093 },
-  { key: 'melbourne', label: 'Melbourne', aliases: ['melbourne', '멜버른'], lat: -37.8136, lng: 144.9631 },
-  { key: 'cairns', label: 'Cairns/Great Barrier Reef', aliases: ['cairns', '케언즈', 'great barrier reef', '그레이트 배리어 리프'], lat: -16.9186, lng: 145.7781 },
-  { key: 'brisbane', label: 'Brisbane', aliases: ['brisbane', '브리즈번'], lat: -27.4698, lng: 153.0251 },
-  { key: 'gold-coast', label: 'Gold Coast', aliases: ['gold coast', '골드코스트', '골드 코스트'], lat: -28.0167, lng: 153.4 },
-  { key: 'uluru', label: 'Uluru', aliases: ['uluru', 'ayers rock', '울루루', '에어즈 록'], lat: -25.3444, lng: 131.0369 },
-  { key: 'perth', label: 'Perth', aliases: ['perth', '퍼스'], lat: -31.9523, lng: 115.8613 },
-  { key: 'adelaide', label: 'Adelaide', aliases: ['adelaide', '애들레이드'], lat: -34.9285, lng: 138.6007 },
-  { key: 'tasmania', label: 'Tasmania', aliases: ['tasmania', 'hobart', '태즈메이니아', '호바트'], lat: -42.8821, lng: 147.3272 },
-  { key: 'darwin', label: 'Darwin', aliases: ['darwin', '다윈'], lat: -12.4634, lng: 130.8456 },
-  { key: 'canberra', label: 'Canberra', aliases: ['canberra', '캔버라'], lat: -35.2809, lng: 149.13 },
+  { key: 'sydney', label: '시드니', aliases: ['sydney', '시드니'], lat: -33.8688, lng: 151.2093 },
+  { key: 'melbourne', label: '멜버른', aliases: ['melbourne', '멜버른'], lat: -37.8136, lng: 144.9631 },
+  { key: 'cairns', label: '케언즈/그레이트 배리어 리프', aliases: ['cairns', '케언즈', 'great barrier reef', '그레이트 배리어 리프'], lat: -16.9186, lng: 145.7781 },
+  { key: 'brisbane', label: '브리즈번', aliases: ['brisbane', '브리즈번'], lat: -27.4698, lng: 153.0251 },
+  { key: 'gold-coast', label: '골드코스트', aliases: ['gold coast', '골드코스트', '골드 코스트'], lat: -28.0167, lng: 153.4 },
+  { key: 'uluru', label: '울루루', aliases: ['uluru', 'ayers rock', '울루루', '에어즈 록'], lat: -25.3444, lng: 131.0369 },
+  { key: 'perth', label: '퍼스', aliases: ['perth', '퍼스'], lat: -31.9523, lng: 115.8613 },
+  { key: 'adelaide', label: '애들레이드', aliases: ['adelaide', '애들레이드'], lat: -34.9285, lng: 138.6007 },
+  { key: 'tasmania', label: '태즈메이니아', aliases: ['tasmania', 'hobart', '태즈메이니아', '호바트'], lat: -42.8821, lng: 147.3272 },
+  { key: 'darwin', label: '다윈', aliases: ['darwin', '다윈'], lat: -12.4634, lng: 130.8456 },
+  { key: 'canberra', label: '캔버라', aliases: ['canberra', '캔버라'], lat: -35.2809, lng: 149.13 },
 ];
 
 const AUSTRALIA_DESTINATIONS = new Set([
@@ -113,7 +113,7 @@ function formatKm(km) {
 }
 
 function itemLabel(item) {
-  return String(item?.name || 'unnamed place');
+  return String(item?.name || '이름 없는 장소');
 }
 
 function normalizeDate(value) {
@@ -309,7 +309,7 @@ function validateAustraliaPacing(plan, params, violations) {
     violations.push({
       day: 'trip',
       type: 'too_many_australia_regions',
-      message: `This ${days}-day Australia itinerary uses ${distinctRegions.length} regions, but should use at most ${limits.maxRegions}. Keep fewer regions with deeper stays and move lower-priority regions to omittedPlaces.`,
+      message: `${days}일 호주 일정에 ${distinctRegions.length}개 권역이 포함되어 있습니다. 최대 ${limits.maxRegions}개 권역까지만 사용해야 하므로, 더 적은 권역에 깊게 머물고 우선순위가 낮은 권역은 omittedPlaces로 옮기세요.`,
     });
   }
 
@@ -317,7 +317,7 @@ function validateAustraliaPacing(plan, params, violations) {
     violations.push({
       day: 'trip',
       type: 'too_many_domestic_transfers',
-      message: `This ${days}-day Australia itinerary has ${transferCount} long-distance region transfer(s), but should have at most ${limits.maxDomesticTransfers}. Reduce domestic flights/trains and spend consecutive days in the same region.`,
+      message: `${days}일 호주 일정에 장거리 권역 이동이 ${transferCount}회 포함되어 있습니다. 최대 ${limits.maxDomesticTransfers}회까지만 허용되므로 국내선/기차 이동을 줄이고 같은 권역에 연속으로 머무르세요.`,
     });
   }
 
@@ -330,9 +330,9 @@ function validateAustraliaPacing(plan, params, violations) {
 
     const first = seen.get(block.region.key);
     violations.push({
-      day: block.days[0]?.day.label || `day ${block.startIndex + 1}`,
+      day: block.days[0]?.day.label || `${block.startIndex + 1}일차`,
       type: 'non_consecutive_region_return',
-      message: `${block.region.label} appears, then another region is visited, then ${block.region.label} appears again. Once an Australia region is completed, do not return to it later; group each region into one consecutive stay.`,
+      message: `${block.region.label} 권역을 방문한 뒤 다른 권역으로 이동했다가 다시 ${block.region.label} 권역으로 돌아옵니다. 호주 권역 하나를 마친 뒤에는 다시 되돌아가지 말고, 각 권역을 연속 숙박 구간으로 묶으세요.`,
     });
     seen.set(block.region.key, first);
   });
@@ -343,9 +343,9 @@ function validateAustraliaPacing(plan, params, violations) {
     if (!prev.transferDay || !current.transferDay) continue;
 
     violations.push({
-      day: current.day.label || `day ${index + 1}`,
+      day: current.day.label || `${index + 1}일차`,
       type: 'back_to_back_transfer_days',
-      message: `${prev.day.label || `day ${index}`} and ${current.day.label || `day ${index + 1}`} are both transfer-heavy days. Do not schedule domestic flights or long-distance transfers on back-to-back days.`,
+      message: `${prev.day.label || `${index}일차`}와 ${current.day.label || `${index + 1}일차`}가 모두 이동 중심 일정입니다. 국내선이나 장거리 이동을 연속된 날짜에 배치하지 마세요.`,
     });
   }
 }
@@ -374,7 +374,7 @@ function validateAccommodationMovement(plan, params, violations) {
       continue;
     }
 
-    const dayLabel = current.day.label || current.day.theme || `day ${index + 1}`;
+    const dayLabel = current.day.label || current.day.theme || `${index + 1}일차`;
     const transferBetween = summaries
       .slice(previous.index + 1, current.index + 1)
       .some(summary => summary.transferDay);
@@ -384,7 +384,7 @@ function validateAccommodationMovement(plan, params, violations) {
       violations.push({
         day: dayLabel,
         type: 'arrival_region_base_hotel_missing',
-        message: `${dayLabel} moves from ${previous.region.label} to ${current.region.label} (${formatKm(moveKm)}). After this long-distance move, day.baseHotel must be an accommodation in or near ${current.region.label}, not the previous region.`,
+        message: `${dayLabel}에 ${previous.region.label}에서 ${current.region.label}(으)로 ${formatKm(moveKm)} 이동합니다. 이 장거리 이동 후 day.baseHotel은 이전 권역이 아니라 ${current.region.label} 또는 인근 숙소여야 합니다.`,
       });
     }
 
@@ -392,7 +392,7 @@ function validateAccommodationMovement(plan, params, violations) {
       violations.push({
         day: dayLabel,
         type: 'arrival_region_accommodation_missing',
-        message: `${dayLabel} needs an accommodation entry covering ${current.date || 'that night'} in ${current.region.label}. Add or adjust accommodations with checkIn/checkOut dates and use that accommodation as baseHotel after the move.`,
+        message: `${dayLabel}에는 ${current.region.label} 권역에서 ${current.date || '해당 숙박일'}을 포함하는 accommodations 항목이 필요합니다. checkIn/checkOut 날짜를 추가하거나 조정하고, 이동 후 해당 숙소를 baseHotel로 사용하세요.`,
       });
     }
 
@@ -400,7 +400,7 @@ function validateAccommodationMovement(plan, params, violations) {
       violations.push({
         day: dayLabel,
         type: 'long_region_move_without_transfer_day',
-        message: `${dayLabel} starts sightseeing in ${current.region.label} after leaving ${previous.region.label} (${formatKm(moveKm)}). Treat this as a long-distance transfer with arrival accommodation check-in before local sightseeing, or move sightseeing to the following day.`,
+        message: `${dayLabel}에 ${previous.region.label}에서 출발해 ${formatKm(moveKm)} 이동한 뒤 바로 ${current.region.label} 관광을 시작합니다. 장거리 이동일로 분리해 도착지 숙소 체크인을 먼저 넣거나, 현지 관광은 다음날로 옮기세요.`,
       });
     }
 
@@ -437,9 +437,9 @@ function validateSameDayRegionConsistency(plan, violations) {
       );
       if (kmFromPrimary > REGION_MOVE_KM) {
         violations.push({
-          day: day.label || day.theme || 'day',
+          day: day.label || day.theme || '해당 일자',
           type: 'cross_region_items_same_day',
-          message: `${day.label || 'This day'}: "${itemLabel(item)}" is in ${region.label} but the rest of this day's sightseeing is in ${primaryRegion.label} (${formatKm(kmFromPrimary)} apart). All items on the same day must be in the same region. Move "${itemLabel(item)}" to a day when the baseHotel is in ${region.label}.`,
+          message: `${day.label || '해당 일자'}: "${itemLabel(item)}"은(는) ${region.label} 권역에 있지만, 같은 날의 나머지 관광은 ${primaryRegion.label} 권역에 있습니다(약 ${formatKm(kmFromPrimary)} 거리). 같은 날의 모든 관광 항목은 같은 권역 안에 있어야 하므로 "${itemLabel(item)}"을(를) baseHotel이 ${region.label}에 있는 날짜로 옮기세요.`,
         });
       }
     }
@@ -459,9 +459,9 @@ function validateAustraliaItinerary(plan, params = {}) {
       if (!isVaguePlaceName(item)) continue;
 
       violations.push({
-        day: day.label || day.theme || 'day',
+        day: day.label || day.theme || '해당 일자',
         type: 'vague_place_name',
-        message: `${itemLabel(item)} is too vague for mapping and route planning. Replace it with a real venue or exact place name in the same region, with accurate coordinates.`,
+        message: `${itemLabel(item)}은(는) 지도 표시와 동선 계산에 쓰기에는 너무 모호합니다. 같은 권역의 실제 상호명 또는 정확한 장소명과 좌표로 바꾸세요.`,
       });
     }
   }
@@ -484,15 +484,15 @@ function validateAustraliaItinerary(plan, params = {}) {
 
       if (km > LONG_SEGMENT_KM && !transferDay) {
         violations.push({
-          day: day.label || day.theme || 'day',
+          day: day.label || day.theme || '해당 일자',
           type: 'long_same_day_segment',
-          message: `${itemLabel(previous)} -> ${itemLabel(current)} is ${formatKm(km)} on the same day. Split this into a one-way transfer day or omit one region.`,
+          message: `${itemLabel(previous)} -> ${itemLabel(current)} 구간이 같은 날 ${formatKm(km)} 이동입니다. 편도 이동일로 분리하거나 한 권역을 일정에서 제외하세요.`,
         });
       } else if (km > NORMAL_DAY_SEGMENT_KM && !transferDay && !isTransferItem(previous) && !isTransferItem(current)) {
         violations.push({
-          day: day.label || day.theme || 'day',
+          day: day.label || day.theme || '해당 일자',
           type: 'wide_sightseeing_day',
-          message: `${itemLabel(previous)} -> ${itemLabel(current)} is ${formatKm(km)}. Keep normal sightseeing days within one region.`,
+          message: `${itemLabel(previous)} -> ${itemLabel(current)} 구간이 ${formatKm(km)}입니다. 일반 관광일은 한 권역 안에서만 구성하세요.`,
         });
       }
     }
@@ -500,13 +500,13 @@ function validateAustraliaItinerary(plan, params = {}) {
     const first = items[0];
     const last = items[items.length - 1];
     const returnKm = haversineKm(Number(first.lat), Number(first.lng), Number(last.lat), Number(last.lng));
-    const hasLongHop = violations.some(v => v.day === (day.label || day.theme || 'day') && v.type === 'long_same_day_segment');
+    const hasLongHop = violations.some(v => v.day === (day.label || day.theme || '해당 일자') && v.type === 'long_same_day_segment');
 
     if (hasLongHop && returnKm < SAME_DAY_RETURN_KM && !transferDay) {
       violations.push({
-        day: day.label || day.theme || 'day',
+        day: day.label || day.theme || '해당 일자',
         type: 'same_day_long_return',
-        message: `${day.label || 'This day'} appears to do a long-distance trip and return to the original region. Australian long-distance moves must not be day-trip round trips.`,
+        message: `${day.label || '해당 일자'}는 장거리 이동 후 원래 권역으로 돌아오는 일정처럼 보입니다. 호주 장거리 이동은 당일 왕복 관광으로 구성하면 안 됩니다.`,
       });
     }
   }

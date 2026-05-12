@@ -42,7 +42,7 @@ async function getRagContext(params) {
       debug: true,
     });
   } catch (err) {
-    console.warn(`[RAG] error: ${err.message}`);
+    console.warn(`[RAG] 조회 오류: ${err.message}`);
     return {
       context: '',
       meta: {
@@ -98,7 +98,7 @@ async function resolveFinalText(chatSession, response) {
     const text = safeText(response);
     if (text.includes('{')) return text;
     if (finishReason && finishReason !== 'STOP') {
-      console.warn('[agentService] resolveFinalText finishReason:', finishReason);
+      console.warn('[agentService] 최종 응답 생성 중단 사유:', finishReason);
     }
     const retry1 = await safeSend(chatSession, JSON_PROMPT);
     const retryText1 = safeText(retry1);
@@ -159,7 +159,7 @@ async function runAgent(params) {
     const routeCheck = validateAustraliaItinerary(plan, params);
     if (routeCheck.valid) break;
 
-    console.warn('[agentService] itinerary route violations:', routeCheck.violations.map(v => v.message).join(' | '));
+    console.warn('[agentService] 일정 동선 검증 위반:', routeCheck.violations.map(v => v.message).join(' | '));
     const repairResponse = await safeSend(chatSession, buildItineraryRepairPrompt(plan, routeCheck.violations));
     finalText = await resolveFinalText(chatSession, repairResponse);
     console.log(`[agentService] repaired finalText preview (${repairAttempt}/2):`, finalText.slice(0, 120));
@@ -176,7 +176,7 @@ async function runAgent(params) {
   while (plan.days.length < expectedDays && fillAttempts < MAX_FILL_ATTEMPTS) {
     fillAttempts++;
     const missingFrom = plan.days.length + 1;
-    console.warn(`[agentService] days 부족: ${plan.days.length}/${expectedDays}일, ${missingFrom}일차부터 재요청 (시도 ${fillAttempts}/${MAX_FILL_ATTEMPTS})`);
+    console.warn(`[agentService] 일정 일수 부족: ${plan.days.length}/${expectedDays}일, ${missingFrom}일차부터 재요청 (시도 ${fillAttempts}/${MAX_FILL_ATTEMPTS})`);
     const missingPrompt = `일정이 ${plan.days.length}일차에서 끊겼습니다. ${missingFrom}일차부터 ${expectedDays}일차까지 나머지 days 배열만 {"days":[...]} 형식의 순수 JSON으로 출력하세요.`;
     try {
       const missingResponse = await safeSend(chatSession, missingPrompt);
@@ -191,12 +191,12 @@ async function runAgent(params) {
       plan.days = [...plan.days, ...newDays];
       console.log(`[agentService] days 복구 중: ${plan.days.length}/${expectedDays}일`);
     } catch (e) {
-      console.warn(`[agentService] days 복구 실패 (시도 ${fillAttempts}):`, e.message);
+      console.warn(`[agentService] 일정 일수 복구 실패 (시도 ${fillAttempts}):`, e.message);
       break;
     }
   }
   if (plan.days.length < expectedDays) {
-    console.warn(`[agentService] days 복구 완료 (부분): ${plan.days.length}/${expectedDays}일`);
+    console.warn(`[agentService] 일정 일수 복구 완료 (부분): ${plan.days.length}/${expectedDays}일`);
   } else {
     console.log(`[agentService] days 복구 완료: ${plan.days.length}/${expectedDays}일`);
   }

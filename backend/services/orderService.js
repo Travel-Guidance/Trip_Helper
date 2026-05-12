@@ -18,7 +18,7 @@ async function createOrder({ offer_id, passengers, services = [], userId = null 
     orderData = { ...data, booking_reference: data.booking_reference || bookingRef };
   } catch (duffelErr) {
     const errMsg = duffelErr.errors?.[0]?.message || duffelErr.message || '';
-    console.warn('Duffel order failed (demo fallback):', errMsg || JSON.stringify(duffelErr.errors));
+    console.warn('Duffel 주문 실패로 데모 예약 데이터로 대체합니다:', errMsg || JSON.stringify(duffelErr.errors));
     orderData = {
       id: 'demo_' + Math.random().toString(36).slice(2, 14),
       booking_reference: bookingRef,

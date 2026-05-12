@@ -5,6 +5,7 @@ import {
   SCHEDULE as MOCK_SCHEDULE,
 } from '../data/AiTravelDuration'
 import { apiGet } from '../api/apiClient'
+import EMERGENCY_NUMBERS from '../data/emergencyNumbers.json'
 
 /* global google */
 const GOOGLE_MAP_SCRIPT_ID = 'google-maps-travel-duration-script'
@@ -16,6 +17,7 @@ const BUDGET_CATEGORIES = [
   { key: 'entry', label: '입장비', icon: '🏛', color: 'var(--green)' },
   { key: 'shop', label: '쇼핑', icon: '🛍', color: 'var(--purple)' },
 ]
+const EMERGENCY_RADIUS_METERS = 3000
 
 function readGeneratedPlanResult() {
   try {
@@ -56,6 +58,19 @@ function cleanPlaceName(name) {
     .replace(/\s+(체크인|체크아웃|도착|출발|복귀|방문|관광|구경|산책|탐방)$/g, '')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+function lookupEmergencyNumber(destination) {
+  if (!destination) return null
+  const dest = destination.trim()
+  if (EMERGENCY_NUMBERS[dest]) return { countryName: dest, ...EMERGENCY_NUMBERS[dest] }
+  for (const [country, data] of Object.entries(EMERGENCY_NUMBERS)) {
+    if (dest.includes(country) || country.includes(dest)) return { countryName: country, ...data }
+    if (data.aliases?.some(alias => dest.includes(alias) || alias.includes(dest))) {
+      return { countryName: country, ...data }
+    }
+  }
+  return null
 }
 
 function knownPlaceCoordinates(name) {
@@ -243,7 +258,27 @@ export function initAiTravelDuration() {
     },
     emergency: {
       title:"긴급 정보",
-      html:`<div class="mi-emergency"><strong>🚑 112</strong><span>스페인 응급·경찰·소방 통합 번호</span></div><div class="mi-row"><strong>🏥 Hospital Clínic</strong><span>도보 18분 · 지도 연결</span></div><div class="mi-row"><strong>🏛 한국 영사관</strong><span>+34 93 265 1500</span></div><div class="mi-row"><strong>🚨 긴급 영사</strong><span>+34 60 312 8534 (24h)</span></div>`
+      html() {
+        const info = lookupEmergencyNumber(travelData.destination)
+        const emergencyRow = info
+          ? `<div class="mi-emergency"><strong>🚑 ${info.number}</strong><span>${info.countryName} ${info.desc}</span></div>`
+          : `<div class="mi-emergency"><strong>🚑 112</strong><span>국제 통합 긴급번호</span></div>`
+        return `
+          ${emergencyRow}
+          <div id="emergencyNearbyInfo">
+            <div class="mi-row"><strong>📍 주변 응급시설</strong><span class="mi-muted">조회 중...</span></div>
+          </div>
+          <div id="consulateInfo">
+            <div class="mi-row"><strong>🏛 한국 영사관</strong><span class="mi-muted">조회 중...</span></div>
+            <div class="mi-row"><strong>🚨 긴급 영사</strong><span class="mi-muted">조회 중...</span></div>
+          </div>`
+      },
+      async postOpen() {
+        const info = lookupEmergencyNumber(travelData.destination)
+        const destination = info?.countryName || travelData.destination
+        loadEmergencyNearbyInfo()
+        if (destination) loadConsulateInfo(destination)
+      }
     },
     nearby: {
       title:"주변 편의시설",
@@ -263,7 +298,114 @@ export function initAiTravelDuration() {
     },
     album: {
       title:"여행 앨범",
-      html:`<p style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6">여행 중 저장한 사진과 메모. 종료 후 날짜별 타임라인으로 정리됩니다.</p><div class="mi-album-grid">${['🌇','🏛','🍝','🌊','🎭','🌄'].map(e=>`<div class="mi-album-thumb">${e}</div>`).join('')}</div>`
+      html() {
+        const dayStops = getDayStops(cityData[schedule[activeIdx]?.base]?.stops || [])
+        const currentStop = dayStops[activeStopIdx]
+        const locationName = currentStop?.name || ''
+        const dayNum = String((schedule[activeIdx]?.day) || 1).padStart(2, '0')
+
+        const photoHtml = albumPhoto
+          ? `<div class="mi-album-preview" id="albumPreview">
+               <img src="${albumPhoto}" alt="업로드된 사진">
+               <button class="mi-album-preview-del" id="albumDel" title="삭제">× 사진 삭제</button>
+             </div>`
+          : `<div class="mi-album-drop" id="albumDrop">
+               <input type="file" id="albumFileInput" accept="image/*" style="display:none">
+               <div class="mi-album-drop-icon">📷</div>
+               <div class="mi-album-drop-text">클릭하거나 사진을 드래그하세요</div>
+               <div class="mi-album-drop-hint">JPG · PNG · GIF · HEIC 지원</div>
+             </div>`
+
+        return `
+          ${locationName ? `
+          <div class="mi-album-location-header">
+            <div class="mi-album-location-day">Day ${dayNum}</div>
+            <div class="mi-album-location-name">${locationName}</div>
+          </div>` : ''}
+          <p style="font-size:13px;color:var(--muted);margin:10px 0 12px;line-height:1.6">여행 중 저장한 사진과 메모. 종료 후 날짜별 타임라인으로 정리됩니다.</p>
+          ${photoHtml}
+          <div class="mi-album-memo-wrap">
+            <textarea class="mi-album-memo" id="albumMemo" placeholder="오늘 여행 소감을 간단히 적어보세요..." maxlength="300">${albumMemo}</textarea>
+            <div class="mi-album-memo-counter"><span id="albumMemoCount">${albumMemo.length}</span> / 300</div>
+          </div>
+        `
+      },
+      postOpen() {
+        const memoEl = document.getElementById('albumMemo')
+        const counterEl = document.getElementById('albumMemoCount')
+        if (memoEl) {
+          memoEl.addEventListener('input', () => {
+            albumMemo = memoEl.value
+            if (counterEl) counterEl.textContent = albumMemo.length
+          })
+        }
+
+        // 사진 삭제 버튼
+        const delBtn = document.getElementById('albumDel')
+        if (delBtn) {
+          delBtn.addEventListener('click', () => {
+            albumPhoto = ''
+            document.getElementById('overlay').classList.remove('show')
+            setTimeout(() => openModal('album'), 0)
+          })
+          return
+        }
+
+        // 드롭존 (사진 없을 때만 존재)
+        const drop = document.getElementById('albumDrop')
+        const input = document.getElementById('albumFileInput')
+        if (!drop || !input) return
+
+        drop.addEventListener('click', () => input.click())
+
+        input.addEventListener('change', e => {
+          const file = e.target.files[0]
+          if (file) loadFile(file)
+          input.value = ''
+        })
+
+        drop.addEventListener('dragover', e => {
+          e.preventDefault()
+          drop.classList.add('drag-over')
+        })
+        drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'))
+        drop.addEventListener('drop', e => {
+          e.preventDefault()
+          drop.classList.remove('drag-over')
+          const file = Array.from(e.dataTransfer.files).find(f => f.type.startsWith('image/'))
+          if (file) loadFile(file)
+        })
+
+        function loadFile(file) {
+          // 미리보기용 base64
+          const reader = new FileReader()
+          reader.onload = ev => { albumPhoto = ev.target.result }
+          reader.readAsDataURL(file)
+
+          // 서버 업로드
+          const apiBase = ((import.meta.env.VITE_API_BASE || '') || '').replace(/\/$/, '')
+          const formData = new FormData()
+          formData.append('photo', file)
+          const token = localStorage.getItem('tripHelperToken')
+          fetch(`${apiBase}/api/memories/upload`, {
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            body: formData,
+          })
+            .then(r => r.json())
+            .then(data => {
+              albumPhotoUrl = data.url || ''
+              document.getElementById('overlay').classList.remove('show')
+              setTimeout(() => openModal('album'), 0)
+            })
+            .catch(() => {
+              // 업로드 실패해도 base64 미리보기는 유지, 모달 재오픈
+              albumPhotoUrl = ''
+              document.getElementById('overlay').classList.remove('show')
+              setTimeout(() => openModal('album'), 0)
+            })
+        }
+      }
     },
     safety: {
       title:"야간 안전 정보",
@@ -306,9 +448,14 @@ export function initAiTravelDuration() {
   let activeTransitStepIdx = null;
   let expenses = [];
   let stopExpenses = {};
+  let albumPhoto = '';      // base64 미리보기용
+  let albumPhotoUrl = '';   // 서버 저장 후 반환된 URL
+  let albumMemo = '';
+  let activeModalKey = '';
   let exchangeRate = { currency: '', rateToKrw: 1, cached: true };
   let mapReady = false;
   let mapModalOpen = false;
+  let emergencyMapUrl = '';
   
   function refreshMap() {
     if (!mapReady || !window.google) return;
@@ -524,6 +671,108 @@ export function initAiTravelDuration() {
       : encodeURIComponent(route.destination);
 
     return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=${travelmode}`;
+  }
+
+  function haversineMeters(a, b) {
+    const R = 6371000;
+    const dLat = (b.lat - a.lat) * Math.PI / 180;
+    const dLng = (b.lng - a.lng) * Math.PI / 180;
+    const lat1 = a.lat * Math.PI / 180;
+    const lat2 = b.lat * Math.PI / 180;
+    const x = Math.sin(dLat / 2) ** 2
+      + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+  }
+
+  function formatDistance(meters) {
+    if (!Number.isFinite(meters)) return '';
+    if (meters < 1000) return `${Math.round(meters)}m`;
+    return `${(meters / 1000).toFixed(1)}km`;
+  }
+
+  function getActiveEmergencyPoint() {
+    const s = schedule[activeIdx];
+    if (!s) return null;
+    const selectedRoute = getRouteSegment(s.base, activeStopIdx);
+    const points = selectedRoute.filter(pt => Number.isFinite(pt?.lat) && Number.isFinite(pt?.lng));
+    if (!points.length) return null;
+    const center = points.reduce((acc, pt) => ({ lat: acc.lat + pt.lat, lng: acc.lng + pt.lng }), { lat: 0, lng: 0 });
+    return {
+      lat: center.lat / points.length,
+      lng: center.lng / points.length,
+      routeLabel: points.length > 1 ? '선택 경로 중간 지점' : '현재 활성 카드 위치',
+    };
+  }
+
+  async function loadConsulateInfo(destination) {
+    const el = document.getElementById('consulateInfo');
+    if (!el) return;
+
+    try {
+      const apiBase = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
+      const res = await fetch(`${apiBase}/api/consulate?destination=${encodeURIComponent(destination)}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+
+      const mapsUrl = data.lat && data.lng
+        ? `https://www.google.com/maps?q=${data.lat},${data.lng}`
+        : null;
+      const mapLink = mapsUrl
+        ? ` · <a href="${mapsUrl}" target="_blank" rel="noopener" class="mi-map-link">지도 연결</a>`
+        : '';
+
+      el.innerHTML = `
+        <div class="mi-row">
+          <strong>🏛 ${escapeHtml(data.name)}</strong>
+          <span>${escapeHtml(data.phone)}${mapLink}</span>
+        </div>
+        ${data.emergencyPhone ? `<div class="mi-row"><strong>🚨 긴급 영사</strong><span>${escapeHtml(data.emergencyPhone)} (24h)</span></div>` : ''}
+        ${data.callCenter ? `<div class="mi-row"><strong>📞 영사콜센터</strong><span>${escapeHtml(data.callCenter)}</span></div>` : ''}`;
+    } catch {
+      el.innerHTML = `<div class="mi-row"><strong>🏛 한국 영사관</strong><span class="mi-muted">정보를 불러올 수 없습니다</span></div>`;
+    }
+  }
+
+  async function loadEmergencyNearbyInfo() {
+    const el = document.getElementById('emergencyNearbyInfo');
+    if (!el) return;
+
+    const point = getActiveEmergencyPoint();
+    if (!point) {
+      el.innerHTML = `<div class="mi-row"><strong>📍 주변 응급시설</strong><span class="mi-muted">현재 위치 좌표가 없습니다</span></div>`;
+      return;
+    }
+
+    try {
+      const data = await apiGet(`/maps/emergency-places?lat=${point.lat}&lng=${point.lng}&radius=${EMERGENCY_RADIUS_METERS}`);
+      emergencyMapUrl = data.mapUrl || `https://www.google.com/maps/search/emergency+services/@${point.lat},${point.lng},14z`;
+      const groups = data.groups || [];
+      const total = groups.reduce((sum, group) => sum + (group.places?.length || 0), 0);
+      const summary = groups
+        .map(group => `${group.label} ${group.places?.length || 0}`)
+        .join(' · ');
+      const rows = groups
+        .flatMap(group => (group.places || []).slice(0, 2).map(place => ({ ...place, group })))
+        .slice(0, 5)
+        .map(place => {
+          const distance = formatDistance(haversineMeters(point, { lat: Number(place.lat), lng: Number(place.lng) }));
+          const map = place.googleMapsUri
+            ? ` · <a href="${place.googleMapsUri}" target="_blank" rel="noopener" class="mi-map-link">연결</a>`
+            : '';
+          return `<div class="mi-row"><strong>${escapeHtml(place.categoryLabel)} · ${escapeHtml(place.name)}</strong><span>${distance}${map}</span></div>`;
+        })
+        .join('');
+
+      el.innerHTML = `
+        <div class="mi-safe">
+          <strong>${point.routeLabel} 반경 ${(EMERGENCY_RADIUS_METERS / 1000).toFixed(0)}km</strong>
+          <span>${total ? `${summary} 있습니다` : '조회된 경찰서·소방서·병원이 없습니다'}</span>
+        </div>
+        ${rows || '<div class="mi-row"><strong>응급시설</strong><span class="mi-muted">근처 시설 없음</span></div>'}
+        <button class="mi-map-btn" data-action="openEmergencyMap">지도보기</button>`;
+    } catch {
+      el.innerHTML = `<div class="mi-row"><strong>📍 주변 응급시설</strong><span class="mi-muted">정보를 불러올 수 없습니다</span></div>`;
+    }
   }
   
   function cleanStepText(html) {
@@ -1066,13 +1315,52 @@ export function initAiTravelDuration() {
   function openModal(key) {
     const d = modalData[key];
     if (!d) return;
+    activeModalKey = key;
     document.getElementById('modalTitle').textContent = d.title;
     document.getElementById('modalContent').innerHTML = typeof d.html === 'function' ? d.html() : d.html;
     document.getElementById('overlay').classList.add('show');
+    if (typeof d.postOpen === 'function') d.postOpen();
   }
-  function closeModal() { document.getElementById('overlay').classList.remove('show'); }
+  function closeModal() {
+    document.getElementById('overlay').classList.remove('show');
+    activeModalKey = '';
+  }
+
+  function saveAlbumMemory() {
+    const token = localStorage.getItem('tripHelperToken')
+    if (!token) { closeModal(); return }  // 비로그인 시 그냥 닫기
+
+    const dayStops = getDayStops(cityData[schedule[activeIdx]?.base]?.stops || [])
+    const currentStop = dayStops[activeStopIdx]
+    const planResult = (() => { try { return JSON.parse(sessionStorage.getItem('aiPlanResult') || '{}') } catch { return {} } })()
+
+    const payload = {
+      photoUrl:     albumPhotoUrl || null,
+      memo:         albumMemo || null,
+      locationName: currentStop?.name || null,
+      dayNum:       schedule[activeIdx]?.day || 1,
+      destination:  travelData.destination || '내 여행',
+      planId:       planResult?.id || null,
+    }
+
+    const apiBase = ((import.meta.env.VITE_API_BASE || '') || '').replace(/\/$/, '')
+    fetch(`${apiBase}/api/memories`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    })
+      .then(r => r.json())
+      .then(() => closeModal())
+      .catch(() => closeModal())
+  }
   document.getElementById('mClose').addEventListener('click', closeModal);
-  document.getElementById('mConfirm').addEventListener('click', closeModal);
+  document.getElementById('mConfirm').addEventListener('click', () => {
+    if (activeModalKey === 'album') {
+      saveAlbumMemory();
+    } else {
+      closeModal();
+    }
+  });
   document.getElementById('overlay').addEventListener('click', e => { if(e.target.id==='overlay') closeModal(); });
   
   function openMapModal() {
@@ -1132,6 +1420,9 @@ export function initAiTravelDuration() {
         if (url) window.open(url, '_blank', 'noopener');
         break;
       }
+      case 'openEmergencyMap':
+        if (emergencyMapUrl) window.open(emergencyMapUrl, '_blank', 'noopener');
+        break;
       case '_dismiss': document.getElementById('toast').classList.remove('show'); break;
     }
   }

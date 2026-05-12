@@ -113,16 +113,38 @@ CREATE TABLE IF NOT EXISTS expenses (
   FOREIGN KEY (plan_id) REFERENCES travel_plans(id) ON DELETE CASCADE
 );
 
--- ─── 여행 사진/메모 (타임라인용) ─────────────────────────
+-- ─── 포토북 앨범 (여행별 책 단위) ─────────────────────────
+-- 책 한 권 = 여행 한 번. title은 화면 상단 대제목, destination은 여행지 표기
+CREATE TABLE IF NOT EXISTS photobook_albums (
+  id          BIGINT        AUTO_INCREMENT PRIMARY KEY,
+  user_id     BIGINT        NOT NULL,
+  plan_id     BIGINT        NULL,               -- travel_plans 연결 (선택)
+  title       VARCHAR(200)  NOT NULL,           -- e.g. "Bali Diary"
+  destination VARCHAR(200),                     -- e.g. "호주 / Australia"
+  cover_image VARCHAR(500),                     -- 커버 이미지 URL
+  memo        TEXT,                             -- 앨범 전체 소감
+  created_at  TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)        ON DELETE CASCADE,
+  FOREIGN KEY (plan_id) REFERENCES travel_plans(id) ON DELETE SET NULL
+);
+
+-- ─── 여행 사진/메모 (포토북 페이지 단위) ──────────────────
+-- 페이지 한 장 = 이미지 + 소제목 + 본문. sort_order로 책 내 순서 결정
 CREATE TABLE IF NOT EXISTS travel_memories (
-  id         BIGINT        AUTO_INCREMENT PRIMARY KEY,
-  plan_id    BIGINT        NOT NULL,
-  day_index  INT           NOT NULL,
-  photo_url  VARCHAR(500),
-  caption    VARCHAR(500),
-  location   VARCHAR(200),
-  taken_at   TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (plan_id) REFERENCES travel_plans(id) ON DELETE CASCADE
+  id          BIGINT        AUTO_INCREMENT PRIMARY KEY,
+  user_id     BIGINT        NOT NULL,
+  album_id    BIGINT        NULL,               -- photobook_albums FK
+  plan_id     BIGINT        NULL,               -- travel_plans FK (기존 호환)
+  day_index   INT,                              -- 여행 N일차
+  sort_order  INT           DEFAULT 0,          -- 앨범 내 페이지 순서
+  photo_url   VARCHAR(500),                     -- 사진 URL
+  subtitle    VARCHAR(200),                     -- 페이지 소제목 (e.g. "First Morning")
+  caption     TEXT,                             -- 본문 설명 텍스트
+  location    VARCHAR(200),                     -- 촬영 장소명
+  taken_at    TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id)  REFERENCES users(id)             ON DELETE CASCADE,
+  FOREIGN KEY (album_id) REFERENCES photobook_albums(id)  ON DELETE CASCADE,
+  FOREIGN KEY (plan_id)  REFERENCES travel_plans(id)      ON DELETE SET NULL
 );
 
 -- ─── 항공권 예약 내역 ─────────────────────────────────────

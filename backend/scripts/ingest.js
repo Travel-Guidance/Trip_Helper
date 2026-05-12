@@ -119,8 +119,8 @@ async function main() {
   console.log('-'.repeat(40));
   console.log(`Complete: ${points.length} points stored`);
   if (failed.length) {
-    console.warn(`Failed: ${failed.length}`);
-    failed.forEach(item => console.warn(`  ${item.item} chunk[${item.chunk}]: ${item.error}`));
+    console.warn(`실패: ${failed.length}건`);
+    failed.forEach(item => console.warn(`  ${item.item} 청크[${item.chunk}]: ${item.error}`));
   }
   console.log('-'.repeat(40));
 }

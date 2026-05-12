@@ -5,7 +5,14 @@ const { createError } = require('../utils/errors')
 const { geocodePlace } = require('../services/geocodeService')
 
 const routeCache = new Map()
+const emergencyPlacesCache = new Map()
 const ROUTE_CACHE_TTL = 60 * 60 * 1000  // 1시간
+const EMERGENCY_PLACES_CACHE_TTL = 30 * 60 * 1000
+const EMERGENCY_PLACE_TYPES = [
+  { key: 'police', type: 'police', label: '경찰서' },
+  { key: 'fire_station', type: 'fire_station', label: '소방서' },
+  { key: 'hospital', type: 'hospital', label: '병원' },
+]
 
 function getCachedRoute(key) {
   const item = routeCache.get(key)
@@ -14,6 +21,15 @@ function getCachedRoute(key) {
 }
 function setCachedRoute(key, value) {
   routeCache.set(key, { value, expiresAt: Date.now() + ROUTE_CACHE_TTL })
+  return value
+}
+function getCachedEmergencyPlaces(key) {
+  const item = emergencyPlacesCache.get(key)
+  if (!item || item.expiresAt < Date.now()) { emergencyPlacesCache.delete(key); return null }
+  return item.value
+}
+function setCachedEmergencyPlaces(key, value) {
+  emergencyPlacesCache.set(key, { value, expiresAt: Date.now() + EMERGENCY_PLACES_CACHE_TTL })
   return value
 }
 
@@ -183,4 +199,97 @@ const geocode = async (req, res, next) => {
   }
 }
 
-module.exports = { getEmbedUrl, getRoute, geocode }
+function normalizeEmergencyPlace(place, category) {
+  const lat = place.location?.latitude
+  const lng = place.location?.longitude
+  return {
+    id: place.id,
+    category: category.key,
+    categoryLabel: category.label,
+    name: place.displayName?.text || category.label,
+    address: place.formattedAddress || '',
+    rating: place.rating || null,
+    openNow: place.regularOpeningHours?.openNow ?? null,
+    phoneNumber: place.internationalPhoneNumber || place.nationalPhoneNumber || '',
+    googleMapsUri: place.googleMapsUri || '',
+    lat,
+    lng,
+  }
+}
+
+async function searchNearbyEmergencyPlaces({ lat, lng, radius, category, key }) {
+  const response = await fetch('https://places.googleapis.com/v1/places:searchNearby', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': key,
+      'X-Goog-FieldMask': [
+        'places.id',
+        'places.displayName',
+        'places.formattedAddress',
+        'places.location',
+        'places.rating',
+        'places.regularOpeningHours',
+        'places.internationalPhoneNumber',
+        'places.nationalPhoneNumber',
+        'places.googleMapsUri',
+      ].join(','),
+    },
+    body: JSON.stringify({
+      includedTypes: [category.type],
+      languageCode: 'ko',
+      rankPreference: 'DISTANCE',
+      maxResultCount: 3,
+      locationRestriction: {
+        circle: {
+          center: { latitude: lat, longitude: lng },
+          radius,
+        },
+      },
+    }),
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`Google Places ${response.status}: ${text}`)
+  }
+
+  const data = await response.json()
+  return (data.places || []).map(place => normalizeEmergencyPlace(place, category))
+}
+
+const getEmergencyPlaces = async (req, res, next) => {
+  try {
+    const key = requireEnv('GOOGLE_MAPS_API_KEY')
+    const lat = Number(req.query.lat)
+    const lng = Number(req.query.lng)
+    const radius = Math.min(Math.max(Number(req.query.radius) || 3000, 500), 10000)
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      throw createError('lat과 lng가 필요합니다.', 400)
+    }
+
+    const cacheKey = `${lat.toFixed(5)},${lng.toFixed(5)},${Math.round(radius)}`
+    const cached = getCachedEmergencyPlaces(cacheKey)
+    if (cached) return res.json(cached)
+
+    const groups = await Promise.all(EMERGENCY_PLACE_TYPES.map(async category => ({
+      ...category,
+      places: await searchNearbyEmergencyPlaces({ lat, lng, radius, category, key }),
+    })))
+
+    const result = {
+      found: groups.some(group => group.places.length > 0),
+      center: { lat, lng },
+      radius,
+      groups,
+      mapUrl: `https://www.google.com/maps/search/emergency+services/@${lat},${lng},14z`,
+    }
+
+    res.json(setCachedEmergencyPlaces(cacheKey, result))
+  } catch (err) {
+    next(err)
+  }
+}
+
+module.exports = { getEmbedUrl, getRoute, geocode, getEmergencyPlaces }

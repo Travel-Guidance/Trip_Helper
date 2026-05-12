@@ -24,7 +24,7 @@ async function createClient(serverPath) {
 
   client.onclose = () => {
     clientCache.delete(serverPath);
-    console.warn(`[mcpClient] server closed, cache cleared: ${path.basename(serverPath)}`);
+    console.warn(`[mcpClient] 서버 연결 종료, 캐시 삭제: ${path.basename(serverPath)}`);
   };
 
   clientCache.set(serverPath, client);
@@ -62,7 +62,7 @@ async function callTool(toolName, args) {
     return parseToolResult(result);
   } catch (err) {
     clientCache.delete(serverPath);
-    console.warn(`[mcpClient] ${toolName} failed, retrying once: ${err.message}`);
+    console.warn(`[mcpClient] ${toolName} 호출 실패, 한 번 재시도합니다: ${err.message}`);
     return callWithFreshClient(serverPath, toolName, args);
   }
 }

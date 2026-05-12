@@ -23,6 +23,7 @@ import AccommodationConfirmation from './pages/AccommodationConfirmation'
 import TourTicket from './pages/TourTicket'
 import TourTicketDetail from './pages/TourTicketDetail'
 import ProfilePage from './pages/ProfilePage'
+import Photobook from './pages/Photobook'
 import { API_BASE } from './api/config'
 import OAuthCallback from './pages/OAuthCallback'
 
@@ -102,6 +103,7 @@ export default function App() {
           <Route path="/tour-ticket" element={<TourTicket />} />
           <Route path="/tour-ticket/:placeId" element={<TourTicketDetail />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/photobook" element={<Photobook />} />
           <Route path="/auth/kakao/callback" element={<OAuthCallback />} />
           <Route path="/auth/google/callback" element={<OAuthCallback />} />
         </Routes>
