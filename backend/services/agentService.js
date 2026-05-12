@@ -81,29 +81,48 @@ function safeSend(chatSession, message) {
 
 const JSON_PROMPT = '지금까지 수집한 정보를 바탕으로 최종 여행 일정을 순수 JSON으로만 반환하세요. 마크다운, 설명 문장, 코드블록은 쓰지 마세요. 각 day에는 summary와 routeStrategy를 넣고, 각 item에는 duration, cost, reservation, transportTip, backup을 넣으세요.\n{"accommodations":[{"name":"숙소명","location":"위치","checkIn":"YYYY-MM-DD","checkOut":"YYYY-MM-DD","searchQuery":"검색어"}],"days":[{"label":"1일차","theme":"테마","summary":"오늘 일정 요약","routeStrategy":"동선 설계 이유","baseHotel":"숙소명","items":[{"time":"09:00","name":"장소명","note":"왜 이 장소를 배치했는지와 현장 팁","duration":"약 90분","cost":"무료 또는 예상 비용","reservation":"예약 여부","transportTip":"이전 장소에서 이동 팁","backup":"대체 장소","isMeal":false,"lat":-33.8568,"lng":151.2153}]}]}';
 
+function safeText(resp) {
+  try {
+    return resp.response.text() || '';
+  } catch {
+    return '';
+  }
+}
+
 async function resolveFinalText(chatSession, response) {
   const lastParts = response.response.candidates?.[0]?.content?.parts ?? [];
   const toolCallParts = lastParts.filter(part => part.functionCall);
+  const finishReason = response.response.candidates?.[0]?.finishReason;
 
   if (!toolCallParts.length) {
-    const text = response.response.text();
+    const text = safeText(response);
     if (text.includes('{')) return text;
-    const retry = await safeSend(chatSession, JSON_PROMPT);
-    return retry.response.text();
+    if (finishReason && finishReason !== 'STOP') {
+      console.warn('[agentService] resolveFinalText finishReason:', finishReason);
+    }
+    const retry1 = await safeSend(chatSession, JSON_PROMPT);
+    const retryText1 = safeText(retry1);
+    if (retryText1.includes('{')) return retryText1;
+    const retry2 = await safeSend(chatSession, JSON_PROMPT);
+    return safeText(retry2);
   }
 
   const dummyResponses = toolCallParts.map(part => ({
     functionResponse: {
       name: part.functionCall.name,
-      response: { content: JSON.stringify({ done: true, note: 'Sufficient data collected. Generate the final itinerary now.' }) },
+      response: { content: JSON.stringify({ done: true, note: 'Sufficient data collected. Output the final itinerary as pure JSON now.' }) },
     },
   }));
   const closedResponse = await safeSend(chatSession, dummyResponses);
-  const closedText = closedResponse.response.text();
+  const closedText = safeText(closedResponse);
   if (closedText.includes('{')) return closedText;
 
-  const fallback = await safeSend(chatSession, JSON_PROMPT);
-  return fallback.response.text();
+  const fallback1 = await safeSend(chatSession, JSON_PROMPT);
+  const fallbackText1 = safeText(fallback1);
+  if (fallbackText1.includes('{')) return fallbackText1;
+
+  const fallback2 = await safeSend(chatSession, JSON_PROMPT);
+  return safeText(fallback2);
 }
 
 async function runAgent(params) {
@@ -130,15 +149,20 @@ async function runAgent(params) {
   }
 
   let finalText = await resolveFinalText(chatSession, response);
-  console.log('[agentService] finalText preview:', finalText.slice(0, 120));
+  console.log('[agentService] finalText preview:', finalText?.slice(0, 120));
+  if (!finalText || !finalText.includes('{')) {
+    throw new Error('AI가 일정을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+  }
   let plan = extractJsonObject(finalText);
 
-  const routeCheck = validateAustraliaItinerary(plan, params);
-  if (!routeCheck.valid) {
+  for (let repairAttempt = 1; repairAttempt <= 2; repairAttempt++) {
+    const routeCheck = validateAustraliaItinerary(plan, params);
+    if (routeCheck.valid) break;
+
     console.warn('[agentService] itinerary route violations:', routeCheck.violations.map(v => v.message).join(' | '));
     const repairResponse = await safeSend(chatSession, buildItineraryRepairPrompt(plan, routeCheck.violations));
     finalText = await resolveFinalText(chatSession, repairResponse);
-    console.log('[agentService] repaired finalText preview:', finalText.slice(0, 120));
+    console.log(`[agentService] repaired finalText preview (${repairAttempt}/2):`, finalText.slice(0, 120));
     plan = extractJsonObject(finalText);
   }
 

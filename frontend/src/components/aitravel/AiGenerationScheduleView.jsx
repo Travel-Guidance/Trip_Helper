@@ -140,7 +140,7 @@ function normalizeRouteInfo(info, origin, destination) {
   if (!info?.found) return info
   const km = distanceTextToKm(info.distance)
   if (km >= 500 && !isAirportItem(origin) && !isAirportItem(destination)) {
-    return { found: false, suppressed: true }
+    return { ...info, longDistanceWarning: true, mode: info.mode || 'flying' }
   }
   return info
 }
@@ -183,14 +183,15 @@ function routeDistanceKm(routeInfo) {
 
 function isTransferLikeItem(item = {}) {
   const text = `${item.name || ''} ${item.note || ''}`.toLowerCase()
-  return /(flight|airport|transfer|train|station|check-?in|check-?out|domestic|terminal|항공|공항|비행|이동|체크인|체크아웃|기차|역)/.test(text)
+  if (/(hotel|resort|inn|숙소|호텔|리조트).*(출발|도착|체크인|체크아웃|departure|arrival|check-?in|check-?out)/.test(text)) return true
+  return /(flight|airport|transfer|domestic|terminal|train|rail|항공|공항|비행|국내선|장거리 이동|숙소 이동|도시 이동|기차|열차)/.test(text)
 }
 
 function shouldSuppressRoute(routeInfo, fromItem, toItem) {
   if (!routeInfo?.found) return false
   if (isTransferLikeItem(fromItem) || isTransferLikeItem(toItem)) return false
-  const km = routeDistanceKm(routeInfo)
-  return routeInfo.mode === 'flying' || (km != null && km > 120)
+  if (routeInfo.longDistanceWarning) return false
+  return false
 }
 
 function minsToTime(mins) {
@@ -1029,13 +1030,15 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
                               <span className="route-loading">이동시간 조회 중…</span>
                             ) : placeRouteInfos[i]?.found ? (
                               <>
-                                <span className="route-mode-icon">{MODE_ICON[placeRouteInfos[i].mode] ?? '🚌'}</span>
-                                <span className="route-duration">{placeRouteInfos[i].duration}</span>
+                                <span className="route-mode-icon">{placeRouteInfos[i].longDistanceWarning ? '⚠️' : (MODE_ICON[placeRouteInfos[i].mode] ?? '🚌')}</span>
+                                <span className="route-duration">{placeRouteInfos[i].longDistanceWarning ? '장거리' : placeRouteInfos[i].duration}</span>
                                 <span className="route-distance">· {placeRouteInfos[i].distance}</span>
                                 <span className="route-mode-label">({MODE_LABEL[placeRouteInfos[i].mode] ?? '이동'})</span>
                               </>
                             ) : (
-                              <span className="route-loading">이동</span>
+                              <span className="route-loading">
+                                {placeRouteInfos[i]?.distance ? `이동 · ${placeRouteInfos[i].distance}` : '이동'}
+                              </span>
                             )}
                           </div>
                         </div>

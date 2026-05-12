@@ -71,7 +71,10 @@ function looksLikeAustraliaTrip(params = {}, plan = {}) {
 
 function isTransferItem(item = {}) {
   const text = `${item.name || ''} ${item.note || ''}`.toLowerCase();
-  return /(flight|airport|transfer|train|station|check-?in|check-?out|domestic|terminal|항공|공항|비행|이동|체크인|체크아웃|기차|역)/.test(text);
+  if (/(hotel|resort|inn|숙소|호텔|리조트).*(출발|도착|체크인|체크아웃|departure|arrival|check-?in|check-?out)/.test(text)) {
+    return true;
+  }
+  return /(flight|airport|transfer|domestic|terminal|train|rail|check-?in|check-?out|hotel departure|hotel arrival|항공|공항|비행|이동|체크인|체크아웃|국내선|장거리|기차|열차|숙소 출발|숙소 도착|호텔 출발|호텔 도착)/.test(text);
 }
 
 function isVaguePlaceName(item = {}) {
@@ -102,7 +105,7 @@ function isVaguePlaceName(item = {}) {
 function dayLooksLikeTransferDay(items = []) {
   if (!items.length) return false;
   const transferCount = items.filter(isTransferItem).length;
-  return transferCount >= 2 && items.length <= 4;
+  return transferCount >= 2 && items.length <= 5;
 }
 
 function formatKm(km) {
@@ -240,19 +243,115 @@ function dayDate(params = {}, dayIndex) {
   return startDate ? addDays(startDate, dayIndex) : '';
 }
 
-function validateAccommodationMovement(plan, params, violations) {
-  const summaries = plan.days.map((day, index) => {
-    const region = estimateRegionFromItems(day.items || []);
+function tripDays(params = {}, plan = {}) {
+  const nights = Number(params.nights || 0);
+  if (Number.isFinite(nights) && nights > 0) return nights + 1;
+  return Array.isArray(plan.days) ? plan.days.length : 0;
+}
+
+function australiaPacingLimits(days) {
+  const totalDays = Number(days || 0);
+  if (totalDays <= 4) return { maxRegions: 1, maxDomesticTransfers: 0 };
+  if (totalDays <= 6) return { maxRegions: 2, maxDomesticTransfers: 1 };
+  if (totalDays <= 9) return { maxRegions: 3, maxDomesticTransfers: 2 };
+  if (totalDays <= 12) return { maxRegions: 4, maxDomesticTransfers: 3 };
+  return { maxRegions: 5, maxDomesticTransfers: 4 };
+}
+
+function summarizeDays(plan, params = {}) {
+  return plan.days.map((day, index) => {
     const date = dayDate(params, index);
+    const region = estimateRegionFromItems(day.items || []);
+    const hotelRegion = hotelRegionForDay(day, plan, date);
+
     return {
       day,
       index,
       date,
       region,
-      hotelRegion: hotelRegionForDay(day, plan, date),
+      hotelRegion,
+      effectiveRegion: region || hotelRegion || null,
       transferDay: dayLooksLikeTransferDay(day.items || []),
     };
   });
+}
+
+function compactRegionSequence(summaries) {
+  const sequence = [];
+  for (const summary of summaries) {
+    const region = summary.effectiveRegion;
+    if (!region) continue;
+    const last = sequence[sequence.length - 1];
+    if (last?.region.key === region.key) {
+      last.endIndex = summary.index;
+      last.days.push(summary);
+      continue;
+    }
+    sequence.push({
+      region,
+      startIndex: summary.index,
+      endIndex: summary.index,
+      days: [summary],
+    });
+  }
+  return sequence;
+}
+
+function validateAustraliaPacing(plan, params, violations) {
+  const days = tripDays(params, plan);
+  const limits = australiaPacingLimits(days);
+  const summaries = summarizeDays(plan, params);
+  const sequence = compactRegionSequence(summaries);
+  const distinctRegions = [...new Set(sequence.map(block => block.region.key))];
+  const transferCount = Math.max(0, sequence.length - 1);
+
+  if (distinctRegions.length > limits.maxRegions) {
+    violations.push({
+      day: 'trip',
+      type: 'too_many_australia_regions',
+      message: `This ${days}-day Australia itinerary uses ${distinctRegions.length} regions, but should use at most ${limits.maxRegions}. Keep fewer regions with deeper stays and move lower-priority regions to omittedPlaces.`,
+    });
+  }
+
+  if (transferCount > limits.maxDomesticTransfers) {
+    violations.push({
+      day: 'trip',
+      type: 'too_many_domestic_transfers',
+      message: `This ${days}-day Australia itinerary has ${transferCount} long-distance region transfer(s), but should have at most ${limits.maxDomesticTransfers}. Reduce domestic flights/trains and spend consecutive days in the same region.`,
+    });
+  }
+
+  const seen = new Map();
+  sequence.forEach(block => {
+    if (!seen.has(block.region.key)) {
+      seen.set(block.region.key, block);
+      return;
+    }
+
+    const first = seen.get(block.region.key);
+    violations.push({
+      day: block.days[0]?.day.label || `day ${block.startIndex + 1}`,
+      type: 'non_consecutive_region_return',
+      message: `${block.region.label} appears, then another region is visited, then ${block.region.label} appears again. Once an Australia region is completed, do not return to it later; group each region into one consecutive stay.`,
+    });
+    seen.set(block.region.key, first);
+  });
+
+  for (let index = 1; index < summaries.length; index++) {
+    const prev = summaries[index - 1];
+    const current = summaries[index];
+    if (!prev.transferDay || !current.transferDay) continue;
+
+    violations.push({
+      day: current.day.label || `day ${index + 1}`,
+      type: 'back_to_back_transfer_days',
+      message: `${prev.day.label || `day ${index}`} and ${current.day.label || `day ${index + 1}`} are both transfer-heavy days. Do not schedule domestic flights or long-distance transfers on back-to-back days.`,
+    });
+  }
+}
+
+function validateAccommodationMovement(plan, params, violations) {
+  const summaries = summarizeDays(plan, params);
 
   let previous = summaries.find(summary => summary.region) || null;
 
@@ -306,6 +405,44 @@ function validateAccommodationMovement(plan, params, violations) {
     }
 
     previous = current;
+  }
+}
+
+function validateSameDayRegionConsistency(plan, violations) {
+  for (const day of plan.days) {
+    const sightseeingItems = (day.items || []).filter(
+      item => hasCoordinates(item) && !isTransferItem(item)
+    );
+    if (sightseeingItems.length < 2) continue;
+
+    const regionVotes = new Map();
+    for (const item of sightseeingItems) {
+      const region = nearestRegion(Number(item.lat), Number(item.lng));
+      if (!region) continue;
+      regionVotes.set(region.key, (regionVotes.get(region.key) || 0) + 1);
+    }
+    if (!regionVotes.size) continue;
+
+    const primaryRegionKey = [...regionVotes.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    const primaryRegion = AUSTRALIA_REGIONS.find(r => r.key === primaryRegionKey);
+    if (!primaryRegion) continue;
+
+    for (const item of sightseeingItems) {
+      const region = nearestRegion(Number(item.lat), Number(item.lng));
+      if (!region || region.key === primaryRegionKey) continue;
+
+      const kmFromPrimary = haversineKm(
+        primaryRegion.lat, primaryRegion.lng,
+        Number(item.lat), Number(item.lng)
+      );
+      if (kmFromPrimary > REGION_MOVE_KM) {
+        violations.push({
+          day: day.label || day.theme || 'day',
+          type: 'cross_region_items_same_day',
+          message: `${day.label || 'This day'}: "${itemLabel(item)}" is in ${region.label} but the rest of this day's sightseeing is in ${primaryRegion.label} (${formatKm(kmFromPrimary)} apart). All items on the same day must be in the same region. Move "${itemLabel(item)}" to a day when the baseHotel is in ${region.label}.`,
+        });
+      }
+    }
   }
 }
 
@@ -374,7 +511,9 @@ function validateAustraliaItinerary(plan, params = {}) {
     }
   }
 
+  validateAustraliaPacing(plan, params, violations);
   validateAccommodationMovement(plan, params, violations);
+  validateSameDayRegionConsistency(plan, violations);
 
   return { valid: violations.length === 0, violations };
 }
@@ -382,23 +521,21 @@ function validateAustraliaItinerary(plan, params = {}) {
 function buildItineraryRepairPrompt(plan, violations) {
   const summary = violations.map((violation, index) => `${index + 1}. [${violation.day}] ${violation.message}`).join('\n');
 
-  return `The itinerary has unrealistic Australia routing. Fix it and return strict JSON only.
+  return `The itinerary has unrealistic routing. Fix every violation below and return strict JSON only.
 
 Violations:
 ${summary}
 
-Rules for the correction:
-- Do not choose a default city. Use the user's requested places and trip length.
-- Cluster places by region/city first.
-- Keep same-day sightseeing within one region.
-- Any segment over 400km must be a one-way transfer day with arrival accommodation check-in, not a day-trip return.
-- When moving between distant Australian regions, move the accommodation as well. The arrival day and all following local sightseeing days must use a baseHotel in the arrival region.
-- Add a separate accommodations entry for each region/city stay. Its checkIn/checkOut dates must cover the days whose baseHotel uses that accommodation.
-- If a violation says an arrival-region accommodation is missing, add or replace the accommodation for that region and update day.baseHotel to match it.
-- Keep the rich itinerary fields. Each day must include summary and routeStrategy, and each item must include duration, cost, reservation, transportTip, and backup.
-- Replace vague items such as "점심 식사", "자유시간 및 쇼핑", "근처 맛집", "로컬 카페", or "shopping" with real place names in the same region. Meals must use actual restaurant/cafe names.
-- If the trip length cannot include all requested places, move the impossible places to omittedPlaces with reasons.
-- Preserve the existing JSON shape and include includedPlaces and omittedPlaces.
+Correction rules (follow in this order):
+1. PACING: Use fewer Australia regions with deeper stays. If the violation says there are too many regions or transfers, remove lower-priority regions and list them in omittedPlaces.
+2. REGION BLOCKS: Group each region into one consecutive stay. Do not do Sydney → Melbourne → Sydney or any A → B → A pattern.
+3. SAME-DAY REGION LOCK: Every item on a given day must be in the same city/region as that day's baseHotel. If a violation says an item belongs to a different region, move that item to a day whose baseHotel is in that item's region. Do NOT keep cross-region items on the same day under any circumstance.
+4. TRANSFER DAYS: If moving between distant regions (>400km), dedicate an entire day to the transfer: previous hotel departure → airport/station → flight/train → arrival hotel check-in. No tourist items on a transfer day. Do not place transfer days back-to-back.
+5. ARRIVAL DAY: The arrival day may only have items in the arrival city. Do not mix arrival-city items with items from a different region.
+6. ACCOMMODATION: Add a separate accommodations[] entry for each distinct region/city stay. checkIn/checkOut must exactly cover the days that use that accommodation as baseHotel.
+7. FIELDS: Keep all itinerary fields (summary, routeStrategy per day; duration, cost, reservation, transportTip, backup per item).
+8. MEALS: Replace any vague meal item ("점심 식사", "근처 맛집", "local cafe") with a real restaurant/cafe name in the same region.
+9. OMISSIONS: If the trip length cannot include all requested places, list them in omittedPlaces with reasons.
 
 Current itinerary JSON:
 ${JSON.stringify(plan)}`;
