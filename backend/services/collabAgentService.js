@@ -129,7 +129,7 @@ async function getCollabRagContext(params) {
       },
     };
   } catch (err) {
-    console.warn(`[CollabRAG] error: ${err.message}`);
+    console.warn(`[공동일정 RAG] 조회 오류: ${err.message}`);
     return { context: '', meta: { enabled: false, reason: 'error', error: err.message } };
   }
 }
@@ -299,7 +299,7 @@ async function resolveFinalText(chatSession, response) {
     const text = safeText(response);
     if (text.includes('{')) return text;
     if (finishReason && finishReason !== 'STOP') {
-      console.warn('[collabAgentService] resolveFinalText finishReason:', finishReason);
+      console.warn('[collabAgentService] 최종 응답 생성 중단 사유:', finishReason);
     }
     const retry1 = await safeSend(chatSession, COLLAB_JSON_PROMPT);
     const retryText1 = safeText(retry1);
@@ -366,7 +366,7 @@ async function runCollabAgent(params) {
     const routeCheck = validateAustraliaItinerary(plan, params);
     if (routeCheck.valid) break;
 
-    console.warn('[collabAgentService] itinerary route violations:', routeCheck.violations.map(v => v.message).join(' | '));
+    console.warn('[collabAgentService] 일정 동선 검증 위반:', routeCheck.violations.map(v => v.message).join(' | '));
     const repairResponse = await safeSend(chatSession, buildItineraryRepairPrompt(plan, routeCheck.violations));
     finalText = await resolveFinalText(chatSession, repairResponse);
     console.log(`[collabAgentService] repaired finalText preview (${repairAttempt}/2):`, finalText.slice(0, 120));
@@ -380,7 +380,7 @@ async function runCollabAgent(params) {
 
   const lodgingIssues = validateLodgingFlow(plan);
   if (lodgingIssues.length) {
-    console.warn('[collabAgentService] lodging flow issues, requesting revision:', lodgingIssues);
+    console.warn('[collabAgentService] 숙소 흐름 문제 감지, 수정 요청:', lodgingIssues);
     plan = await revisePlanForLodgingFlow(chatSession, plan, lodgingIssues);
     if (!Array.isArray(plan.days) || plan.days.length === 0) {
       throw new Error('AI가 공동 일정을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.');

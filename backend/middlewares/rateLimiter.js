@@ -48,7 +48,7 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
   store: makeStore('rl:gen:'),
   handler: (req, res) => {
-    console.warn(`[RateLimit] General limit reached: ${req.ip} -> ${req.originalUrl}`);
+    console.warn(`[요청 제한] 일반 API 한도 초과: ${req.ip} -> ${req.originalUrl}`);
     res.status(429).json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' });
   },
 });
@@ -61,7 +61,7 @@ const mapsLimiter = rateLimit({
   legacyHeaders: false,
   store: makeStore('rl:maps:'),
   handler: (req, res) => {
-    console.warn(`[RateLimit] Maps limit reached: ${req.ip} -> ${req.originalUrl}`);
+    console.warn(`[요청 제한] 지도 API 한도 초과: ${req.ip} -> ${req.originalUrl}`);
     res.status(429).json({ error: '지도 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.' });
   },
 });
@@ -74,7 +74,7 @@ const aiLimiter = rateLimit({
   legacyHeaders: false,
   store: makeStore('rl:ai:'),
   handler: (req, res) => {
-    console.warn(`[RateLimit] AI limit reached: ${req.ip} -> ${req.originalUrl}`);
+    console.warn(`[요청 제한] AI API 한도 초과: ${req.ip} -> ${req.originalUrl}`);
     res.status(429).json({ error: 'AI 요청 한도를 초과했습니다. 1분 후 다시 시도해주세요.' });
   },
 });

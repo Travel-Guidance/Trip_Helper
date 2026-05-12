@@ -27,7 +27,7 @@ async function withRetry(fn, maxRetries = MAX_RETRIES) {
     } catch (err) {
       const is429 = err.message?.includes('429') || err.status === 429
       if (is429 && isDailyQuotaExceeded(err)) {
-        console.warn('[Gemini] 429 — 일일 quota 초과, 재시도하지 않음')
+        console.warn('[Gemini] 429 — 일일 할당량 초과, 재시도하지 않음')
         throw toQuotaError(err)
       }
       if (!is429 || attempt === maxRetries) throw err
