@@ -59,6 +59,7 @@ export default function AiGenerationSchedule() {
         if (cancelled) return
         const nextResult = {
           planData: plan.plan_data,
+          planId: plan.id,
           tripInfo: {
             country: plan.destination || result?.tripInfo?.country || '',
             nights: Number(plan.nights) || 0,
@@ -90,7 +91,13 @@ export default function AiGenerationSchedule() {
   }
 
   function handleTravelDuration() {
-    sessionStorage.setItem('aiPlanResult', JSON.stringify({ planData, tripInfo }))
+    const nextPlanId = displayResult?.planId || planId || null
+    if (nextPlanId) {
+      navigate(`/ai-travel-duration?planId=${encodeURIComponent(nextPlanId)}`)
+      return
+    }
+
+    sessionStorage.setItem('aiPlanResult', JSON.stringify({ planData, tripInfo, planId: null }))
     navigate('/ai-travel-duration')
   }
 

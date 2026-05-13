@@ -105,9 +105,13 @@ CREATE TABLE IF NOT EXISTS travel_logs (
 CREATE TABLE IF NOT EXISTS expenses (
   id          BIGINT      AUTO_INCREMENT PRIMARY KEY,
   plan_id     BIGINT      NOT NULL,
+  day_index   INT         NULL,
+  item_index  INT         NULL,
+  source      VARCHAR(20) DEFAULT 'manual',
   category    ENUM('food','transport','entrance','shopping','accommodation','other') NOT NULL,
   amount      DECIMAL(10,2) NOT NULL,
   currency    VARCHAR(10) DEFAULT 'KRW',
+  amount_krw  DECIMAL(12,2) NULL,
   description VARCHAR(255),
   spent_at    TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (plan_id) REFERENCES travel_plans(id) ON DELETE CASCADE

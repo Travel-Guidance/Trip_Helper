@@ -95,7 +95,7 @@ export default function AiGenerationLoading() {
       .then(json => {
         if (cancelled) return
         if (json?.data) {
-          sessionStorage.setItem('aiPlanResult', JSON.stringify({ planData: json.data, tripInfo: params }))
+          sessionStorage.setItem('aiPlanResult', JSON.stringify({ planData: json.data, tripInfo: params, planId: json.planId || null }))
         }
         setIsFinishing(true)
         setProgress(100)

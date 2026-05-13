@@ -1,5 +1,15 @@
 const { Router } = require('express');
-const { generatePlan, chatbot, getUserPlans, getPlanById, deletePlan } = require('../controllers/aiTravelController');
+const {
+  generatePlan,
+  chatbot,
+  getUserPlans,
+  getPlanById,
+  deletePlan,
+  getPlanExpenses,
+  createPlanExpense,
+  updatePlanExpense,
+  deletePlanExpense,
+} = require('../controllers/aiTravelController');
 const { generateCollabPlan } = require('../controllers/collabController');
 const { aiLimiter } = require('../middlewares/rateLimiter');
 const optionalAuth = require('../middlewares/optionalAuth');
@@ -49,6 +59,10 @@ const router = Router();
 router.post('/ai-travel/generate', aiLimiter, optionalAuth, generatePlan);
 
 router.get('/ai-travel/plans', requireAuth, getUserPlans);
+router.get('/ai-travel/plans/:id/expenses', requireAuth, getPlanExpenses);
+router.post('/ai-travel/plans/:id/expenses', requireAuth, createPlanExpense);
+router.put('/ai-travel/plans/:id/expenses/:expenseId', requireAuth, updatePlanExpense);
+router.delete('/ai-travel/plans/:id/expenses/:expenseId', requireAuth, deletePlanExpense);
 router.get('/ai-travel/plans/:id', requireAuth, getPlanById);
 router.delete('/ai-travel/plans/:id', requireAuth, deletePlan);
 

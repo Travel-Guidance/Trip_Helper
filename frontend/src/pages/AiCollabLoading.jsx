@@ -85,8 +85,9 @@ export default function AiCollabLoading() {
 
       const planData = message.planData || message.generatedPlan
       const tripInfo = message.params || message.generatedParams || params
+      const planId = message.planId || null
       if ((message.type === 'plan_generated' || message.type === 'room_state') && planData) {
-        sessionStorage.setItem('aiPlanResult', JSON.stringify({ planData, tripInfo }))
+        sessionStorage.setItem('aiPlanResult', JSON.stringify({ planData, tripInfo, planId }))
         setIsFinishing(true)
         setProgress(100)
         setTimeout(() => navigate('/ai-generation-schedule'), 650)
@@ -126,8 +127,8 @@ export default function AiCollabLoading() {
       .then(json => {
         if (cancelled) return
         if (json?.data) {
-          sessionStorage.setItem('aiPlanResult', JSON.stringify({ planData: json.data, tripInfo: params }))
-          sendWhenOpen(socketRef.current, { type: 'plan_generated', planData: json.data, params })
+          sessionStorage.setItem('aiPlanResult', JSON.stringify({ planData: json.data, tripInfo: params, planId: json.planId || null }))
+          sendWhenOpen(socketRef.current, { type: 'plan_generated', planData: json.data, params, planId: json.planId || null })
         }
         setIsFinishing(true)
         setProgress(100)
