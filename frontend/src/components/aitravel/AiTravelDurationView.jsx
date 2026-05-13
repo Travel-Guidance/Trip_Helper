@@ -169,7 +169,10 @@ export default function AiTravelDurationView() {
 
   const day             = schedule[activeIdx]
   const currentCityData = cityData[day?.base]
-  const dayStops        = currentCityData ? getDayStops(currentCityData.stops || []) : []
+  const dayStops        = useMemo(
+    () => currentCityData ? getDayStops(currentCityData.stops || []) : [],
+    [currentCityData]
+  )
   const statusLabel     = day?.today ? 'LIVE' : day?.done ? 'DONE' : 'UPCOMING'
 
   const currentDayNumber  = getCurrentDayNumber(schedule, activeIdx)
@@ -533,7 +536,7 @@ export default function AiTravelDurationView() {
       {/* TOPBAR */}
       <header className="topbar">
         <div className="topbar-in">
-          <a className="brand" href="#"><span className="brand-icon">📱</span>Trip Helper</a>
+          <a className="brand" href="/home"><span className="brand-icon">✈</span><span>폰가이즈</span></a>
           <div className="topbar-trip">
             <strong>{travelData.destination} 여행</strong>
             <span className="sep">›</span>

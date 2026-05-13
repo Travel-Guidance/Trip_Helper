@@ -806,7 +806,7 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
 
         <header className="command">
           <div className="command-inner">
-            <a className="brand" href="#"><span className="brand-icon">✈</span><span>폰가이즈</span></a>
+            <a className="brand" href="/home"><span className="brand-icon">✈</span><span>폰가이즈</span></a>
             <div className="route-pill">
               <strong>{dest}</strong>
               <span>{tripInfo?.nights}박 {(tripInfo?.nights ?? 0) + 1}일</span>
