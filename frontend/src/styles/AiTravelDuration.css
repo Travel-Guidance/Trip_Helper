@@ -865,6 +865,8 @@
     .ai-travel-duration-page .mi-textarea { width: 100%; min-height: 64px; padding: 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border2); color: var(--text); font-size: 13px; resize: none; margin-bottom: 7px; }
     .ai-travel-duration-page .mi-textarea:focus { border-color: var(--blue); outline: none; }
     .ai-travel-duration-page .mi-result { padding: 11px; border-radius: 10px; background: rgba(41,171,226,.06); border: 1px solid rgba(41,171,226,.2); font-size: 14px; font-weight: 700; color: var(--navy); min-height: 42px; }
+    .ai-travel-duration-page .mi-translate-btn { margin: 0 0 10px; }
+    .ai-travel-duration-page .mi-pronunciation { margin-top: 7px; padding: 9px 12px; border-radius: 10px; background: rgba(11,185,122,.06); border: 1px solid rgba(11,185,122,.2); font-size: 13px; font-weight: 600; color: var(--green); letter-spacing: 0.3px; font-style: italic; }
     .ai-travel-duration-page .mi-album-location-header { padding: 14px 0 12px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
     .ai-travel-duration-page .mi-album-location-day { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: var(--blue); text-transform: uppercase; margin-bottom: 4px; }
     .ai-travel-duration-page .mi-album-location-name { font-size: 26px; font-weight: 800; color: var(--navy); line-height: 1.15; letter-spacing: -0.5px; }

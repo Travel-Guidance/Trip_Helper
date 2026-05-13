@@ -1,5 +1,6 @@
 // AiTravelDurationView.jsx - 여행 일정 메인 뷰 (상태·렌더링 통합 React 컴포넌트)
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { apiPost } from '../../api/apiClient'
 import {
   buildGeneratedTravelData, getDayStops, getRouteInfo, getRouteSegment,
   haversineMeters, formatDistance, lookupEmergencyNumber, heroImageForDestination,
@@ -15,6 +16,63 @@ import {
   getGeneratedPlanId, readGeneratedPlanResult,
   BUDGET_CATEGORIES, GOOGLE_MAP_SCRIPT_ID, GOOGLE_MAP_SCRIPT_SRC, EMERGENCY_RADIUS_METERS,
 } from '../../utils/AiTravelDuration'
+
+const QUICK_PHRASES = ['이거 얼마예요?', '화장실 어디예요?', '영수증 주세요', '택시 불러주세요', '병원이 어디예요?', '도와주세요!']
+
+function TranslateModal({ destination }) {
+  const [input, setInput]               = useState('')
+  const [translated, setTranslated]     = useState('')
+  const [pronunciation, setPronunciation] = useState('')
+  const [loading, setLoading]           = useState(false)
+  const [error, setError]               = useState('')
+
+  async function doTranslate(text) {
+    if (!text.trim()) return
+    setLoading(true)
+    setTranslated('')
+    setPronunciation('')
+    setError('')
+    try {
+      const data = await apiPost('/translate', { text: text.trim(), destination })
+      setTranslated(data.translated || '번역 결과 없음')
+      setPronunciation(data.pronunciation || '')
+    } catch {
+      setError('번역 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div>
+      <div className="mi-phrase">
+        {QUICK_PHRASES.map(p => (
+          <button key={p} onClick={() => { setInput(p); doTranslate(p) }}>{p}</button>
+        ))}
+      </div>
+      <textarea
+        className="mi-textarea"
+        placeholder="번역할 내용을 입력하세요..."
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); doTranslate(input) } }}
+      />
+      <button
+        className="mi-map-btn mi-translate-btn"
+        onClick={() => doTranslate(input)}
+        disabled={loading}
+      >
+        {loading ? '번역 중...' : '번역하기'}
+      </button>
+      {(translated || error) && (
+        <>
+          <div className="mi-result">{error || translated}</div>
+          {pronunciation && <div className="mi-pronunciation">[ {pronunciation} ]</div>}
+        </>
+      )}
+    </div>
+  )
+}
 
 const FATIGUE_LABELS = {
   1:'최상 컨디션', 2:'컨디션 좋음', 3:'약간 피로', 4:'적당히 피로', 5:'중간 피로',
@@ -1193,15 +1251,7 @@ function ModalContent({
   const dayNum      = String(schedule[activeIdx]?.day || 1).padStart(2, '0')
 
   if (modalKey === 'translate') return (
-    <div>
-      <div className="mi-phrase">
-        {['이거 얼마예요?', '화장실 어디예요?', '영수증 주세요', '택시 불러주세요', '병원이 어디예요?', '도와주세요!'].map(p => (
-          <button key={p}>{p}</button>
-        ))}
-      </div>
-      <textarea className="mi-textarea" placeholder="번역할 내용을 입력하세요..."></textarea>
-      <div className="mi-result">번역 결과가 여기에 표시됩니다.</div>
-    </div>
+    <TranslateModal destination={travelData?.destination || ''} />
   )
 
   if (modalKey === 'emergency') {

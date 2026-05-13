@@ -526,6 +526,49 @@ async function chatbot(req, res, next) {
   }
 }
 
+async function translateText(req, res, next) {
+  try {
+    const { text, destination } = req.body;
+    if (!text?.trim() || !destination?.trim()) {
+      return res.status(400).json({ error: '텍스트와 여행지를 입력하세요.' });
+    }
+
+    const prompt = `You are a professional travel translator.
+Translate the following Korean text into the local language of the travel destination "${destination.trim()}".
+
+The "pronunciation" field must show how to READ the TRANSLATED text aloud, written in Korean phonetic syllables.
+Examples:
+- translated "How much is this?" → pronunciation "하우 머치 이즈 디스"
+- translated "¿Cuánto cuesta esto?" → pronunciation "꽌또 꾸에스따 에스또"
+- translated "これはいくらですか" → pronunciation "코레와 이쿠라 데스카"
+- translated "เท่าไหร่" → pronunciation "타오라이"
+NEVER put the original Korean input text in the pronunciation field. ONLY Korean phonetic approximation of the translated language.
+
+Return ONLY a valid JSON object (no markdown, no code block, no explanation):
+{
+  "translated": "<translated text in native script>",
+  "pronunciation": "<Korean phonetic spelling of how to pronounce the translated text>",
+  "targetLanguage": "<language name in Korean, e.g. 영어, 일본어, 스페인어, 태국어>"
+}
+
+Korean text to translate: "${text.trim().replace(/"/g, '\\"')}"`;
+
+    const raw = await generateText(prompt);
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('번역 결과를 파싱할 수 없습니다.');
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    res.json({
+      translated: parsed.translated || '',
+      pronunciation: parsed.pronunciation || '',
+      targetLanguage: parsed.targetLanguage || '',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   generatePlan,
   chatbot,
@@ -537,4 +580,5 @@ module.exports = {
   updatePlanExpense,
   deletePlanExpense,
   rebudgetPlanDay,
+  translateText,
 };
