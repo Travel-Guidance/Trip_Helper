@@ -33,6 +33,11 @@ function LegacyAccommodationRedirect() {
   return <Navigate to={`${path}${location.search}`} replace />
 }
 
+function RootRedirect() {
+  const { isLoggedIn } = useAuth()
+  return isLoggedIn ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />
+}
+
 function SocialAuthRedirect() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -78,7 +83,7 @@ export default function App() {
     <SearchProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<LoginPage />} />
+          <Route path="/" element={<RootRedirect />} />
           <Route path="/home" element={<MainPage />} />
           <Route path="/ai-travel" element={<Navigate to="/ai-generation-inputform" replace />} />
           <Route path="/ai-generation-inputform" element={<AiGenerationInputForm />} />
