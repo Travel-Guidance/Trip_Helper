@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { getEmbedUrl, getRoute, geocode, getEmergencyPlaces, getNearbyAmenities } = require('../controllers/mapsController')
+const { getEmbedUrl, getRoute, geocode, getEmergencyPlaces, getNearbyAmenities, getIndoorPlaces, getNearbyCafes } = require('../controllers/mapsController')
 
 const router = Router()
 
@@ -34,5 +34,7 @@ router.get('/maps/geocode', geocode)
 router.get('/maps/route', getRoute)
 router.get('/maps/emergency-places', getEmergencyPlaces)
 router.get('/maps/nearby-amenities', getNearbyAmenities)
+router.get('/maps/indoor-places', getIndoorPlaces)
+router.get('/maps/nearby-cafes', getNearbyCafes)
 
 module.exports = router

@@ -39,11 +39,16 @@ function makeStore(prefix) {
   }
 }
 
-// 일반 API: 분당 60회
+function isLocalhost(req) {
+  const ip = req.ip || '';
+  return ip === '::1' || ip === '127.0.0.1' || ip.startsWith('::ffff:127.');
+}
+
+// 일반 API: 분당 100회
 const generalLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 60,
-  skip: req => req.path === '/tours/photo' || req.path.startsWith('/maps/'),
+  max: 100,
+  skip: req => isLocalhost(req) || req.path === '/tours/photo' || req.path.startsWith('/maps/'),
   standardHeaders: true,
   legacyHeaders: false,
   store: makeStore('rl:gen:'),
@@ -57,6 +62,7 @@ const generalLimiter = rateLimit({
 const mapsLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 300,
+  skip: req => isLocalhost(req),
   standardHeaders: true,
   legacyHeaders: false,
   store: makeStore('rl:maps:'),

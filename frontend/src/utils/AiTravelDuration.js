@@ -754,3 +754,15 @@ export async function fetchEmergencyNearbyInfo(point, radius) {
 export async function fetchNearbyAmenities(point, radius = 1500) {
   return apiGet(`/maps/nearby-amenities?lat=${point.lat}&lng=${point.lng}&radius=${radius}`)
 }
+
+export async function fetchIndoorPlaces(point, radius = 2000) {
+  return apiGet(`/maps/indoor-places?lat=${point.lat}&lng=${point.lng}&radius=${radius}`)
+}
+
+export async function fetchNearbyCafes(point, radius = 800) {
+  return apiGet(`/maps/nearby-cafes?lat=${point.lat}&lng=${point.lng}&radius=${radius}`)
+}
+
+export async function fetchDayWeather(destination, date) {
+  return apiGet(`/weather/day?destination=${encodeURIComponent(destination)}&date=${encodeURIComponent(date)}`)
+}

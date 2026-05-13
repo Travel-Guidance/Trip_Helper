@@ -11,7 +11,7 @@ import {
   parseBudgetWon,
   normalizeSavedExpense, fetchSavedExpenses, persistExpense, fetchExchangeRate,
   rebudgetPlanDay,
-  fetchConsulateInfo, fetchEmergencyNearbyInfo, fetchNearbyAmenities, buildGoogleMapsRouteUrl,
+  fetchConsulateInfo, fetchEmergencyNearbyInfo, fetchNearbyAmenities, fetchIndoorPlaces, fetchNearbyCafes, fetchDayWeather, buildGoogleMapsRouteUrl,
   requestSimpleRoute, requestTransitRoute, renderRouteMap, renderSafeRouteMap,
   getGeneratedPlanId, readGeneratedPlanResult,
   BUDGET_CATEGORIES, GOOGLE_MAP_SCRIPT_ID, GOOGLE_MAP_SCRIPT_SRC, EMERGENCY_RADIUS_METERS,
@@ -159,6 +159,19 @@ export default function AiTravelDurationView() {
   const [safetyBadge,   setSafetyBadge]   = useState(null)
   const safetyAbortRef = useRef(null)
 
+  const [weatherData,       setWeatherData]       = useState(null)
+  const [weatherLoading,    setWeatherLoading]     = useState(false)
+  const [indoorPlaces,      setIndoorPlaces]       = useState(null)
+  const [indoorLoading,     setIndoorLoading]      = useState(false)
+  const [indoorPanelOpen,   setIndoorPanelOpen]    = useState(false)
+
+  const [fatigueModalOpen,  setFatigueModalOpen]  = useState(false)
+  const [fatigueCafes,      setFatigueCafes]      = useState(null)
+  const [fatigueCafeLoading, setFatigueCafeLoading] = useState(false)
+  const [selectedCafeKey,   setSelectedCafeKey]   = useState(null)
+  const [restStop,          setRestStop]           = useState(null)
+  const [fatigueApplied,    setFatigueApplied]    = useState(false)
+
   const toastTimerRef        = useRef(null)
   const lastAutoExpNameRef   = useRef('')
 
@@ -216,6 +229,13 @@ export default function AiTravelDurationView() {
   const fatigueRingOffset = fatigueRingCirc - (fatigueVal / 10) * fatigueRingCirc
   const fatigueRingColor  = fatigueVal >= 8 ? 'var(--rose)' : fatigueVal >= 6 ? 'var(--amber)' : 'var(--green)'
 
+  const displayStops = useMemo(() => {
+    if (!restStop) return dayStops
+    const arr = [...dayStops]
+    arr.splice(activeStopIdx + 1, 0, restStop)
+    return arr
+  }, [dayStops, restStop, activeStopIdx])
+
   const mapState = useCallback(() => ({
     schedule, activeIdx, activeStopIdx, selectedTravelMode,
     activeTransitStepIdx, routeModeResults, cityData, transitResults,
@@ -266,6 +286,39 @@ export default function AiTravelDurationView() {
       })
       .catch(() => {})
   }, [travelData])
+
+  // ── 날씨: 일정 날짜별 조회 ────────────────────────────────────
+  useEffect(() => {
+    if (!travelData) return
+    const planResult  = readGeneratedPlanResult()
+    const destination = planResult?.tripInfo?.country || travelData.destination
+    const startDate   = planResult?.tripInfo?.startDate
+    if (!destination) return
+
+    let date
+    if (startDate) {
+      const base = new Date(startDate)
+      base.setDate(base.getDate() + activeIdx)
+      date = base.toISOString().slice(0, 10)
+    } else {
+      const today = new Date()
+      today.setDate(today.getDate() + activeIdx)
+      date = today.toISOString().slice(0, 10)
+    }
+
+    setWeatherData(null)
+    setIndoorPlaces(null)
+    setIndoorPanelOpen(false)
+    setFatigueCafes(null)
+    setSelectedCafeKey(null)
+    setRestStop(null)
+    setFatigueApplied(false)
+    setWeatherLoading(true)
+    fetchDayWeather(destination, date)
+      .then(data => setWeatherData(data))
+      .catch(() => {})
+      .finally(() => setWeatherLoading(false))
+  }, [travelData, activeIdx])
 
   // ── 초기화: Google Maps ────────────────────────────────────
   useEffect(() => {
@@ -455,14 +508,24 @@ export default function AiTravelDurationView() {
   // ── 액션 핸들러 ───────────────────────────────────────────
   const handle = useCallback(async (action) => {
     switch (action) {
-      case 'wxReroute':
-        showToast('☔', '오후 비 예보 감지', '기존 루트에서 멀지 않은 실내 코스로 재경로할까요?', 'warn', [
-          { label: '실내 루트 적용', action: 'applyWx', primary: true }, { label: '무시', action: '_dismiss' },
-        ]); break
-      case 'applyWx':
-        setToast(t => ({ ...t, show: false }))
-        setRouteCard({ title: '실내 재경로: 피카소 미술관 우선', desc: '야외 산책 → 실내 코스. +9분' })
-        showToast('✓', '실내 루트 적용됨', '기존 관광 순서 유지. 야외 구간만 실내로 전환됩니다.', 'ok'); break
+      case 'wxReroute': {
+        setIndoorPanelOpen(true)
+        if (indoorPlaces) break
+        const activeStop = dayStops[activeStopIdx]
+        const pt = activeStop?.lat && activeStop?.lng
+          ? { lat: activeStop.lat, lng: activeStop.lng }
+          : getActiveEmergencyPoint()
+        if (!pt) {
+          setIndoorPanelOpen(false)
+          showToast('!', '실내 활동', '현재 위치 정보를 확인할 수 없습니다.', 'warn'); break
+        }
+        setIndoorLoading(true)
+        fetchIndoorPlaces(pt, 2000)
+          .then(data => setIndoorPlaces(data))
+          .catch(() => showToast('!', '실내 장소 조회 실패', '잠시 후 다시 시도해 주세요.', 'warn'))
+          .finally(() => setIndoorLoading(false))
+        break
+      }
       case 'safeRoute': {
         const currentStop = dayStops[activeStopIdx]
         const lat = currentStop?.lat
@@ -512,14 +575,45 @@ export default function AiTravelDurationView() {
         setMealRerouteOpen(false)
         setRouteCard({ title: `식당 변경: 평균 ${formatEurAsKrw(19)} 타파스 바 적용`, desc: '루트 420m 이내 · 관광 순서 유지됨' })
         showToast('✓', '식당 변경 적용', '기존 관광 루트와 크게 벗어나지 않는 대체 식당으로 조정되었습니다.', 'ok'); break
-      case 'fatigueReroute':
-        showToast('◇', `피로도 ${fatigueVal}/10 — 루트 조정`, '도보를 줄이고 카페 휴식과 택시 구간을 늘린 루트로 바꿀까요?', 'warn', [
-          { label: '적용', action: 'applyFatigue', primary: true }, { label: '유지', action: '_dismiss' },
-        ]); break
-      case 'applyFatigue':
-        setToast(t => ({ ...t, show: false }))
-        setRouteCard({ title: '휴식 루트: 카페 40분 + 택시 구간', desc: '도보 -2km · 오후 카페 휴식 후 복귀' })
-        showToast('✓', '휴식 루트 적용됨', '관광 포인트 유지. 이동 방식과 중간 휴식만 조정됩니다.', 'ok'); break
+      case 'fatigueReroute': {
+        setFatigueModalOpen(true)
+        if (fatigueCafes) break
+        const fatigueStop = dayStops[activeStopIdx]
+        const fatiguePt   = fatigueStop?.lat && fatigueStop?.lng
+          ? { lat: fatigueStop.lat, lng: fatigueStop.lng }
+          : getActiveEmergencyPoint()
+        if (!fatiguePt) break
+        setFatigueCafeLoading(true)
+        fetchNearbyCafes(fatiguePt, 800)
+          .then(data => setFatigueCafes(data))
+          .catch(() => {})
+          .finally(() => setFatigueCafeLoading(false))
+        break
+      }
+      case 'applyFatigue': {
+        setFatigueModalOpen(false)
+        setFatigueApplied(true)
+        if (fatigueVal >= 7) {
+          setSelectedTravelMode('TAXI')
+          setRouteCard({ title: '피로도 루트 적용됨', desc: '남은 구간 택시 이동으로 전환됩니다.' })
+        }
+        if (selectedCafeKey) {
+          const allPlaces = (fatigueCafes?.groups || []).flatMap(g => g.places)
+          const cafe = allPlaces.find(p => p.id === selectedCafeKey)
+          if (cafe) {
+            setRestStop({
+              t: '휴식', name: cafe.name, badge: '카페 휴식', kind: 'rest',
+              desc: `${cafe.distanceText ? cafe.distanceText + ' · ' : ''}피로도 회복을 위한 카페 휴식`,
+              cost: '', tags: ['휴식 추가됨', cafe.durationText || ''].filter(Boolean),
+              safety: 'safe', lat: cafe.lat, lng: cafe.lng, isInserted: true,
+            })
+          }
+        }
+        showToast('✓', '휴식 루트 적용됨', fatigueVal >= 7
+          ? '남은 구간 택시 전환 + 카페 휴식이 일정에 추가됩니다.'
+          : '카페 휴식이 현재 일정에 추가됩니다.', 'ok')
+        break
+      }
       case 'openMapModal':
         setMapModalOpen(true); break
       case 'routeGuide': {
@@ -660,13 +754,13 @@ export default function AiTravelDurationView() {
             <div className="c-card-title">도구</div>
             <div className="tool-pad">
               {[
-                { modal: 'translate', icon: '↔', label: '번역'    },
-                { modal: 'budget',    icon: '◫', label: '예산'    },
-                { modal: 'fatigue',   icon: '◇', label: '피로도'  },
-                { modal: 'nearby',    icon: '＋', label: '편의시설' },
+                { modal: 'translate', icon: '🌐', label: '번역'    },
+                { modal: 'budget',    icon: '💰', label: '예산'    },
+                { modal: 'fatigue',   icon: '💪', label: '피로도'  },
+                { modal: 'nearby',    icon: '📍', label: '편의시설' },
                 { modal: 'emergency', icon: '🚨', label: '긴급'    },
                 { modal: 'safety',    icon: '🛡', label: '야간안전' },
-                { modal: 'album',     icon: '▧', label: '사진'    },
+                { modal: 'album',     icon: '📷', label: '사진'    },
                 { modal: 'hotel',     icon: '🏨', label: '숙소'    },
               ].map(({ modal, icon, label }) => (
                 <button key={modal} className="tool-pad-btn" onClick={() => openModal(modal)}>
@@ -692,7 +786,34 @@ export default function AiTravelDurationView() {
             </div>
             <div className="sec-body">
               <div className="tl">
-                {dayStops.map((stop, i) => {
+                {displayStops.map((stop, i) => {
+                  if (stop.isInserted) return (
+                    <div key="rest-stop" className="tl-node">
+                      <div className="tl-t">{stop.t}</div>
+                      <div className="tl-axis">
+                        <span className="tl-dot rest inserted"></span>
+                      </div>
+                      <div className="tl-card tl-card--rest">
+                        <div className="tl-card-top">
+                          <h3>☕ {stop.name}</h3>
+                          <span className="tl-badge rest">{stop.badge}</span>
+                        </div>
+                        <p>{stop.desc}</p>
+                        <div className="tl-tags">
+                          {stop.tags.map((t, ti) => <span key={ti} className="tl-tag">{t}</span>)}
+                        </div>
+                        <div className="tl-card-actions">
+                          <button
+                            className="tl-next-btn"
+                            onClick={e => { e.stopPropagation(); setRestStop(null); setFatigueApplied(false) }}
+                          >
+                            일정에서 제거
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+
                   const transitState    = { day: day?.day, routeModeResults, transitResults }
                   const transport       = getTransportPlan(stop, i, transitState)
                   const route           = getRouteInfo(dayStops, stop, i)
@@ -1006,7 +1127,7 @@ export default function AiTravelDurationView() {
             <div className="map-hd">
               <span className="map-hd-title">라이브 지도</span>
               <div className="map-hd-actions">
-                <button className="map-icon-btn" onClick={() => handle('openMapModal')} aria-label="지도 확대">⛶</button>
+                <button className="map-icon-btn" onClick={() => handle('openMapModal')} aria-label="지도 확대">⤢</button>
                 <button className="map-hd-btn"   onClick={() => handle('routeGuide')}>경로 안내</button>
               </div>
             </div>
@@ -1029,21 +1150,72 @@ export default function AiTravelDurationView() {
           </div>
 
           <div className="wx-card">
-            <div className="wx-bg">
-              <span className="wx-icon-big">🌦</span>
-              <div>
-                <div className="wx-num">24°</div>
-                <div className="wx-cond">오전 맑음 · 오후 3시 비</div>
-              </div>
-            </div>
-            <div className="wx-outfit">
-              <strong>오늘 옷차림</strong>
-              <span>얇은 방수 재킷 + 접이식 우산. 미끄럽지 않은 밑창 신발.</span>
-            </div>
-            <div className="wx-btns">
-              <button className="map-btn primary" style={{ flex: 1 }} onClick={() => handle('wxReroute')}>실내 재경로</button>
-              <button className="map-btn sec"     style={{ flex: 1 }} onClick={() => handle('restore')}>원래 루트</button>
-            </div>
+            {weatherLoading ? (
+              <div className="wx-loading">날씨 불러오는 중...</div>
+            ) : weatherData ? (
+              <>
+                <div className="wx-bg">
+                  <span className="wx-icon-big">{weatherData.icon}</span>
+                  <div>
+                    <div className="wx-num">
+                      {weatherData.afternoon?.temp != null ? `${weatherData.afternoon.temp}°` : '--°'}
+                    </div>
+                    <div className="wx-cond">
+                      {weatherData.weatherLabel}
+                      {weatherData.precipProb > 0 ? ` · 강수 ${weatherData.precipProb}%` : ''}
+                    </div>
+                  </div>
+                </div>
+                <div className="wx-temp-row">
+                  {[
+                    { label: '아침', data: weatherData.morning },
+                    { label: '낮',   data: weatherData.afternoon },
+                    { label: '저녁', data: weatherData.evening },
+                  ].map(({ label, data }) => (
+                    <div key={label} className="wx-temp-cell">
+                      <span className="wx-temp-label">{label}</span>
+                      <span className="wx-temp-val">{data?.temp != null ? `${data.temp}°` : '--'}</span>
+                      {data?.feels != null && data.feels !== data.temp && (
+                        <span className="wx-temp-feels">체감 {data.feels}°</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {weatherData.outfit?.summary && (
+                  <div className="wx-outfit">
+                    <strong>오늘 옷차림</strong>
+                    <span className="wx-outfit-summary">{weatherData.outfit.summary}</span>
+                    {weatherData.outfit.items?.length > 0 && (
+                      <div className="wx-outfit-items">
+                        {weatherData.outfit.items.map((item, i) => (
+                          <span key={i} className="wx-outfit-tag">{item}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="wx-btns">
+                  <button className="map-btn primary" style={{ flex: 1 }} onClick={() => handle('wxReroute')}>
+                    🏛 실내 활동 보기
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="wx-bg">
+                  <span className="wx-icon-big">🌦</span>
+                  <div>
+                    <div className="wx-num">--°</div>
+                    <div className="wx-cond">날씨 정보 없음</div>
+                  </div>
+                </div>
+                <div className="wx-btns">
+                  <button className="map-btn primary" style={{ flex: 1 }} onClick={() => handle('wxReroute')}>
+                    🏛 실내 활동 보기
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="fatigue-card">
@@ -1067,7 +1239,22 @@ export default function AiTravelDurationView() {
                 <div className="fc-hint">높을수록 도보를 줄이고 카페·택시 비중을 늘립니다.</div>
               </div>
             </div>
-            <button className="fc-btn" onClick={() => handle('fatigueReroute')}>휴식 루트 보기</button>
+            <div className="fc-btns">
+              <button className="fc-btn" onClick={() => handle('fatigueReroute')}>휴식 루트 보기</button>
+              {fatigueApplied && (
+                <button
+                  className="fc-btn fc-btn--reset"
+                  onClick={() => {
+                    setRestStop(null)
+                    setFatigueApplied(false)
+                    setSelectedTravelMode('WALKING')
+                    setSelectedCafeKey(null)
+                  }}
+                >
+                  원래대로
+                </button>
+              )}
+            </div>
           </div>
         </aside>
       </div>
@@ -1129,6 +1316,126 @@ export default function AiTravelDurationView() {
           <div className="modal-footer">
             <button className="mf ghost" onClick={closeModal}>닫기</button>
             <button className="mf primary" onClick={() => { if (activeModalKey === 'album') saveAlbumMemory(); else closeModal() }}>확인</button>
+          </div>
+        </div>
+      </div>
+
+      {/* FATIGUE MODAL */}
+      <div
+        className={`overlay${fatigueModalOpen ? ' show' : ''}`}
+        onClick={e => { if (e.target.classList.contains('overlay')) setFatigueModalOpen(false) }}
+      >
+        <div className="modal-box fatigue-modal-box">
+          <div className="modal-title">💪 피로도 루트 조정</div>
+          <div className="fatigue-modal-body">
+
+            {/* 택시 전환 안내 */}
+            <div className="fm-section">
+              <div className="fm-section-title">🚕 이동수단 조정</div>
+              {fatigueVal >= 7 ? (
+                <div className="fm-taxi-desc">
+                  피로도 <strong>{fatigueVal}/10</strong> — 남은 {dayStops.length - activeStopIdx - 1}개 구간을 <strong>전부 택시</strong>로 전환합니다.
+                  <span className="fm-badge high">강력 권장</span>
+                </div>
+              ) : fatigueVal >= 5 ? (
+                <div className="fm-taxi-desc">
+                  피로도 <strong>{fatigueVal}/10</strong> — 남은 구간 중 도보 이동을 <strong>택시로 전환</strong>을 권장합니다.
+                  <span className="fm-badge mid">권장</span>
+                </div>
+              ) : (
+                <div className="fm-taxi-desc fm-taxi-ok">
+                  피로도 <strong>{fatigueVal}/10</strong> — 현재 컨디션은 양호합니다. 이동수단 변경이 필요하지 않아요.
+                </div>
+              )}
+            </div>
+
+            {/* 카페 선택 */}
+            <div className="fm-section">
+              <div className="fm-section-title">☕ 카페 휴식 추가</div>
+              <p className="fm-section-desc">현재 일정 바로 다음에 카페 휴식을 추가합니다. 하나를 선택하거나 건너뛰세요.</p>
+              {fatigueCafeLoading ? (
+                <div className="fm-cafe-loading">근처 카페 검색 중...</div>
+              ) : fatigueCafes?.groups?.length > 0 ? (
+                fatigueCafes.groups.filter(g => g.places.length > 0).map(group => (
+                  <div key={group.key}>
+                    <div className="fm-cafe-group-title">{group.icon} {group.label}</div>
+                    {group.places.map(place => (
+                      <div
+                        key={place.id}
+                        className={`fm-cafe-item${selectedCafeKey === place.id ? ' selected' : ''}`}
+                        onClick={() => setSelectedCafeKey(prev => prev === place.id ? null : place.id)}
+                      >
+                        <div className="fm-cafe-check">{selectedCafeKey === place.id ? '✓' : ''}</div>
+                        <div className="fm-cafe-info">
+                          <div className="fm-cafe-name">{place.name}</div>
+                          <div className="fm-cafe-meta">
+                            {place.distanceText && <span>{place.distanceText}</span>}
+                            {place.durationText && <span>{place.durationText}</span>}
+                            {place.rating      && <span>★ {place.rating}</span>}
+                            {place.openNow === true  && <span className="wx-open">영업 중</span>}
+                            {place.openNow === false && <span className="wx-closed">영업 종료</span>}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))
+              ) : (
+                <div className="fm-cafe-empty">800m 내 카페를 찾지 못했어요.</div>
+              )}
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button className="mf ghost"   onClick={() => setFatigueModalOpen(false)}>취소</button>
+            <button className="mf primary" onClick={() => handle('applyFatigue')}>
+              {fatigueVal >= 5 ? '택시 전환' : ''}{selectedCafeKey ? (fatigueVal >= 5 ? ' + 카페 추가' : '카페 추가') : ''}{fatigueVal < 5 && !selectedCafeKey ? '확인' : ''}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* INDOOR MODAL */}
+      <div
+        className={`overlay${indoorPanelOpen ? ' show' : ''}`}
+        onClick={e => { if (e.target.classList.contains('overlay')) setIndoorPanelOpen(false) }}
+      >
+        <div className="modal-box indoor-modal-box">
+          <div className="modal-title">🏛 주변 실내 활동</div>
+          <div className="indoor-modal-body">
+            {indoorLoading ? (
+              <div className="wx-indoor-loading">근처 실내 장소 검색 중...</div>
+            ) : indoorPlaces?.groups?.length > 0 ? (
+              indoorPlaces.groups
+                .filter(g => g.places.length > 0)
+                .map(group => (
+                  <div key={group.key} className="wx-indoor-group">
+                    <div className="wx-indoor-group-title">{group.icon} {group.label}</div>
+                    {group.places.map(place => (
+                      <a
+                        key={place.id}
+                        className="wx-indoor-place"
+                        href={place.googleMapsUri}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <div className="wx-indoor-place-name">{place.name}</div>
+                        <div className="wx-indoor-place-meta">
+                          {place.distanceText && <span>{place.distanceText}</span>}
+                          {place.durationText && <span>{place.durationText}</span>}
+                          {place.rating && <span>★ {place.rating}</span>}
+                          {place.openNow === true  && <span className="wx-open">영업 중</span>}
+                          {place.openNow === false && <span className="wx-closed">영업 종료</span>}
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                ))
+            ) : (
+              <div className="wx-indoor-empty">주변 2km 내 실내 장소를 찾지 못했어요.</div>
+            )}
+          </div>
+          <div className="modal-footer">
+            <button className="mf primary" onClick={() => setIndoorPanelOpen(false)}>닫기</button>
           </div>
         </div>
       </div>

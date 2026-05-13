@@ -21,6 +21,44 @@ const AMENITY_PLACE_TYPES = [
   { key: 'public_bathroom', type: 'public_bathroom', label: '공공 화장실', icon: '🚻' },
 ]
 
+const INDOOR_PLACE_TYPES = [
+  {
+    key: 'museum',
+    types: ['museum', 'natural_history_museum', 'science_museum', 'history_museum', 'childrens_museum'],
+    label: '박물관', icon: '🏛',
+  },
+  {
+    key: 'art',
+    types: ['art_gallery', 'art_studio', 'performing_arts_theater'],
+    label: '미술관·공연', icon: '🎨',
+  },
+  {
+    key: 'shopping',
+    types: ['shopping_mall', 'department_store', 'market'],
+    label: '쇼핑몰·백화점', icon: '🛍',
+  },
+  {
+    key: 'entertainment',
+    types: ['movie_theater', 'amusement_center', 'bowling_alley', 'casino', 'comedy_club', 'karaoke'],
+    label: '엔터테인먼트', icon: '🎬',
+  },
+  {
+    key: 'nature_indoor',
+    types: ['aquarium', 'zoo', 'botanical_garden'],
+    label: '아쿠아리움·동물원', icon: '🐟',
+  },
+  {
+    key: 'culture',
+    types: ['library', 'cultural_center', 'community_center', 'convention_center', 'exhibition_hall'],
+    label: '문화시설', icon: '📚',
+  },
+  {
+    key: 'wellness',
+    types: ['spa', 'fitness_center', 'swimming_pool', 'sauna'],
+    label: '스파·웰니스', icon: '🧖',
+  },
+]
+
 
 function getCachedRoute(key) {
   const item = routeCache.get(key)
@@ -393,4 +431,122 @@ const getNearbyAmenities = async (req, res, next) => {
   }
 }
 
-module.exports = { getEmbedUrl, getRoute, geocode, getEmergencyPlaces, getNearbyAmenities }
+async function searchNearbyIndoor({ lat, lng, radius, category, key }) {
+  const response = await fetch('https://places.googleapis.com/v1/places:searchNearby', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': key,
+      'X-Goog-FieldMask': [
+        'places.id',
+        'places.displayName',
+        'places.formattedAddress',
+        'places.location',
+        'places.rating',
+        'places.regularOpeningHours',
+        'places.googleMapsUri',
+      ].join(','),
+    },
+    body: JSON.stringify({
+      includedTypes: category.types,
+      languageCode: 'ko',
+      rankPreference: 'POPULARITY',
+      maxResultCount: 5,
+      locationRestriction: {
+        circle: {
+          center: { latitude: lat, longitude: lng },
+          radius,
+        },
+      },
+    }),
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`Google Places ${response.status}: ${text}`)
+  }
+
+  const data = await response.json()
+  return (data.places || []).map(place => normalizeAmenityPlace(place, category, { lat, lng }))
+}
+
+const CAFE_PLACE_TYPES = [
+  { key: 'cafe',    types: ['cafe', 'coffee_shop'],       label: '카페',     icon: '☕' },
+  { key: 'bakery',  types: ['bakery', 'pastry_shop'],     label: '베이커리',  icon: '🥐' },
+  { key: 'dessert', types: ['dessert_shop', 'ice_cream_shop'], label: '디저트', icon: '🍨' },
+]
+
+async function searchNearbyCafes({ lat, lng, radius, category, key }) {
+  const response = await fetch('https://places.googleapis.com/v1/places:searchNearby', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': key,
+      'X-Goog-FieldMask': [
+        'places.id', 'places.displayName', 'places.formattedAddress',
+        'places.location', 'places.rating', 'places.regularOpeningHours', 'places.googleMapsUri',
+      ].join(','),
+    },
+    body: JSON.stringify({
+      includedTypes: category.types,
+      languageCode: 'ko',
+      rankPreference: 'POPULARITY',
+      maxResultCount: 4,
+      locationRestriction: { circle: { center: { latitude: lat, longitude: lng }, radius } },
+    }),
+  })
+  if (!response.ok) return []
+  const data = await response.json()
+  return (data.places || []).map(place => normalizeAmenityPlace(place, category, { lat, lng }))
+}
+
+const getNearbyCafes = async (req, res, next) => {
+  try {
+    const key    = requireEnv('GOOGLE_MAPS_API_KEY')
+    const lat    = Number(req.query.lat)
+    const lng    = Number(req.query.lng)
+    const radius = Math.min(Math.max(Number(req.query.radius) || 800, 200), 2000)
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw createError('lat과 lng가 필요합니다.', 400)
+
+    const groups = await Promise.all(
+      CAFE_PLACE_TYPES.map(async cat => ({
+        key: cat.key, label: cat.label, icon: cat.icon,
+        places: await searchNearbyCafes({ lat, lng, radius, category: cat, key }),
+      }))
+    )
+    res.json({ found: groups.some(g => g.places.length > 0), center: { lat, lng }, radius, groups })
+  } catch (err) {
+    next(err)
+  }
+}
+
+const getIndoorPlaces = async (req, res, next) => {
+  try {
+    const key    = requireEnv('GOOGLE_MAPS_API_KEY')
+    const lat    = Number(req.query.lat)
+    const lng    = Number(req.query.lng)
+    const radius = Math.min(Math.max(Number(req.query.radius) || 2000, 300), 5000)
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      throw createError('lat과 lng가 필요합니다.', 400)
+    }
+
+    const groups = await Promise.all(
+      INDOOR_PLACE_TYPES.map(async category => {
+        const places = await searchNearbyIndoor({ lat, lng, radius, category, key }).catch(() => [])
+        return { key: category.key, label: category.label, icon: category.icon, places }
+      })
+    )
+
+    res.json({
+      found: groups.some(g => g.places.length > 0),
+      center: { lat, lng },
+      radius,
+      groups,
+    })
+  } catch (err) {
+    next(err)
+  }
+}
+
+module.exports = { getEmbedUrl, getRoute, geocode, getEmergencyPlaces, getNearbyAmenities, getIndoorPlaces, getNearbyCafes }

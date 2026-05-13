@@ -16,6 +16,7 @@ const healthRoutes       = require('./healthRoutes');
 const memoryRoutes       = require('./memoryRoutes');
 const consulateRoutes    = require('./consulateRoutes');
 const safetyRoutes       = require('./safetyRoutes');
+const weatherRoutes      = require('./weatherRoutes');
 
 const router = Router();
 
@@ -35,6 +36,7 @@ router.use(exchangeRateRoutes);
 router.use(memoryRoutes);
 router.use(consulateRoutes);
 router.use(safetyRoutes);
+router.use(weatherRoutes);
 
 module.exports = router;
 
