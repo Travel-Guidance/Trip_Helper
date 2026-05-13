@@ -31,6 +31,12 @@ function parseMustVisitList(value) {
     .filter(Boolean);
 }
 
+function extractMaxNumber(costStr) {
+  const nums = String(costStr || '').match(/\d+(?:\.\d+)?/g);
+  if (!nums?.length) return null;
+  return Math.max(...nums.map(Number));
+}
+
 function isProtectedMustVisitItem(item, mustVisitList) {
   const name = String(item?.name || '').toLowerCase();
   return mustVisitList.some(place => {
@@ -39,24 +45,108 @@ function isProtectedMustVisitItem(item, mustVisitList) {
   });
 }
 
-function buildRebudgetPrompt({ day, targetItems, activeItemIndex, remainingBudgetWon, remainingCostWon, mustVisit }) {
+async function searchNearbyPlaces(lat, lng, key, includedTypes, radius = 2000) {
+  try {
+    const response = await fetch('https://places.googleapis.com/v1/places:searchNearby', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': key,
+        'X-Goog-FieldMask': [
+          'places.displayName', 'places.formattedAddress',
+          'places.location', 'places.rating', 'places.priceLevel',
+          'places.regularOpeningHours',
+        ].join(','),
+      },
+      body: JSON.stringify({
+        includedTypes,
+        languageCode: 'ko',
+        rankPreference: 'DISTANCE',
+        maxResultCount: 8,
+        locationRestriction: {
+          circle: { center: { latitude: lat, longitude: lng }, radius },
+        },
+      }),
+    });
+    if (!response.ok) return [];
+    const data = await response.json();
+    return (data.places || [])
+      .slice(0, 5)
+      .map(p => ({
+        name: p.displayName?.text || '',
+        address: p.formattedAddress || '',
+        lat: p.location?.latitude ?? null,
+        lng: p.location?.longitude ?? null,
+        rating: p.rating ?? null,
+        priceLevel: p.priceLevel ?? null,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+// 식사 항목: 저렴한 식당만 필터
+async function searchNearbyRestaurants(lat, lng, key) {
+  const all = await searchNearbyPlaces(lat, lng, key, ['restaurant', 'cafe'], 2000);
+  const CHEAP = new Set(['PRICE_LEVEL_FREE', 'PRICE_LEVEL_INEXPENSIVE', 'PRICE_LEVEL_MODERATE', 'PRICE_LEVEL_UNSPECIFIED', undefined, null]);
+  return all.filter(p => CHEAP.has(p.priceLevel));
+}
+
+// 관광/입장 항목: 무료/저가 명소
+async function searchNearbyAttractions(lat, lng, key) {
+  return searchNearbyPlaces(lat, lng, key, [
+    'tourist_attraction', 'museum', 'art_gallery', 'park', 'viewpoint',
+    'national_park', 'historical_landmark', 'cultural_landmark',
+  ], 2000);
+}
+
+function priceLevelOrder(level) {
+  const order = { PRICE_LEVEL_FREE: 0, PRICE_LEVEL_INEXPENSIVE: 1, PRICE_LEVEL_MODERATE: 2, PRICE_LEVEL_UNSPECIFIED: 1 };
+  return order[level] ?? 3;
+}
+
+function cheapestCandidate(candidates) {
+  return [...candidates].sort((a, b) => {
+    const diff = priceLevelOrder(a.priceLevel) - priceLevelOrder(b.priceLevel);
+    return diff !== 0 ? diff : (b.rating ?? 0) - (a.rating ?? 0);
+  })[0];
+}
+
+function buildRebudgetPrompt({ day, targetItems, activeItemIndex, remainingBudgetWon, budgetForAdjustments, selectedCount, remainingCostWon, mustVisit, mealCandidatesMap, placeCandidatesMap }) {
+  const hasMealCandidates  = mealCandidatesMap  && Object.keys(mealCandidatesMap).length  > 0;
+  const hasPlaceCandidates = placeCandidatesMap && Object.keys(placeCandidatesMap).length > 0;
+  const candidatesSection = [
+    hasMealCandidates  ? `\n근처 저가 식당 후보 (itemIndex → 후보, 반경 2km):\n${JSON.stringify(mealCandidatesMap)}`  : '',
+    hasPlaceCandidates ? `\n근처 저가 명소 후보 (itemIndex → 후보, 반경 2km):\n${JSON.stringify(placeCandidatesMap)}` : '',
+  ].filter(Boolean).join('\n');
+  const mealRule = hasMealCandidates
+    ? '3. 식사 항목은 반드시 위 "근처 저가 식당 후보" 목록에서 실제 다른 식당 하나를 골라 교체하세요. priceLevel이 낮고 rating이 높은 것을 우선합니다. 교체 시 name/lat/lng는 해당 후보 값으로 덮어쓰세요. 식사 항목의 교체 결과는 반드시 식당이어야 합니다.'
+    : '3. 식사 비용이 문제면 더 저렴한 식당으로 교체하세요. 식당을 다른 종류의 장소로 바꾸면 안 됩니다.';
+  const placeRule = hasPlaceCandidates
+    ? '4. 관광·입장 항목은 반드시 위 "근처 저가 명소 후보" 목록에서 더 저렴한 명소로 교체하세요. 교체 결과는 반드시 관광지·명소여야 하며 식당으로 바꾸면 안 됩니다.'
+    : '4. 관광·입장 항목이 문제면 무료 전망대, 공원, 산책 코스 등 같은 지역의 저가 명소로 대체하세요. 식당으로 바꾸면 안 됩니다.';
+  const perItemBudget = selectedCount > 0 ? Math.floor(budgetForAdjustments / selectedCount) : budgetForAdjustments;
+
   return `오늘 남은 여행 일정만 예산에 맞게 재조정하세요. 반드시 순수 JSON만 반환하세요.
 
 상황:
 - 현재 활성 일정 인덱스: ${activeItemIndex}
-- 오늘 남은 사용 가능 예산: ${remainingBudgetWon} KRW
-- 남은 식사/쇼핑/입장비 예상 합계: ${remainingCostWon} KRW
+- 오늘 사용 가능 총 예산: ${remainingBudgetWon} KRW
+- 유지하는 항목들의 확정 비용: ${remainingBudgetWon - budgetForAdjustments} KRW
+- 재조정 항목들에 쓸 수 있는 최대 예산: ${budgetForAdjustments} KRW (항목당 약 ${perItemBudget} KRW)
+- 현재 재조정 항목들의 총 비용: ${remainingCostWon} KRW → 이것을 ${budgetForAdjustments} KRW 이하로 줄여야 합니다.
 - 사용자가 반드시 방문하길 원한 장소(mustVisit): ${mustVisit || '없음'}
-
+${candidatesSection}
 규칙:
 1. 이미 지나간 일정은 절대 수정하지 않습니다. 아래 targetItems만 수정합니다.
-2. 전체 여행이 아니라 오늘 남은 일정만 예산에 맞게 조정합니다.
-3. 식사 비용이 문제면 저가 식당, 간단한 식사, 메뉴/주문 팁으로 조정합니다.
-4. 쇼핑 비용이 문제면 쇼핑 시간을 줄이거나 구매 상한을 둡니다.
-5. 입장비가 문제면 무료 전망, 산책 코스, 저가 입장 옵션으로 대체합니다.
-6. mustVisit에 포함된 장소는 삭제하거나 다른 장소로 바꾸지 않습니다. 특히 mustVisit 음식점은 name/time/lat/lng/isMeal을 유지하고 note/cost/reservation/transportTip/backup만 예산형으로 바꿉니다.
-7. 각 item의 필드는 가능한 유지하되 name, note, cost, reservation, transportTip, backup, isMeal, lat, lng를 포함하세요.
-8. 동선이 과도하게 늘어나지 않게 같은 지역/근처 대체안을 사용하세요.
+2. 재조정 후 항목들의 KRW 환산 총 비용이 ${budgetForAdjustments} KRW 이하여야 합니다. 이 조건이 최우선입니다.
+${mealRule}
+${placeRule}
+5. 쇼핑 비용이 문제면 쇼핑 시간을 줄이거나 구매 상한을 둡니다.
+6. 항목 종류(식사→식당, 관광→명소)를 절대 바꾸지 마세요. 식사 항목을 명소로, 명소를 식당으로 교체하면 안 됩니다.
+7. mustVisit에 포함된 장소는 삭제하거나 다른 장소로 바꾸지 않습니다.
+8. 각 item의 필드는 가능한 유지하되 name, note, cost, isMeal, lat, lng를 포함하세요.
+9. 모든 후보는 원래 일정 위치 반경 2km 이내입니다.
 
 반환 형식:
 {"items":[...],"summary":"무엇을 줄였는지 한 문장","warnings":["주의사항"]}
@@ -185,8 +275,9 @@ async function generatePlan(req, res, next) {
       res.json(finalResponse);
     }
   } catch (err) {
+    console.error('[ai-travel] 일정 생성 오류:', err);
     if (isSSE) {
-      res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+      res.write(`data: ${JSON.stringify({ error: '일정 생성에 실패했습니다.' })}\n\n`);
       res.end();
     } else {
       next(err);
@@ -430,13 +521,62 @@ async function rebudgetPlanDay(req, res, next) {
 
     const mustVisit = String(req.body.mustVisit || '');
     const mustVisitList = parseMustVisitList(mustVisit);
+
+    const mapsKey = process.env.GOOGLE_MAPS_API_KEY;
+    const mealCandidatesMap = {};       // 식사 항목 → 근처 저가 식당 후보
+    const placeCandidatesMap = {};      // 관광/입장 항목 → 근처 저가 명소 후보
+
+    function isMealItem(item) {
+      return item?.isMeal || item?.kind === 'meal' || item?.badge === '식사';
+    }
+    function isSpotItem(item) {
+      return item?.kind === 'spot' || item?.kind === 'entry' || item?.badge === '명소' || item?.badge === '입장';
+    }
+
+    if (mapsKey) {
+      await Promise.all(
+        targetItems.map(async ({ index, item }) => {
+          const lat = Number(item?.lat);
+          const lng = Number(item?.lng);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+          if (isMealItem(item)) {
+            const candidates = await searchNearbyRestaurants(lat, lng, mapsKey);
+            if (candidates.length) mealCandidatesMap[index] = candidates;
+          } else if (isSpotItem(item)) {
+            const candidates = await searchNearbyAttractions(lat, lng, mapsKey);
+            if (candidates.length) placeCandidatesMap[index] = candidates;
+          }
+        })
+      );
+    }
+    console.log('[ai-travel:rebudget] candidates', {
+      planId, dayIndex,
+      meal:  Object.keys(mealCandidatesMap).map(idx => ({ idx, count: mealCandidatesMap[idx].length })),
+      place: Object.keys(placeCandidatesMap).map(idx => ({ idx, count: placeCandidatesMap[idx].length })),
+    });
+
+    const remainingBudgetWon  = Number(req.body.remainingBudgetWon)  || 0;
+    const remainingCostWon    = Number(req.body.remainingCostWon)    || 0;
+    const lockedCostWon       = Number(req.body.lockedCostWon)       || 0;
+    const exchangeRateToKrw   = Number(req.body.exchangeRateToKrw)   || 1;
+    // 유지 항목 비용을 제외한 실제 재조정 예산
+    const budgetForAdjustments = Math.max(0, remainingBudgetWon - lockedCostWon);
+
+    console.log('[ai-travel:rebudget] budget', {
+      remainingBudgetWon, lockedCostWon, budgetForAdjustments, remainingCostWon,
+    });
+
     const prompt = buildRebudgetPrompt({
       day,
       targetItems,
       activeItemIndex,
-      remainingBudgetWon: Number(req.body.remainingBudgetWon) || 0,
-      remainingCostWon: Number(req.body.remainingCostWon) || 0,
+      remainingBudgetWon,
+      budgetForAdjustments,
+      selectedCount: uniqueSelectedIndexes.length,
+      remainingCostWon,
       mustVisit,
+      mealCandidatesMap,
+      placeCandidatesMap,
     });
 
     const text = await generateText(prompt, 'You are a budget-aware travel itinerary editor. Return strict JSON only.');
@@ -471,9 +611,85 @@ async function rebudgetPlanDay(req, res, next) {
         isMeal: original.isMeal,
       };
     });
+
+    // 후처리 검증: 식사 항목은 candidates 강제 적용, 비용 상승 방지
+    // 항목당 최대 허용 비용(현지 통화) 계산
+    const perItemBudgetKrw = uniqueSelectedIndexes.length > 0
+      ? Math.floor(budgetForAdjustments / uniqueSelectedIndexes.length)
+      : budgetForAdjustments;
+    const perItemBudgetLocal = exchangeRateToKrw > 0
+      ? perItemBudgetKrw / exchangeRateToKrw
+      : null;
+
+    function buildForcedItem(original, candidate, note) {
+      return {
+        ...original,
+        name:  candidate.name,
+        lat:   candidate.lat  ?? original.lat,
+        lng:   candidate.lng  ?? original.lng,
+        note,
+        badge: original.badge,
+        kind:  original.kind,
+        isMeal: original.isMeal,
+        time:  original.time,
+      };
+    }
+
+    function usedFromList(aiName, candidates) {
+      const n = String(aiName || '').toLowerCase().trim();
+      return candidates.some(c => {
+        const cn = String(c.name || '').toLowerCase().trim();
+        return cn && (cn.includes(n) || n.includes(cn));
+      });
+    }
+
+    const finalRevised = protectedRevised.map((revisedItem, resultIndex) => {
+      const origIndex      = targetItems[resultIndex]?.index;
+      const original       = targetItems[resultIndex]?.item || {};
+      const mealCands      = mealCandidatesMap[origIndex];
+      const placeCands     = placeCandidatesMap[origIndex];
+      const isMeal         = isMealItem(original);
+      const isSpot         = isSpotItem(original);
+      const origNum        = extractMaxNumber(original.cost);
+      const newNum         = extractMaxNumber(revisedItem?.cost);
+      const exceedsBudget  = perItemBudgetLocal != null && newNum != null && newNum > perItemBudgetLocal;
+      const costIncreased  = origNum != null && newNum != null && newNum > origNum * 1.05;
+      const needsForce     = exceedsBudget || costIncreased;
+
+      // ── 식사 항목 처리 ──────────────────────────────────────
+      if (isMeal && mealCands?.length) {
+        const aiUsed = usedFromList(revisedItem?.name, mealCands);
+        if (!aiUsed || needsForce) {
+          const best = cheapestCandidate(mealCands);
+          console.log('[ai-travel:rebudget] meal→force restaurant', { origIndex, best: best.name, needsForce, aiUsed });
+          return buildForcedItem(original, best,
+            `예산 절약을 위해 근처 저가 식당으로 교체되었습니다. (${best.address || ''})`.trim());
+        }
+      }
+
+      // ── 관광/입장 항목 처리 ────────────────────────────────
+      if (isSpot && placeCands?.length) {
+        const aiUsed = usedFromList(revisedItem?.name, placeCands);
+        if (!aiUsed || needsForce) {
+          const best = cheapestCandidate(placeCands);
+          console.log('[ai-travel:rebudget] spot→force attraction', { origIndex, best: best.name, needsForce, aiUsed });
+          return buildForcedItem(original, best,
+            `예산 절약을 위해 근처 저가 명소로 교체되었습니다. (${best.address || ''})`.trim());
+        }
+      }
+
+      // ── 예산 초과 폴백 (candidates 없는 경우) ──────────────
+      if (needsForce) {
+        console.log('[ai-travel:rebudget] cost over budget, marking free', { origIndex, origNum, newNum });
+        return { ...revisedItem, cost: '무료', note: revisedItem?.note || original.note || '' };
+      }
+
+      return revisedItem;
+    });
+
     const nextItems = [...items];
     uniqueSelectedIndexes.forEach((itemIndex, resultIndex) => {
-      nextItems[itemIndex] = protectedRevised[resultIndex] || nextItems[itemIndex];
+      nextItems[itemIndex] = finalRevised[resultIndex] || nextItems[itemIndex];
     });
     console.log('[ai-travel:rebudget] applied changes', {
       planId,

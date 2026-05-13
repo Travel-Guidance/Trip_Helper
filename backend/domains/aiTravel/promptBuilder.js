@@ -298,7 +298,32 @@ function buildInitialPrompt(params, ragContext = '') {
     accommodations,
   } = normalized;
 
+  const travelerCount = adults + (children || 0);
   const travelers = `성인 ${adults}명${children > 0 ? `, 어린이 ${children}명` : ''}`;
+
+  const rawBudgetText = params.budgetText || BUDGET_LABELS[budget] || budget || '';
+  const budgetWon = (() => {
+    const compact = String(rawBudgetText).replace(/,/g, '').replace(/\s+/g, '');
+    const units = [
+      { pattern: /(\d+(?:\.\d+)?)억/, multiplier: 100000000 },
+      { pattern: /(\d+(?:\.\d+)?)만/, multiplier: 10000 },
+      { pattern: /(\d+(?:\.\d+)?)천/, multiplier: 1000 },
+    ];
+    const unitTotal = units.reduce((sum, u) => {
+      const m = compact.match(u.pattern);
+      return m ? sum + Number(m[1]) * u.multiplier : sum;
+    }, 0);
+    if (unitTotal > 0) return unitTotal;
+    const num = Number(compact.replace(/[^\d.]/g, ''));
+    return Number.isFinite(num) ? num : 0;
+  })();
+  const perPersonWon = budgetWon > 0 && travelerCount > 1 ? Math.round(budgetWon / travelerCount) : 0;
+  const perPersonText = perPersonWon > 0
+    ? ` (1인당 약 ${perPersonWon >= 10000 ? `${Math.round(perPersonWon / 10000)}만원` : `${perPersonWon.toLocaleString()}원`})`
+    : '';
+  const budgetLine = rawBudgetText
+    ? `항공권 제외 총 예산 ${rawBudgetText}${perPersonText}`
+    : '미정';
   const accSection = buildAccommodationSection(hasAccommodation, accommodations);
   const australiaOptimizationSection = buildAustraliaOptimizationSection(normalized);
   const itemCount = DIFFICULTY_ITEM_COUNTS[difficulty] || DIFFICULTY_ITEM_COUNTS.normal;
@@ -309,7 +334,7 @@ function buildInitialPrompt(params, ragContext = '') {
   return `${ragContext ? `[호주 RAG 지식 베이스]\n${ragContext}\n\n` : ''}[여행 요청]
 - 목적지: ${dest}
 - 여행 날짜: ${dateRange}
-- 예산: ${params.budgetText || BUDGET_LABELS[budget] || budget || '미정'}
+- 예산: ${budgetLine}
 - 여행 스타일: ${styles.join(', ') || '자유'}
 - 여행 강도: ${DIFFICULTY_LABELS[difficulty] || difficulty || '보통'}${intensityScore != null ? ` (${intensityScore}/100)` : ''} — 일반 관광일 하루 ${itemCount.label}개 장소
 - 인원: ${travelers}

@@ -102,8 +102,7 @@ export default function AiGenerationLoadingView({
                 <div className="message-wrap" aria-live="polite">
                   {hasError ? (
                     <p className="loading-message">
-                      일정 생성에 실패했어요.<br />
-                      <span style={{ color: '#fecaca' }}>{error}</span>
+                      일정 생성에 실패했어요.
                     </p>
                   ) : (
                     <p

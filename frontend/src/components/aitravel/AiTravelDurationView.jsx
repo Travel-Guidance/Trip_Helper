@@ -9,7 +9,7 @@ import {
   getTotalSpent, getCurrentDayNumber, getDailyBudgetWon, getCurrentDayExpenses,
   getCurrentDaySpent, getTodayAvailableBudget, getCategoryBreakdown,
   parseBudgetWon,
-  normalizeSavedExpense, fetchSavedExpenses, persistExpense, fetchExchangeRate,
+  normalizeSavedExpense, fetchSavedExpenses, persistExpense, deleteExpense, fetchExchangeRate,
   rebudgetPlanDay,
   fetchConsulateInfo, fetchEmergencyNearbyInfo, fetchNearbyAmenities, fetchIndoorPlaces, fetchNearbyCafes, fetchDayWeather, buildGoogleMapsRouteUrl,
   requestSimpleRoute, requestTransitRoute, renderRouteMap, renderSafeRouteMap,
@@ -103,8 +103,16 @@ function budgetCategoryForStop(stop) {
   return null
 }
 
+function expenseCategoryForStop(stop) {
+  const text = `${stop?.name || ''} ${stop?.badge || ''} ${stop?.tags?.join(' ') || ''}`.toLowerCase()
+  const budgetCategory = budgetCategoryForStop(stop)
+  if (budgetCategory) return budgetCategory
+  if (/택시|버스|지하철|기차|공항|이동|교통|taxi|bus|train|metro|subway|airport|transfer/.test(text)) return 'transport'
+  return 'other'
+}
+
 function adjustmentText(category) {
-  if (category === 'meal') return '저가 식당이나 간단한 식사 옵션으로 낮추기'
+  if (category === 'meal') return '목적지 근처 더 저렴한 식당으로 교체'
   if (category === 'shop') return '쇼핑 시간을 줄이거나 구매 예산 상한 정하기'
   return '무료 전망·산책 코스 또는 저가 입장 옵션으로 대체'
 }
@@ -152,8 +160,10 @@ export default function AiTravelDurationView() {
   const [expName, setExpName]       = useState('')
   const [expAmt,  setExpAmt]        = useState('')
   const [expCat,  setExpCat]        = useState('meal')
+  const [catPickerOpen, setCatPickerOpen] = useState(false)
   const [rebudgeting, setRebudgeting] = useState(false)
   const [selectedAdjustmentIndexes, setSelectedAdjustmentIndexes] = useState([])
+  const [rebudgetChangelog, setRebudgetChangelog] = useState([])
   const [safetyData,    setSafetyData]    = useState(null)
   const [safetyLoading, setSafetyLoading] = useState(false)
   const [safetyBadge,   setSafetyBadge]   = useState(null)
@@ -180,6 +190,7 @@ export default function AiTravelDurationView() {
   const cityData   = travelData?.cityData   || {}
   const cityGroups = travelData?.cityGroups || []
   const total      = travelData?.totalBudgetWon || 0
+  const selectedBudgetCategory = BUDGET_CATEGORIES.find(category => category.key === expCat) || BUDGET_CATEGORIES[0]
 
   const fmt = makeFormatters(exchangeRate)
   const { formatKrw, formatExpense, formatEurAsKrw, localToKrw, formatLocalAmount, formatExpenseLogAmount, localizeMoneyText } = fmt
@@ -199,7 +210,7 @@ export default function AiTravelDurationView() {
   const currentDaySpent   = getCurrentDaySpent(expenses, schedule, activeIdx)
   const todayAvailable    = getTodayAvailableBudget(total, expenses, schedule, activeIdx)
   const categoryBreakdown = getCategoryBreakdown(expenses, schedule, activeIdx)
-  const budgetPct         = dailyBudgetWon > 0 ? Math.min(100, (currentDaySpent / dailyBudgetWon) * 100) : 0
+  const budgetPct         = total > 0 ? Math.min(100, (totalSpent / total) * 100) : 0
   const mustVisitText     = mustVisitTextFromResult(readGeneratedPlanResult())
   const adjustmentCandidates = useMemo(() => {
     return dayStops
@@ -365,6 +376,7 @@ export default function AiTravelDurationView() {
       setExpName(nextName)
       lastAutoExpNameRef.current = nextName
     }
+    setExpCat(expenseCategoryForStop(stop))
   }, [activeIdx, activeStopIdx]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -423,6 +435,7 @@ export default function AiTravelDurationView() {
     setSelectedTravelMode('WALKING')
     setActiveTransitStepIdx(null)
     setOpenTransitKey('')
+    setCatPickerOpen(false)
   }, [dayStops.length])
 
   // ── 날 선택 ───────────────────────────────────────────────
@@ -432,6 +445,7 @@ export default function AiTravelDurationView() {
     setSelectedTravelMode('WALKING')
     setActiveTransitStepIdx(null)
     setOpenTransitKey('')
+    setCatPickerOpen(false)
   }, [])
 
   // ── 지출 추가 ─────────────────────────────────────────────
@@ -468,6 +482,12 @@ export default function AiTravelDurationView() {
     }
   }, [expName, expAmt, expCat, localToKrw, total, totalSpent, currentDayNumber, activeStopIdx, exchangeRate, dayStops, showToast, formatLocalAmount, formatExpense, todayAvailable])
 
+  const handleDeleteExpense = useCallback((expense) => {
+    setExpenses(prev => prev.filter(e => e !== expense))
+    const planId = getGeneratedPlanId(readGeneratedPlanResult())
+    if (planId && expense.id) deleteExpense(planId, expense.id).catch(() => {})
+  }, [])
+
   const handleRebudgetDay = useCallback(async () => {
     const planResult = readGeneratedPlanResult()
     const planId = getGeneratedPlanId(planResult)
@@ -477,13 +497,29 @@ export default function AiTravelDurationView() {
     }
 
     setRebudgeting(true)
+    setRebudgetChangelog([])
     try {
+      // 선택하지 않은 항목(유지할 항목)의 KRW 비용 합산
+      const lockedCostWon = adjustmentCandidates
+        .filter(c => !selectedAdjustmentIndexes.includes(c.index))
+        .reduce((sum, c) => sum + c.estimateWon, 0)
+
+      // 재조정 전 스냅샷
+      const beforeSnapshot = {}
+      adjustmentCandidates.forEach(c => {
+        if (selectedAdjustmentIndexes.includes(c.index)) {
+          beforeSnapshot[c.index] = { name: c.stop?.name || '', cost: c.stop?.cost || '' }
+        }
+      })
+
       const result = await rebudgetPlanDay(planId, {
         dayIndex: activeIdx,
         activeItemIndex: activeStopIdx,
         selectedItemIndexes: selectedAdjustmentIndexes,
         remainingBudgetWon: todayAvailable,
         remainingCostWon: selectedAdjustmentCost || remainingAdjustableCost,
+        lockedCostWon,
+        exchangeRateToKrw: exchangeRate.rateToKrw || 1,
         mustVisit: mustVisitTextFromResult(planResult),
       })
 
@@ -496,6 +532,22 @@ export default function AiTravelDurationView() {
         const nextTravelData = await buildGeneratedTravelData()
         if (nextTravelData) setTravelData(nextTravelData)
         setActiveStopIdx(Math.min(activeStopIdx, result.day?.items?.length ? result.day.items.length - 1 : activeStopIdx))
+
+        // 변경 내역 계산
+        if (result.day?.items) {
+          const changelog = selectedAdjustmentIndexes
+            .map(idx => {
+              const before = beforeSnapshot[idx]
+              const after  = result.day.items[idx]
+              if (!before || !after) return null
+              const nameChanged = before.name !== (after.name || '')
+              const costChanged = before.cost !== (after.cost || '')
+              if (!nameChanged && !costChanged) return null
+              return { idx, beforeName: before.name, beforeCost: before.cost, afterName: after.name || '', afterCost: after.cost || '' }
+            })
+            .filter(Boolean)
+          setRebudgetChangelog(changelog)
+        }
       }
       showToast('✓', '예산 맞춤 재조정 완료', result?.summary || '오늘 남은 일정이 예산에 맞게 조정되었습니다.', 'ok')
     } catch (err) {
@@ -728,8 +780,8 @@ export default function AiTravelDurationView() {
               <div className="budget-label">예산 소진율</div>
               <div className="budget-bar"><div className="budget-bar-fill" style={{ width: `${budgetPct}%` }}></div></div>
               <div className="budget-nums">
-                <span className="budget-spent">{formatExpense(currentDaySpent)}</span>
-                <span className="budget-total">/ {dailyBudgetWon ? formatKrw(dailyBudgetWon) : '₩0'}</span>
+                <span className="budget-spent">{formatExpense(totalSpent)}</span>
+                <span className="budget-total">/ {total ? formatKrw(total) : '₩0'}</span>
               </div>
             </div>
           </div>
@@ -775,7 +827,7 @@ export default function AiTravelDurationView() {
         <section className="feed">
 
           {/* 타임라인 */}
-          <div className="sec">
+          <div className="sec budget-sec">
             <div className="sec-head">
               <div>
                 <div className="sec-kicker">DAY {String(day?.day || 1).padStart(2, '0')} · {statusLabel}</div>
@@ -990,7 +1042,7 @@ export default function AiTravelDurationView() {
           </div>
 
           {/* 예산 */}
-          <div className="sec">
+          <div className="sec budget-sec">
             <div className="sec-head">
               <div>
                 <div className="sec-kicker">Live Budget</div>
@@ -1053,6 +1105,7 @@ export default function AiTravelDurationView() {
                             type="checkbox"
                             checked={selectedAdjustmentIndexes.includes(candidate.index)}
                             onChange={event => {
+                              setRebudgetChangelog([])
                               setSelectedAdjustmentIndexes(prev => event.target.checked
                                 ? [...new Set([...prev, candidate.index])]
                                 : prev.filter(index => index !== candidate.index))
@@ -1071,27 +1124,75 @@ export default function AiTravelDurationView() {
                         </label>
                       ))}
                     </div>
+                    {rebudgetChangelog.length > 0 && (
+                      <div className="rebudget-changelog">
+                        <div className="rcl-title">변경 내역</div>
+                        {rebudgetChangelog.map(entry => (
+                          <div key={entry.idx} className="rcl-item">
+                            <span className="rcl-before">{entry.beforeName}</span>
+                            <span className="rcl-arrow">→</span>
+                            <span className="rcl-after">{entry.afterName}</span>
+                            {entry.beforeCost !== entry.afterCost && (
+                              <span className="rcl-cost">{entry.beforeCost || '?'} → {entry.afterCost || '무료'}</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
-                <div className="b-block">
+                <div className="b-block exp-block">
                   <div className="b-block-title">실시간 지출 입력</div>
                   <div className="exp-form">
-                    <input
-                      className="exp-input" value={expName} aria-label="지출 내역" placeholder="예: 점심 식사"
-                      onChange={e => { setExpName(e.target.value); lastAutoExpNameRef.current = '' }}
-                    />
-                    <input
-                      className="exp-num" value={expAmt} aria-label="지출 금액" type="number" inputMode="decimal"
-                      placeholder={exchangeRate.currency ? `금액(${exchangeRate.currency})` : '통화 확인 중'}
-                      onChange={e => setExpAmt(e.target.value)}
-                    />
-                    <select className="exp-cat-sel" value={expCat} aria-label="지출 카테고리" onChange={e => setExpCat(e.target.value)}>
-                      <option value="meal">식사</option>
-                      <option value="transport">교통</option>
-                      <option value="entry">입장비</option>
-                      <option value="shop">쇼핑</option>
-                    </select>
-                    <button className="exp-add" onClick={handleAddExpense}>+</button>
+                    <label className="exp-field exp-field-name">
+                      <span>내역</span>
+                      <input
+                        className="exp-input" value={expName} aria-label="지출 내역" placeholder="예: 점심 식사"
+                        onChange={e => { setExpName(e.target.value); lastAutoExpNameRef.current = '' }}
+                      />
+                    </label>
+                    <label className="exp-field exp-field-amount">
+                      <span>금액</span>
+                      <input
+                        className="exp-num" value={expAmt} aria-label="지출 금액" type="number" inputMode="decimal"
+                        placeholder="0"
+                        onChange={e => setExpAmt(e.target.value)}
+                      />
+                      <em>{exchangeRate.currency || '...'}</em>
+                    </label>
+                    <div className={`exp-field exp-field-category${catPickerOpen ? ' open' : ''}`}>
+                      <span>분류</span>
+                      <button
+                        type="button"
+                        className="exp-cat-trigger"
+                        aria-label="지출 카테고리 선택"
+                        aria-expanded={catPickerOpen}
+                        onClick={() => setCatPickerOpen(open => !open)}
+                      >
+                        <span className="exp-cat-icon">{selectedBudgetCategory.icon}</span>
+                        <strong>{selectedBudgetCategory.label}</strong>
+                        <span className="exp-cat-caret">⌄</span>
+                      </button>
+                      {catPickerOpen && (
+                        <div className="exp-cat-popover">
+                          {BUDGET_CATEGORIES.map(category => (
+                            <button
+                              type="button"
+                              key={category.key}
+                              className={`exp-cat-option${category.key === expCat ? ' active' : ''}`}
+                              onClick={() => {
+                                setExpCat(category.key)
+                                setCatPickerOpen(false)
+                              }}
+                            >
+                              <span className="exp-cat-option-icon" style={{ background: category.color }}>{category.icon}</span>
+                              <span className="exp-cat-option-text">{category.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <button className="exp-add" onClick={handleAddExpense} aria-label="지출 추가">+</button>
                   </div>
                   <div className="exp-log">
                     {currentDayExpenses.length > 0
@@ -1101,7 +1202,10 @@ export default function AiTravelDurationView() {
                               <span className="exp-cat-dot" style={{ background: BUDGET_CATEGORIES.find(c => c.key === e.cat)?.color }}></span>
                               <span className="exp-log-name">{e.name}</span>
                             </div>
-                            <span className={`exp-log-amt${e.over ? ' over' : ''}`}>{formatExpenseLogAmount(e)}</span>
+                            <div className="exp-log-right">
+                              <span className={`exp-log-amt${e.over ? ' over' : ''}`}>{formatExpenseLogAmount(e)}</span>
+                              <button className="exp-log-del" onClick={() => handleDeleteExpense(e)} aria-label="지출 삭제">×</button>
+                            </div>
                           </div>
                         ))
                       : <div className="b-empty">아직 입력된 지출이 없습니다</div>

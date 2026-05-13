@@ -1,7 +1,7 @@
 // AiTravelDuration.js - 여행 일정 비즈니스 로직 및 순수 유틸리티 함수 모음
 
 import { EUR_TO_KRW } from '../data/AiTravelDuration'
-import { apiGet, apiPost } from '../api/apiClient'
+import { apiGet, apiPost, apiDelete } from '../api/apiClient'
 import EMERGENCY_NUMBERS from '../data/emergencyNumbers.json'
 
 /* global google */
@@ -12,6 +12,7 @@ export const BUDGET_CATEGORIES = [
   { key: 'transport', label: '교통',   icon: '🚇', color: 'var(--blue)'   },
   { key: 'entry',     label: '입장비', icon: '🏛', color: 'var(--green)'  },
   { key: 'shop',      label: '쇼핑',   icon: '🛍', color: 'var(--purple)' },
+  { key: 'other',     label: '기타',   icon: '⋯', color: 'var(--muted)'  },
 ]
 export const EMERGENCY_RADIUS_METERS = 3000
 
@@ -728,6 +729,11 @@ export async function persistExpense(planId, expense) {
     itemIndex: expense.itemIndex, source: expense.source || 'manual',
     amountLocal: expense.amountLocal, amountKrw: expense.amountKrw, currency: expense.currency,
   })
+}
+
+export async function deleteExpense(planId, expenseId) {
+  if (!planId || !expenseId) return null
+  return apiDelete(`/ai-travel/plans/${planId}/expenses/${expenseId}`)
 }
 
 export async function rebudgetPlanDay(planId, payload) {

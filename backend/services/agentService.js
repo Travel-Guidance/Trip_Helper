@@ -84,7 +84,10 @@ const JSON_PROMPT = '지금까지 수집한 정보를 바탕으로 최종 여행
 function safeText(resp) {
   try {
     return resp.response.text() || '';
-  } catch {
+  } catch (e) {
+    const reason = resp?.response?.candidates?.[0]?.finishReason;
+    const safety = resp?.response?.candidates?.[0]?.safetyRatings;
+    console.warn('[agentService] safeText 실패:', e.message, '| finishReason:', reason, '| safetyRatings:', JSON.stringify(safety));
     return '';
   }
 }

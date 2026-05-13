@@ -554,7 +554,7 @@ export default function AiGenerationInputFormView() {
                         <span className="icon">💰</span>
                         <div>
                           <h3>여행 예산</h3>
-                          <p className="panel-note">1인 기준 하루 예산, 총 예산 등 편한 방식으로 적어주세요.</p>
+                          <p className="panel-note">항공권 제외 총 여행 예산을 입력해주세요.</p>
                         </div>
                       </div>
                       <span className="badge">선택</span>
@@ -564,12 +564,12 @@ export default function AiGenerationInputFormView() {
                         className="input"
                         id="budgetInput"
                         type="text"
-                        placeholder="예: 1인 하루 10만원, 총 여행 예산 150만원"
+                        placeholder="예: 100만원, 150만원, 200만원"
                         value={budgetText}
                         onChange={(e) => setBudgetText(e.target.value)}
                       />
                     </div>
-                    <p className="hint">항공권 제외 금액을 자유롭게 입력하세요. (예: 50만원, 1인 하루 10만원, 총 150만원)</p>
+                    <p className="hint">입력한 예산은 일정 생성과 현지 예산 추적에 활용됩니다.</p>
                   </section>
                 </div>
                 <div className="step-actions">
