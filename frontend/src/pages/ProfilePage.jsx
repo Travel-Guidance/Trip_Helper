@@ -1,24 +1,34 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Trash2, ChevronRight, Plane, Building2, Sparkles } from 'lucide-react'
+import {
+  Trash2, ChevronRight, Pencil,
+  Plane, Building2, Sparkles, BookOpen, Heart, LogOut,
+  Globe, Calendar, Trophy, MapPin, Star, Mail, MessageSquare, Map,
+} from 'lucide-react'
 import Navbar from '../components/layout/Navbar'
 import BottomNav from '../components/layout/BottomNav'
 import { useAuth } from '../store/AuthContext'
-import { getMyBookings, deletePlan } from '../api/bookingApi'
+import { getMyBookings, deletePlan, cancelFlightBooking, cancelStayBooking } from '../api/bookingApi'
 import '../styles/profile.css'
 
 const BUDGET_LABEL = { low: '저예산', mid: '중간', high: '고급' }
-
-const TAB_LIST = [
-  { key: 'flights', label: '항공권', icon: <Plane size={14} /> },
-  { key: 'stays',   label: '숙소',   icon: <Building2 size={14} /> },
-  { key: 'plans',   label: 'AI 일정', icon: <Sparkles size={14} /> },
-]
 
 function formatDate(dateStr) {
   if (!dateStr) return '-'
   const d = new Date(dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`)
   return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return ''
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const m = Math.floor(diff / 60000)
+  if (m < 60)  return `${m || 1}분 전`
+  const h = Math.floor(m / 60)
+  if (h < 24)  return `${h}시간 전`
+  const d = Math.floor(h / 24)
+  if (d < 30)  return `${d}일 전`
+  return formatDate(dateStr)
 }
 
 function formatAmount(amount, currency = 'KRW') {
@@ -29,84 +39,166 @@ function formatAmount(amount, currency = 'KRW') {
 }
 
 function getFlightRoute(slices) {
-  if (!slices?.length) return { from: '-', to: '-' }
-  const first = slices[0]?.segments?.[0]
+  if (!slices?.length) return { from: '-', to: '-', airline: '', date: '-', arrDate: '-', cabin: '-' }
+  const first     = slices[0]?.segments?.[0]
   const lastSlice = slices[slices.length - 1]
-  const lastSeg = lastSlice?.segments?.[lastSlice.segments.length - 1]
+  const lastSeg   = lastSlice?.segments?.[lastSlice.segments.length - 1]
   return {
-    from: first?.origin?.iata_code || '-',
-    to:   lastSeg?.destination?.iata_code || '-',
-    date: first?.departing_at ? formatDate(first.departing_at) : '-',
+    from:    first?.origin?.iata_code        || '-',
+    to:      lastSeg?.destination?.iata_code  || '-',
+    airline: first?.operating_carrier?.name  || first?.marketing_carrier?.name || '',
+    date:    first?.departing_at    ? formatDate(first.departing_at)   : '-',
+    arrDate: lastSeg?.arriving_at   ? formatDate(lastSeg.arriving_at)  : '-',
+    cabin:   first?.passengers?.[0]?.cabin_class_marketing_name || first?.passengers?.[0]?.cabin_class || '이코노미',
   }
 }
 
+function gradeFromCount(count) {
+  if (count >= 20) return { label: 'Platinum', color: '#7c3aed', bg: '#f3e8ff' }
+  if (count >= 15) return { label: 'Gold',     color: '#d97706', bg: '#fef3c7' }
+  if (count >= 10) return { label: 'Silver',   color: '#6b7280', bg: '#f3f4f6' }
+  return               { label: 'Bronze',   color: '#92400e', bg: '#fef3c7' }
+}
+
+const PROVIDER_INFO = {
+  kakao:  { Icon: MessageSquare, text: '카카오로 로그인', color: '#fee500', textColor: '#3c1e1e' },
+  google: { Icon: Globe,         text: '구글로 로그인',   color: '#fff',    textColor: '#374151' },
+  email:  { Icon: Mail,          text: '이메일로 로그인', color: '#eff6ff', textColor: '#1d4ed8' },
+}
+
 // ── 항공권 카드 ──────────────────────────────────────────
-function FlightCard({ booking }) {
+function FlightCard({ booking, onCancel }) {
+  const [cancelling, setCancelling] = useState(false)
+  const cancelled = booking.status === 'cancelled'
   const route = getFlightRoute(booking.slices)
-  const pax = booking.passengers?.[0]
-  const paxName = pax ? `${pax.given_name} ${pax.family_name}` : '-'
+
+  const handleCancel = async () => {
+    if (!window.confirm('항공권 예약을 취소하시겠습니까?\n취소 후에는 되돌릴 수 없습니다.')) return
+    setCancelling(true)
+    try {
+      await cancelFlightBooking(booking.id)
+      onCancel(booking.id)
+    } catch {
+      alert('취소에 실패했습니다. 다시 시도해 주세요.')
+    } finally {
+      setCancelling(false)
+    }
+  }
 
   return (
-    <div className="profile-card pf-flight-card">
-      <div className="pf-flight-top">
-        <div className="pf-flight-route">
-          {route.from}
-          <span className="pf-flight-arrow">→</span>
-          {route.to}
+    <div className={`pf2-card${cancelled ? ' pf2-card--cancelled' : ''}`}>
+      <div className="pf2-card-head">
+        <div className="pf2-flight-icon-wrap">
+          <Plane size={20} style={{ color: '#fff' }} />
         </div>
-        <span className="pf-ref-badge">{booking.booking_reference}</span>
+        <div className="pf2-flight-info">
+          <div className="pf2-flight-route">
+            {route.from} <span className="pf2-arrow">→</span> {route.to}
+          </div>
+          {route.airline && <div className="pf2-flight-airline">{route.airline}</div>}
+        </div>
+        {cancelled
+          ? <span className="pf2-badge pf2-badge--cancelled">취소됨</span>
+          : <span className="pf2-badge pf2-badge--confirmed">예약 확정</span>
+        }
       </div>
 
-      <div className="pf-flight-meta">
-        <div className="pf-meta-item">
-          <span className="pf-meta-label">날짜</span>
-          <span className="pf-meta-value">{route.date}</span>
+      <div className="pf2-flight-meta">
+        <div className="pf2-meta-col">
+          <span className="pf2-meta-label">출발일</span>
+          <span className="pf2-meta-value">{route.date}</span>
         </div>
-        <div className="pf-meta-item">
-          <span className="pf-meta-label">승객</span>
-          <span className="pf-meta-value">{paxName}</span>
+        <div className="pf2-meta-col">
+          <span className="pf2-meta-label">도착일</span>
+          <span className="pf2-meta-value">{route.arrDate}</span>
         </div>
-        <div className="pf-meta-item">
-          <span className="pf-meta-label">예약일</span>
-          <span className="pf-meta-value">{formatDate(booking.created_at)}</span>
+        <div className="pf2-meta-col">
+          <span className="pf2-meta-label">좌석 등급</span>
+          <span className="pf2-meta-value">{route.cabin}</span>
         </div>
       </div>
 
-      <div className="pf-flight-bottom">
-        <span className="pf-status-dot">예약 확정</span>
-        <span className="pf-amount">
-          {formatAmount(booking.total_amount, booking.total_currency)}
-        </span>
+      <div className="pf2-card-foot">
+        <span className="pf2-amount">{formatAmount(booking.total_amount, booking.total_currency)}</span>
+        <div className="pf2-foot-right">
+          <span className="pf2-ref">{booking.booking_reference}</span>
+          {!cancelled && (
+            <button className="pf2-cancel-btn" onClick={handleCancel} disabled={cancelling}>
+              {cancelling ? '취소 중...' : '예약 취소'}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
 // ── 숙소 카드 ────────────────────────────────────────────
-function StayCard({ booking }) {
+function StayCard({ booking, onCancel }) {
+  const [cancelling, setCancelling] = useState(false)
+  const cancelled = booking.status === 'cancelled'
+
+  const handleCancel = async () => {
+    if (!window.confirm('숙소 예약을 취소하시겠습니까?\n취소 후에는 되돌릴 수 없습니다.')) return
+    setCancelling(true)
+    try {
+      await cancelStayBooking(booking.id)
+      onCancel(booking.id)
+    } catch {
+      alert('취소에 실패했습니다. 다시 시도해 주세요.')
+    } finally {
+      setCancelling(false)
+    }
+  }
+
   return (
-    <div className="profile-card pf-stay-card">
-      {booking.image_url ? (
-        <img className="pf-stay-img" src={booking.image_url} alt={booking.hotel_name} />
-      ) : (
-        <div className="pf-stay-img-placeholder">🏨</div>
-      )}
-      <div className="pf-stay-body">
-        <div className="pf-stay-name">{booking.hotel_name || '숙소'}</div>
-        {booking.location && (
-          <div className="pf-stay-location">📍 {booking.location}</div>
-        )}
-        <div className="pf-stay-dates">
-          {formatDate(booking.check_in)} – {formatDate(booking.check_out)}
-          <span style={{ fontWeight: 400, color: 'var(--text-muted)', marginLeft: 6 }}>
-            {booking.nights}박 · {booking.guests}명
-          </span>
+    <div className={`pf2-card${cancelled ? ' pf2-card--cancelled' : ''}`}>
+      <div className="pf2-card-head">
+        <div className="pf2-stay-icon-wrap">
+          {booking.image_url
+            ? <img src={booking.image_url} alt="" className="pf2-stay-thumb" />
+            : <Building2 size={20} style={{ color: '#fff' }} />
+          }
         </div>
-        <div className="pf-stay-footer">
-          <span className="pf-ref-badge">{booking.booking_reference}</span>
-          <span className="pf-amount">
-            {formatAmount(booking.total_amount, booking.total_currency)}
-          </span>
+        <div className="pf2-flight-info">
+          <div className="pf2-flight-route" style={{ fontSize: 15 }}>{booking.hotel_name || '숙소'}</div>
+          {booking.location && (
+            <div className="pf2-flight-airline" style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              <MapPin size={11} />
+              {booking.location}
+            </div>
+          )}
+        </div>
+        {cancelled
+          ? <span className="pf2-badge pf2-badge--cancelled">취소됨</span>
+          : <span className="pf2-badge pf2-badge--confirmed">예약 확정</span>
+        }
+      </div>
+
+      <div className="pf2-flight-meta">
+        <div className="pf2-meta-col">
+          <span className="pf2-meta-label">체크인</span>
+          <span className="pf2-meta-value">{formatDate(booking.check_in)}</span>
+        </div>
+        <div className="pf2-meta-col">
+          <span className="pf2-meta-label">체크아웃</span>
+          <span className="pf2-meta-value">{formatDate(booking.check_out)}</span>
+        </div>
+        <div className="pf2-meta-col">
+          <span className="pf2-meta-label">인원</span>
+          <span className="pf2-meta-value">{booking.nights}박 · {booking.guests}명</span>
+        </div>
+      </div>
+
+      <div className="pf2-card-foot">
+        <span className="pf2-amount">{formatAmount(booking.total_amount, booking.total_currency)}</span>
+        <div className="pf2-foot-right">
+          <span className="pf2-ref">{booking.booking_reference}</span>
+          {!cancelled && (
+            <button className="pf2-cancel-btn" onClick={handleCancel} disabled={cancelling}>
+              {cancelling ? '취소 중...' : '예약 취소'}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -132,170 +224,285 @@ function PlanCard({ plan, onDelete }) {
     }
   }
 
-  const budgetText = BUDGET_LABEL[plan.budget] || plan.budget || '-'
-
   return (
-    <div
-      className="profile-card pf-plan-card"
-      onClick={() => navigate(`/ai-generation-schedule`, { state: { planId: plan.id } })}
+    <div className="pf2-card pf2-plan-card"
+      onClick={() => navigate('/ai-generation-schedule', { state: { planId: plan.id } })}
     >
-      <div className="pf-plan-icon">✨</div>
-      <div className="pf-plan-body">
-        <div className="pf-plan-dest">{plan.destination || '목적지 미정'}</div>
-        <div className="pf-plan-meta">
-          {plan.nights}박 · {budgetText} · {formatDate(plan.created_at)} 생성
+      <div className="pf2-plan-icon"><Sparkles size={18} style={{ color: '#fff' }} /></div>
+      <div className="pf2-flight-info" style={{ flex: 1 }}>
+        <div className="pf2-flight-route" style={{ fontSize: 15 }}>{plan.destination || '목적지 미정'}</div>
+        <div className="pf2-flight-airline">
+          {plan.nights}박 · {BUDGET_LABEL[plan.budget] || plan.budget || '-'} · {formatDate(plan.created_at)} 생성
         </div>
       </div>
-      <button
-        className="pf-plan-delete"
-        onClick={handleDelete}
-        disabled={deleting}
-        title="삭제"
-      >
-        <Trash2 size={15} />
+      <button className="pf2-icon-btn pf2-delete-btn" onClick={handleDelete} disabled={deleting}>
+        <Trash2 size={14} />
       </button>
-      <ChevronRight size={16} style={{ color: 'var(--text-light)', flexShrink: 0 }} />
+      <ChevronRight size={16} style={{ color: '#9ca3af', flexShrink: 0 }} />
     </div>
   )
 }
 
-// ── 빈 상태 ──────────────────────────────────────────────
 function EmptyState({ tab }) {
   const navigate = useNavigate()
   const config = {
-    flights: { icon: '✈️', text: '예약한 항공권이 없습니다', action: '항공권 검색', to: '/flights' },
-    stays:   { icon: '🏨', text: '예약한 숙소가 없습니다',   action: '숙소 검색',   to: '/accommodation' },
-    plans:   { icon: '🗺️', text: '저장된 AI 일정이 없습니다', action: 'AI 일정 만들기', to: '/ai-generation-inputform' },
+    flights: { Icon: Plane,     text: '예약한 항공권이 없습니다',  action: '항공권 검색',    to: '/flights' },
+    stays:   { Icon: Building2, text: '예약한 숙소가 없습니다',    action: '숙소 검색',      to: '/accommodation' },
+    plans:   { Icon: Map,       text: '저장된 AI 일정이 없습니다', action: 'AI 일정 만들기', to: '/ai-generation-inputform' },
   }[tab]
-
   return (
-    <div className="pf-empty">
-      <span className="pf-empty-icon">{config.icon}</span>
-      <span className="pf-empty-text">{config.text}</span>
-      <button className="pf-empty-btn" onClick={() => navigate(config.to)}>
-        {config.action}
-      </button>
+    <div className="pf2-empty">
+      <config.Icon size={36} style={{ opacity: 0.25, color: '#6b7280' }} />
+      <span style={{ fontSize: 14, color: '#9ca3af' }}>{config.text}</span>
+      <button className="pf2-empty-btn" onClick={() => navigate(config.to)}>{config.action}</button>
     </div>
   )
 }
 
 // ── 메인 페이지 ──────────────────────────────────────────
 export default function ProfilePage() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('flights')
-  const [data, setData] = useState({ flights: [], stays: [], plans: [] })
+  const [data, setData]       = useState({ flights: [], stays: [], plans: [] })
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError]     = useState(null)
+  const [profilePic, setProfilePic] = useState(null)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login', { replace: true })
-      return
-    }
+    if (!user) { navigate('/login', { replace: true }); return }
     getMyBookings()
       .then(setData)
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [user, navigate])
 
-  const handleDeletePlan = (planId) => {
-    setData(prev => ({ ...prev, plans: prev.plans.filter(p => p.id !== planId) }))
+  useEffect(() => {
+    if (user?.id) {
+      const saved = localStorage.getItem(`profilePic_${user.id}`)
+      if (saved) setProfilePic(saved)
+    }
+  }, [user?.id])
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const base64 = ev.target.result
+      setProfilePic(base64)
+      localStorage.setItem(`profilePic_${user.id}`, base64)
+    }
+    reader.readAsDataURL(file)
   }
 
-  const providerLabel = {
-    kakao: { emoji: '💬', text: '카카오 로그인' },
-    google: { emoji: '🔵', text: '구글 로그인' },
-    email: { emoji: '✉️', text: '이메일 로그인' },
-  }[user?.provider] || { emoji: '✉️', text: '이메일 로그인' }
+  const handleDeletePlan   = id => setData(p => ({ ...p, plans:   p.plans.filter(x => x.id !== id) }))
+  const handleCancelFlight = id => setData(p => ({ ...p, flights: p.flights.map(b => b.id === id ? { ...b, status: 'cancelled' } : b) }))
+  const handleCancelStay   = id => setData(p => ({ ...p, stays:   p.stays.map(b => b.id === id ? { ...b, status: 'cancelled' } : b) }))
 
-  const counts = {
-    flights: data.flights.length,
-    stays:   data.stays.length,
-    plans:   data.plans.length,
-  }
+  const stats = useMemo(() => {
+    const tripCount   = data.stays.length
+    const totalNights = data.stays.reduce((s, b) => s + (Number(b.nights) || 0), 0)
+    const countries   = new Set()
+    data.stays.forEach(s => { if (s.location) countries.add(s.location.split(',').pop().trim()) })
+    return {
+      countries: countries.size || data.stays.length,
+      totalDays: totalNights,
+      tripCount,
+      grade: gradeFromCount(tripCount),
+    }
+  }, [data])
+
+  const recentActivities = useMemo(() => {
+    const items = [
+      ...data.flights.map(b => ({
+        icon: <Plane size={15} />, iconBg: '#eff6ff', iconColor: '#3b82f6',
+        text: `${getFlightRoute(b.slices).to}행 항공권을 예약했습니다`,
+        time: b.created_at,
+      })),
+      ...data.stays.map(b => ({
+        icon: <Building2 size={15} />, iconBg: '#f0fdf4', iconColor: '#16a34a',
+        text: `${b.hotel_name || '숙소'}을 예약했습니다`,
+        time: b.created_at,
+      })),
+      ...data.plans.map(p => ({
+        icon: <Sparkles size={15} />, iconBg: '#faf5ff', iconColor: '#7c3aed',
+        text: `${p.destination || ''} 여행 계획을 생성했습니다`,
+        time: p.created_at,
+      })),
+    ]
+    return items.sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 5)
+  }, [data])
+
+  const provider = PROVIDER_INFO[user?.provider] || PROVIDER_INFO.email
+  const { Icon: ProviderIcon } = provider
+
+  const QUICK_MENU = [
+    { icon: <BookOpen size={16} />, label: '포토북',     action: () => navigate('/photobook') },
+    { icon: <Heart size={16} />,    label: '찜한 여행지', action: () => setActiveTab('plans') },
+    { icon: <LogOut size={16} />,   label: '로그아웃',   action: () => { logout(); navigate('/login') }, danger: true },
+  ]
+
+  const TABS = [
+    { key: 'flights', label: '항공권', count: data.flights.length },
+    { key: 'stays',   label: '숙소',   count: data.stays.length },
+    { key: 'plans',   label: 'AI 일정', count: data.plans.length },
+  ]
+
+  const STAT_ITEMS = [
+    { Icon: Globe,    label: '방문 국가', value: stats.countries },
+    { Icon: Calendar, label: '총 여행일', value: stats.totalDays },
+    { Icon: Plane,    label: '여행 횟수', value: stats.tripCount },
+    { Icon: Trophy,   label: '여행 등급', value: stats.grade.label, valueStyle: { color: stats.grade.color, fontSize: 13 } },
+  ]
 
   return (
-    <div className="profile-page">
+    <div className="pf2-page">
       <Navbar />
 
-      {/* 프로필 헤더 */}
-      <div className="profile-hero" style={{ paddingTop: 80 }}>
-        <div className="profile-avatar">
-          {user?.name?.[0]?.toUpperCase() || '?'}
-        </div>
-        <div className="profile-name">{user?.name}</div>
-        {user?.email && <div className="profile-email">{user.email}</div>}
-        <div className="profile-provider-badge">
-          {providerLabel.emoji} {providerLabel.text}
-        </div>
-        <button
-          className="pf-photobook-btn"
-          onClick={() => navigate('/photobook')}
-        >
-          📖 포토북 보기
-        </button>
-      </div>
+      <div className="pf2-layout">
 
-      {/* 탭 */}
-      <div className="profile-tabs">
-        {TAB_LIST.map(tab => (
-          <button
-            key={tab.key}
-            className={`profile-tab${activeTab === tab.key ? ' active' : ''}`}
-            onClick={() => setActiveTab(tab.key)}
-          >
-            {tab.label}
-            {counts[tab.key] > 0 && (
-              <span style={{
-                marginLeft: 5,
-                background: activeTab === tab.key ? 'var(--primary)' : 'var(--border)',
-                color: activeTab === tab.key ? '#fff' : 'var(--text-muted)',
-                borderRadius: 10,
-                fontSize: 10,
-                fontWeight: 700,
-                padding: '1px 6px',
-                verticalAlign: 'middle',
-              }}>
-                {counts[tab.key]}
-              </span>
+        {/* ── 사이드바 ── */}
+        <aside className="pf2-sidebar">
+          {user?.provider === 'email' && (
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+          )}
+
+          <div className="pf2-avatar-wrap">
+            <div className="pf2-avatar">
+              {profilePic
+                ? <img src={profilePic} alt="프로필" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                : user?.name?.[0]?.toUpperCase() || '?'
+              }
+            </div>
+            {user?.provider === 'email' && (
+              <button className="pf2-avatar-edit" aria-label="프로필 사진 변경" onClick={() => fileInputRef.current?.click()}>
+                <Pencil size={12} />
+              </button>
             )}
-          </button>
-        ))}
-      </div>
-
-      {/* 콘텐츠 */}
-      <div className="profile-content">
-        {loading ? (
-          <div className="pf-loading"><div className="pf-spinner" /></div>
-        ) : error ? (
-          <div className="pf-empty">
-            <span className="pf-empty-icon">⚠️</span>
-            <span className="pf-empty-text">{error}</span>
           </div>
-        ) : (
-          <>
-            {activeTab === 'flights' && (
-              data.flights.length > 0
-                ? data.flights.map(b => <FlightCard key={b.id} booking={b} />)
-                : <EmptyState tab="flights" />
-            )}
+          <div className="pf2-sidebar-name">{user?.name}</div>
+          <div className="pf2-sidebar-email">{user?.email}</div>
 
-            {activeTab === 'stays' && (
-              data.stays.length > 0
-                ? data.stays.map(b => <StayCard key={b.id} booking={b} />)
-                : <EmptyState tab="stays" />
-            )}
+          <div className="pf2-provider-badge" style={{ background: provider.color, color: provider.textColor }}>
+            <ProviderIcon size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
+            {provider.text}
+          </div>
 
-            {activeTab === 'plans' && (
-              data.plans.length > 0
-                ? data.plans.map(p => (
-                    <PlanCard key={p.id} plan={p} onDelete={handleDeletePlan} />
-                  ))
-                : <EmptyState tab="plans" />
+          <div className="pf2-sidebar-btns">
+            {user?.provider === 'email' && (
+              <button className="pf2-edit-btn" onClick={() => fileInputRef.current?.click()}>
+                <Pencil size={13} /> 프로필 사진 변경
+              </button>
             )}
-          </>
-        )}
+            <button className="pf2-grade-btn">
+              <Star size={12} style={{ display: 'inline', color: stats.grade.color, fill: stats.grade.color }} />
+              {' '}{stats.grade.label}
+            </button>
+          </div>
+
+          <div className="pf2-stats-title">나의 여행 통계</div>
+          <div className="pf2-stats-grid">
+            {STAT_ITEMS.map(s => (
+              <div key={s.label} className="pf2-stat-item">
+                <div className="pf2-stat-icon"><s.Icon size={18} /></div>
+                <div className="pf2-stat-value" style={s.valueStyle}>{s.value}</div>
+                <div className="pf2-stat-label">{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="pf2-stats-title" style={{ marginTop: 20 }}>빠른 메뉴</div>
+          <div className="pf2-quick-menu">
+            {QUICK_MENU.map(item => (
+              <button key={item.label} className={`pf2-menu-item${item.danger ? ' pf2-menu-danger' : ''}`} onClick={item.action}>
+                <span className="pf2-menu-icon">{item.icon}</span>
+                <span className="pf2-menu-label">{item.label}</span>
+                <ChevronRight size={15} className="pf2-menu-chevron" />
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        {/* ── 메인 콘텐츠 ── */}
+        <main className="pf2-main">
+
+          {/* 웰컴 배너 */}
+          <div className="pf2-banner">
+            <div>
+              <div className="pf2-banner-title">안녕하세요, {user?.name}님</div>
+              <div className="pf2-banner-sub">다음 여행을 계획할 준비가 되셨나요?</div>
+            </div>
+            <button className="pf2-banner-btn" onClick={() => navigate('/ai-generation-inputform')}>
+              <Plane size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }} />
+              새로운 여행 계획하기
+            </button>
+          </div>
+
+          {/* 탭 */}
+          <div className="pf2-tabs">
+            {TABS.map(t => (
+              <button
+                key={t.key}
+                className={`pf2-tab${activeTab === t.key ? ' active' : ''}`}
+                onClick={() => setActiveTab(t.key)}
+              >
+                {t.label}
+                {t.count > 0 && <span className="pf2-tab-count">{t.count}</span>}
+              </button>
+            ))}
+          </div>
+
+          {/* 카드 목록 */}
+          <div className="pf2-cards">
+            {loading ? (
+              <div className="pf2-loading"><div className="pf2-spinner" /></div>
+            ) : error ? (
+              <div className="pf2-empty"><span style={{ fontSize: 13, color: '#ef4444' }}>{error}</span></div>
+            ) : (
+              <>
+                {activeTab === 'flights' && (
+                  data.flights.length > 0
+                    ? data.flights.map(b => <FlightCard key={b.id} booking={b} onCancel={handleCancelFlight} />)
+                    : <EmptyState tab="flights" />
+                )}
+                {activeTab === 'stays' && (
+                  data.stays.length > 0
+                    ? data.stays.map(b => <StayCard key={b.id} booking={b} onCancel={handleCancelStay} />)
+                    : <EmptyState tab="stays" />
+                )}
+                {activeTab === 'plans' && (
+                  data.plans.length > 0
+                    ? data.plans.map(p => <PlanCard key={p.id} plan={p} onDelete={handleDeletePlan} />)
+                    : <EmptyState tab="plans" />
+                )}
+              </>
+            )}
+          </div>
+
+          {/* 최근 활동 */}
+          {!loading && recentActivities.length > 0 && (
+            <div className="pf2-activity">
+              <div className="pf2-activity-title">최근 활동</div>
+              {recentActivities.map((a, i) => (
+                <div key={i} className="pf2-activity-item">
+                  <div className="pf2-activity-icon" style={{ background: a.iconBg, color: a.iconColor }}>{a.icon}</div>
+                  <div className="pf2-activity-body">
+                    <div className="pf2-activity-text">{a.text}</div>
+                    <div className="pf2-activity-time">{timeAgo(a.time)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </main>
       </div>
 
       <BottomNav />

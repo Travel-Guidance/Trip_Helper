@@ -65,4 +65,42 @@ router.get('/bookings', requireAuth, async (req, res, next) => {
   }
 });
 
+// DELETE /api/bookings/flights/:id — 항공권 예약 취소
+router.delete('/bookings/flights/:id', requireAuth, async (req, res, next) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id FROM flight_bookings WHERE id = ? AND user_id = ?',
+      [req.params.id, req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: '예약을 찾을 수 없습니다.' });
+
+    await pool.query(
+      'UPDATE flight_bookings SET status = ? WHERE id = ?',
+      ['cancelled', req.params.id]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/bookings/stays/:id — 숙소 예약 취소
+router.delete('/bookings/stays/:id', requireAuth, async (req, res, next) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id FROM stay_bookings WHERE id = ? AND user_id = ?',
+      [req.params.id, req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: '예약을 찾을 수 없습니다.' });
+
+    await pool.query(
+      'UPDATE stay_bookings SET status = ? WHERE id = ?',
+      ['cancelled', req.params.id]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

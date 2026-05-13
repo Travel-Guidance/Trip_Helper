@@ -15,3 +15,11 @@ export async function getPlanDetail(planId) {
 export async function deletePlan(planId) {
   return apiDelete(`/ai-travel/plans/${planId}`)
 }
+
+export async function cancelFlightBooking(id) {
+  return apiDelete(`/bookings/flights/${id}`)
+}
+
+export async function cancelStayBooking(id) {
+  return apiDelete(`/bookings/stays/${id}`)
+}

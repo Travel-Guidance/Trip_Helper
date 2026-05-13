@@ -87,7 +87,9 @@
   color: var(--primary);
 }
 .bottom-nav-icon {
-  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
 }
 .bottom-nav-label {
