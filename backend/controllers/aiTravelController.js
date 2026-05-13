@@ -1,6 +1,6 @@
 'use strict';
 
-const { chat } = require('../services/geminiService');
+const { chat, generateText } = require('../services/geminiService');
 const { buildPersonaSystem, getPersona } = require('../domains/aiTravel/persona');
 const { enrichPlanWithCoordinates } = require('../services/geocodeService');
 const { sanitizeAustraliaItinerary } = require('../services/itinerarySanitizer');
@@ -14,6 +14,58 @@ function normalizeJson(value, fallback) {
   } catch {
     return fallback;
   }
+}
+
+function extractJsonObject(text) {
+  const raw = String(text || '').replace(/```json|```/g, '').trim();
+  const start = raw.indexOf('{');
+  const end = raw.lastIndexOf('}');
+  if (start < 0 || end < start) throw new Error('JSON 응답을 찾을 수 없습니다.');
+  return JSON.parse(raw.slice(start, end + 1));
+}
+
+function parseMustVisitList(value) {
+  return String(value || '')
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean);
+}
+
+function isProtectedMustVisitItem(item, mustVisitList) {
+  const name = String(item?.name || '').toLowerCase();
+  return mustVisitList.some(place => {
+    const target = place.toLowerCase();
+    return target && (name.includes(target) || target.includes(name));
+  });
+}
+
+function buildRebudgetPrompt({ day, targetItems, activeItemIndex, remainingBudgetWon, remainingCostWon, mustVisit }) {
+  return `오늘 남은 여행 일정만 예산에 맞게 재조정하세요. 반드시 순수 JSON만 반환하세요.
+
+상황:
+- 현재 활성 일정 인덱스: ${activeItemIndex}
+- 오늘 남은 사용 가능 예산: ${remainingBudgetWon} KRW
+- 남은 식사/쇼핑/입장비 예상 합계: ${remainingCostWon} KRW
+- 사용자가 반드시 방문하길 원한 장소(mustVisit): ${mustVisit || '없음'}
+
+규칙:
+1. 이미 지나간 일정은 절대 수정하지 않습니다. 아래 targetItems만 수정합니다.
+2. 전체 여행이 아니라 오늘 남은 일정만 예산에 맞게 조정합니다.
+3. 식사 비용이 문제면 저가 식당, 간단한 식사, 메뉴/주문 팁으로 조정합니다.
+4. 쇼핑 비용이 문제면 쇼핑 시간을 줄이거나 구매 상한을 둡니다.
+5. 입장비가 문제면 무료 전망, 산책 코스, 저가 입장 옵션으로 대체합니다.
+6. mustVisit에 포함된 장소는 삭제하거나 다른 장소로 바꾸지 않습니다. 특히 mustVisit 음식점은 name/time/lat/lng/isMeal을 유지하고 note/cost/reservation/transportTip/backup만 예산형으로 바꿉니다.
+7. 각 item의 필드는 가능한 유지하되 name, note, cost, reservation, transportTip, backup, isMeal, lat, lng를 포함하세요.
+8. 동선이 과도하게 늘어나지 않게 같은 지역/근처 대체안을 사용하세요.
+
+반환 형식:
+{"items":[...],"summary":"무엇을 줄였는지 한 문장","warnings":["주의사항"]}
+
+오늘 day:
+${JSON.stringify(day)}
+
+수정 대상 targetItems:
+${JSON.stringify(targetItems)}`;
 }
 
 const CATEGORY_TO_DB = {
@@ -301,6 +353,146 @@ async function deletePlanExpense(req, res, next) {
   }
 }
 
+async function rebudgetPlanDay(req, res, next) {
+  try {
+    const planId = Number(req.params.id);
+    if (!Number.isInteger(planId) || planId <= 0) {
+      return res.status(400).json({ error: '유효하지 않은 일정 ID입니다.' });
+    }
+
+    const [rows] = await pool.query(
+      'SELECT id, plan_data FROM travel_plans WHERE id = ? AND user_id = ?',
+      [planId, req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: '일정을 찾을 수 없습니다.' });
+
+    const planData = normalizeJson(rows[0].plan_data, {});
+    const dayIndex = Number(req.body.dayIndex);
+    const activeItemIndex = Number(req.body.activeItemIndex);
+    if (!Array.isArray(planData.days) || !planData.days[dayIndex]) {
+      return res.status(400).json({ error: '재조정할 일차를 찾을 수 없습니다.' });
+    }
+
+    const day = planData.days[dayIndex];
+    const items = Array.isArray(day.items) ? day.items : [];
+    const selectedItemIndexes = Array.isArray(req.body.selectedItemIndexes)
+      ? req.body.selectedItemIndexes
+        .map(Number)
+        .filter(index => Number.isInteger(index) && index > activeItemIndex && index < items.length)
+      : [];
+    const uniqueSelectedIndexes = [...new Set(selectedItemIndexes)];
+    if (!uniqueSelectedIndexes.length) {
+      return res.status(400).json({ error: '재조정할 일정을 선택해 주세요.' });
+    }
+    const targetItems = uniqueSelectedIndexes.map(index => ({ index, item: items[index] }));
+    console.log('[ai-travel:rebudget] adjustment target', {
+      planId,
+      dayIndex,
+      activeItemIndex,
+      selectedItemIndexes: uniqueSelectedIndexes,
+      targetItems: targetItems.map(({ index, item }) => ({
+        index,
+        name: item?.name,
+        time: item?.time,
+        cost: item?.cost,
+        isMeal: item?.isMeal,
+      })),
+    });
+
+    const mustVisit = String(req.body.mustVisit || '');
+    const mustVisitList = parseMustVisitList(mustVisit);
+    const prompt = buildRebudgetPrompt({
+      day,
+      targetItems,
+      activeItemIndex,
+      remainingBudgetWon: Number(req.body.remainingBudgetWon) || 0,
+      remainingCostWon: Number(req.body.remainingCostWon) || 0,
+      mustVisit,
+    });
+
+    const text = await generateText(prompt, 'You are a budget-aware travel itinerary editor. Return strict JSON only.');
+    const parsed = extractJsonObject(text);
+    const revisedItems = Array.isArray(parsed.items) ? parsed.items : [];
+    if (!revisedItems.length) {
+      return res.status(502).json({ error: '재조정 결과가 비어 있습니다.' });
+    }
+    console.log('[ai-travel:rebudget] ai result', {
+      planId,
+      dayIndex,
+      summary: parsed.summary || '',
+      warnings: Array.isArray(parsed.warnings) ? parsed.warnings : [],
+      revisedItems: revisedItems.map((item, index) => ({
+        targetIndex: targetItems[index]?.index,
+        name: item?.name,
+        time: item?.time,
+        cost: item?.cost,
+        isMeal: item?.isMeal,
+      })),
+    });
+
+    const protectedRevised = revisedItems.map((item, index) => {
+      const original = targetItems[index]?.item || {};
+      if (!isProtectedMustVisitItem(original, mustVisitList)) return item;
+      return {
+        ...item,
+        name: original.name,
+        time: original.time,
+        lat: original.lat,
+        lng: original.lng,
+        isMeal: original.isMeal,
+      };
+    });
+    const nextItems = [...items];
+    uniqueSelectedIndexes.forEach((itemIndex, resultIndex) => {
+      nextItems[itemIndex] = protectedRevised[resultIndex] || nextItems[itemIndex];
+    });
+    console.log('[ai-travel:rebudget] applied changes', {
+      planId,
+      dayIndex,
+      changes: uniqueSelectedIndexes.map((itemIndex, resultIndex) => ({
+        index: itemIndex,
+        before: {
+          name: items[itemIndex]?.name,
+          time: items[itemIndex]?.time,
+          cost: items[itemIndex]?.cost,
+          note: items[itemIndex]?.note,
+        },
+        after: {
+          name: nextItems[itemIndex]?.name,
+          time: nextItems[itemIndex]?.time,
+          cost: nextItems[itemIndex]?.cost,
+          note: nextItems[itemIndex]?.note,
+        },
+      })),
+    });
+
+    planData.days[dayIndex] = {
+      ...day,
+      summary: parsed.summary || day.summary,
+      warnings: [
+        ...(Array.isArray(day.warnings) ? day.warnings : []),
+        ...(Array.isArray(parsed.warnings) ? parsed.warnings : []),
+      ],
+      items: nextItems,
+    };
+
+    await pool.query(
+      'UPDATE travel_plans SET plan_data = ? WHERE id = ? AND user_id = ?',
+      [JSON.stringify(planData), planId, req.user.id]
+    );
+
+    res.json({
+      success: true,
+      planData,
+      day: planData.days[dayIndex],
+      summary: parsed.summary || '',
+      warnings: Array.isArray(parsed.warnings) ? parsed.warnings : [],
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function getChatContext(destination, message) {
   if (!destination) return '';
 
@@ -344,4 +536,5 @@ module.exports = {
   createPlanExpense,
   updatePlanExpense,
   deletePlanExpense,
+  rebudgetPlanDay,
 };

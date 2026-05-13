@@ -627,23 +627,63 @@
       line-height: 1.55;
       word-break: keep-all;
     }
-    .ai-travel-duration-page .budget-adjust-head strong {
+    .ai-travel-duration-page .budget-adjust-actions {
+      flex-shrink: 0;
+      display: flex;
+      align-items: flex-end;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .ai-travel-duration-page .budget-adjust-actions strong {
       flex-shrink: 0;
       color: var(--amber);
       font-size: 16px;
       font-weight: 900;
       white-space: nowrap;
     }
+    .ai-travel-duration-page .budget-adjust-actions button {
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: var(--blue-g);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 900;
+      box-shadow: 0 4px 14px rgba(41,171,226,.24);
+    }
+    .ai-travel-duration-page .budget-adjust-actions button:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
     .ai-travel-duration-page .budget-adjust-list { display: grid; gap: 8px; }
     .ai-travel-duration-page .budget-adjust-item {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 110px;
+      grid-template-columns: 22px minmax(0, 1fr) 110px;
       align-items: center;
       gap: 12px;
       padding: 10px 12px;
       border-radius: 10px;
       background: #fff;
       border: 1px solid rgba(245,158,11,.22);
+      cursor: pointer;
+      transition: background .12s, border-color .12s, box-shadow .12s;
+    }
+    .ai-travel-duration-page .budget-adjust-item.selected {
+      background: #F0FAFF;
+      border-color: rgba(41,171,226,.46);
+      box-shadow: inset 3px 0 0 var(--blue);
+    }
+    .ai-travel-duration-page .budget-adjust-item input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--blue);
+      cursor: pointer;
+    }
+    .ai-travel-duration-page .budget-adjust-item-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      min-width: 0;
     }
     .ai-travel-duration-page .budget-adjust-item strong {
       display: block;
@@ -660,6 +700,24 @@
       font-size: 12px;
       font-weight: 700;
       line-height: 1.45;
+    }
+    .ai-travel-duration-page .budget-adjust-item-title .budget-adjust-badge {
+      display: inline-flex;
+      align-items: center;
+      margin-top: 0;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: rgba(41,171,226,.1);
+      border: 1px solid rgba(41,171,226,.18);
+      color: var(--blue-d);
+      font-size: 10px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .ai-travel-duration-page .budget-adjust-item-title .budget-adjust-badge.keep {
+      background: rgba(245,158,11,.11);
+      border-color: rgba(245,158,11,.24);
+      color: var(--amber);
     }
     .ai-travel-duration-page .budget-adjust-item em {
       color: var(--amber);
@@ -875,8 +933,9 @@
       .ai-travel-duration-page .budget-head-summary { grid-template-columns: 1fr; }
       .ai-travel-duration-page .exp-form { grid-template-columns: 1fr; }
       .ai-travel-duration-page .budget-adjust-head { flex-direction: column; }
-      .ai-travel-duration-page .budget-adjust-item { grid-template-columns: 1fr; }
-      .ai-travel-duration-page .budget-adjust-item em { text-align: left; }
+      .ai-travel-duration-page .budget-adjust-actions { align-items: flex-start; }
+      .ai-travel-duration-page .budget-adjust-item { grid-template-columns: 22px minmax(0, 1fr); align-items: start; }
+      .ai-travel-duration-page .budget-adjust-item em { grid-column: 2; text-align: left; }
       .ai-travel-duration-page .b-row { grid-template-columns: 24px 44px minmax(72px, 1fr) 122px; gap: 8px; }
       .ai-travel-duration-page .b-val { width: 122px; grid-template-columns: 34px 8px 80px; font-size: 12px; }
       .ai-travel-duration-page .workspace { padding: 12px 14px 36px; }

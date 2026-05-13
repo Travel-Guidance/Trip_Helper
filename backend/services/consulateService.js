@@ -4,74 +4,103 @@
 const { requireEnv } = require('../utils/env')
 const { findCountryByDestination } = require('../data/countries')
 
-const MOFA_API_URL = 'https://api.odcloud.kr/api/15076569/v1/uddi:7692653c-21f9-4396-b6b3-f3f0cdbe9370'
+const MOFA_API_URL = 'https://apis.data.go.kr/1262000/EmbassyService2/getEmbassyList2'
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
 
-let consulateCache = { data: null, fetchedAt: 0 }
+const consulateCache = new Map()
 
-async function fetchAllConsulates() {
-  const key = requireEnv('MOFA_API_KEY')
-  const url = `${MOFA_API_URL}?serviceKey=${encodeURIComponent(key)}&page=1&perPage=500&returnType=json`
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`MOFA API 오류: ${res.status}`)
-  const json = await res.json()
-  if (!Array.isArray(json.data)) throw new Error('MOFA API 응답 형식 오류')
-  return json.data
+function normalizeItems(json) {
+  const items = json?.response?.body?.items?.item
+    ?? json?.body?.items?.item
+    ?? json?.items?.item
+    ?? json?.data
+    ?? []
+
+  if (Array.isArray(items)) return items
+  return items ? [items] : []
 }
 
-async function getAllConsulates() {
-  const now = Date.now()
-  if (consulateCache.data && now - consulateCache.fetchedAt < CACHE_TTL_MS) {
-    return consulateCache.data
+async function fetchConsulates(params) {
+  const key = requireEnv('MOFA_API_KEY').trim()
+  const query = new URLSearchParams({
+    pageNo: '1',
+    numOfRows: '20',
+    returnType: 'JSON',
+    ...params,
+  })
+  const serviceKey = key.includes('%') ? key : encodeURIComponent(key)
+  const url = `${MOFA_API_URL}?serviceKey=${serviceKey}&${query}`
+  const res = await fetch(url)
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`MOFA API 오류: ${res.status} ${text.slice(0, 160)}`)
   }
-  const data = await fetchAllConsulates()
-  consulateCache = { data, fetchedAt: now }
+  const json = await res.json()
+  const items = normalizeItems(json)
+  if (!Array.isArray(items)) throw new Error('MOFA API 응답 형식 오류')
+  return items
+}
+
+async function getCachedConsulates(cacheKey, params) {
+  const now = Date.now()
+  const cached = consulateCache.get(cacheKey)
+  if (cached && now - cached.fetchedAt < CACHE_TTL_MS) {
+    return cached.data
+  }
+  const data = await fetchConsulates(params)
+  consulateCache.set(cacheKey, { data, fetchedAt: now })
   return data
 }
 
-function resolveCountryName(destination, allConsulates) {
+function resolveCountry(destination) {
   if (!destination) return null
   const dest = destination.trim()
-  const countryNames = [...new Set(allConsulates.map(c => c['국가명']).filter(Boolean))]
-
-  if (countryNames.includes(dest)) return dest
-
-  const partial = countryNames.find(cn => dest.includes(cn) || cn.includes(dest))
-  if (partial) return partial
-
   const country = findCountryByDestination(dest)
-  if (country && countryNames.includes(country.nameKo)) return country.nameKo
+  return country || { nameKo: dest, iso2: '' }
+}
 
-  return null
+function getField(item, ...keys) {
+  for (const key of keys) {
+    if (item[key] != null && item[key] !== '') return item[key]
+  }
+  return ''
 }
 
 async function getConsulateByDestination(destination) {
-  const all = await getAllConsulates()
-  const countryName = resolveCountryName(destination, all)
-  if (!countryName) return null
+  const country = resolveCountry(destination)
+  if (!country) return null
 
-  const list = all.filter(c => c['국가명'] === countryName)
+  let list = await getCachedConsulates(
+    `country:${country.nameKo}`,
+    { 'cond[country_nm::EQ]': country.nameKo }
+  )
+  if (!list.length && country.iso2) {
+    list = await getCachedConsulates(
+      `iso:${country.iso2}`,
+      { 'cond[country_iso_alp2::EQ]': country.iso2 }
+    )
+  }
   if (!list.length) return null
 
   // 대사관 > 총영사관 > 첫 번째 순으로 우선순위
   const pick =
-    list.find(c => c['재외공관 유형']?.includes('대사관') && !c['재외공관 유형']?.includes('총')) ||
-    list.find(c => c['재외공관 유형']?.includes('총영사관')) ||
+    list.find(c => getField(c, 'embassy_ty_cd_nm', '재외공관 유형')?.includes('대사관') && !getField(c, 'embassy_ty_cd_nm', '재외공관 유형')?.includes('총')) ||
+    list.find(c => getField(c, 'embassy_ty_cd_nm', '재외공관 유형')?.includes('총영사관')) ||
     list[0]
 
-  const lat = parseFloat(pick['재외공관 위도'])
-  const lng = parseFloat(pick['재외공관 경도'])
+  const lat = parseFloat(getField(pick, 'embassy_lat', '재외공관 위도'))
+  const lng = parseFloat(getField(pick, 'embassy_lng', '재외공관 경도'))
 
   return {
-    name: pick['재외공관명'] || '',
-    type: pick['재외공관 유형'] || '',
-    phone: pick['전화번호'] || '',
-    emergencyPhone: pick['긴급전화번호'] || '',
-    callCenter: pick['영사콜센터번호'] || '',
-    address: pick['재외공관주소'] || '',
+    name: getField(pick, 'embassy_kor_nm', '재외공관명'),
+    type: getField(pick, 'embassy_ty_cd_nm', '재외공관 유형'),
+    phone: getField(pick, 'tel_no', '전화번호'),
+    emergencyPhone: getField(pick, 'urgency_tel_no', '긴급전화번호'),
+    callCenter: getField(pick, 'center_tel_no', '영사콜센터번호'),
+    address: getField(pick, 'embassy_addr', 'emblgbd_addr', '재외공관주소'),
     lat: Number.isFinite(lat) ? lat : null,
     lng: Number.isFinite(lng) ? lng : null,
-    countryName,
+    countryName: getField(pick, 'country_nm', '국가명') || country.nameKo,
   }
 }
 

@@ -639,6 +639,11 @@ export async function persistExpense(planId, expense) {
   })
 }
 
+export async function rebudgetPlanDay(planId, payload) {
+  if (!planId) return null
+  return apiPost(`/ai-travel/plans/${planId}/rebudget-day`, payload)
+}
+
 export async function fetchExchangeRate(destination) {
   if (!destination) return null
   return apiGet(`/exchange-rate?destination=${encodeURIComponent(destination)}`)
