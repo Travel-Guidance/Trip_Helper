@@ -793,6 +793,34 @@
       font-weight: 600;
       white-space: nowrap;
     }
+    /* ─── BUDGET EDIT ─── */
+    .ai-travel-duration-page .budget-edit-block { }
+    .ai-travel-duration-page .budget-edit-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .ai-travel-duration-page .budget-edit-summary-left { display: flex; align-items: baseline; gap: 10px; min-width: 0; flex-wrap: wrap; }
+    .ai-travel-duration-page .budget-edit-label { font-size: 14px; font-weight: 900; color: var(--navy); white-space: nowrap; }
+    .ai-travel-duration-page .budget-edit-amount { font-size: 16px; font-weight: 900; color: var(--blue-d); white-space: nowrap; }
+    .ai-travel-duration-page .budget-edit-daily-hint { font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .ai-travel-duration-page .budget-edit-toggle { padding: 7px 16px; border-radius: 999px; font-size: 12px; font-weight: 800; background: var(--bg); border: 1px solid var(--border2); color: var(--muted); transition: background .12s, color .12s, border-color .12s; white-space: nowrap; flex-shrink: 0; }
+    .ai-travel-duration-page .budget-edit-toggle:hover { background: rgba(41,171,226,.08); color: var(--blue-d); border-color: rgba(41,171,226,.3); }
+    .ai-travel-duration-page .budget-edit-toggle.open { background: var(--bg); border-color: rgba(239,68,68,.3); color: var(--rose); }
+    .ai-travel-duration-page .budget-edit-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .26s ease; }
+    .ai-travel-duration-page .budget-edit-panel.open { grid-template-rows: 1fr; }
+    .ai-travel-duration-page .budget-edit-inner { overflow: hidden; padding-top: 0; transition: padding-top .26s ease; }
+    .ai-travel-duration-page .budget-edit-panel.open .budget-edit-inner { padding-top: 14px; }
+    .ai-travel-duration-page .budget-edit-mode-toggle { display: inline-flex; gap: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 3px; margin-bottom: 10px; }
+    .ai-travel-duration-page .bet-tab { padding: 5px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--muted); background: transparent; transition: background .12s, color .12s; white-space: nowrap; }
+    .ai-travel-duration-page .bet-tab.active { background: var(--blue-g); color: #fff; box-shadow: 0 2px 8px rgba(41,171,226,.25); }
+    .ai-travel-duration-page .budget-edit-row { display: flex; align-items: center; gap: 8px; }
+    .ai-travel-duration-page .budget-edit-input-wrap { flex: 1; display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 10px; background: var(--card); border: 1.5px solid var(--border2); transition: border-color .12s, box-shadow .12s; }
+    .ai-travel-duration-page .budget-edit-input-wrap:focus-within { border-color: rgba(41,171,226,.65); box-shadow: 0 0 0 3px rgba(41,171,226,.1); }
+    .ai-travel-duration-page .budget-edit-input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 15px; font-weight: 700; color: var(--navy); }
+    .ai-travel-duration-page .budget-edit-input::placeholder { color: var(--dim); font-weight: 500; font-size: 13px; }
+    .ai-travel-duration-page .budget-edit-unit { font-size: 13px; font-weight: 700; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+    .ai-travel-duration-page .budget-edit-calc { font-size: 12px; font-weight: 700; color: var(--blue-d); white-space: nowrap; flex-shrink: 0; }
+    .ai-travel-duration-page .budget-edit-save { padding: 9px 18px; border-radius: 10px; background: var(--blue-g); color: #fff; font-size: 13px; font-weight: 900; white-space: nowrap; box-shadow: 0 3px 10px rgba(41,171,226,.25); transition: opacity .15s, transform .12s; flex-shrink: 0; }
+    .ai-travel-duration-page .budget-edit-save:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
+    .ai-travel-duration-page .budget-edit-save:disabled { opacity: .5; cursor: not-allowed; }
+
     .ai-travel-duration-page .exp-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(112px, .38fr) 118px 48px; gap: 8px; margin-top: 4px; align-items: stretch; min-width: 0; }
     .ai-travel-duration-page .exp-field {
       position: relative;

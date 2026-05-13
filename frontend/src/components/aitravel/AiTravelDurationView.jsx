@@ -10,7 +10,7 @@ import {
   getCurrentDaySpent, getTodayAvailableBudget, getCategoryBreakdown,
   parseBudgetWon,
   normalizeSavedExpense, fetchSavedExpenses, persistExpense, deleteExpense, fetchExchangeRate,
-  rebudgetPlanDay,
+  rebudgetPlanDay, updatePlanBudget,
   fetchConsulateInfo, fetchEmergencyNearbyInfo, fetchNearbyAmenities, fetchIndoorPlaces, fetchNearbyCafes, fetchDayWeather, buildGoogleMapsRouteUrl,
   requestSimpleRoute, requestTransitRoute, renderRouteMap, renderSafeRouteMap,
   getGeneratedPlanId, readGeneratedPlanResult,
@@ -161,6 +161,9 @@ export default function AiTravelDurationView() {
   const [expAmt,  setExpAmt]        = useState('')
   const [expCat,  setExpCat]        = useState('meal')
   const [catPickerOpen, setCatPickerOpen] = useState(false)
+  const [budgetEditMode, setBudgetEditMode] = useState('total')
+  const [budgetEditValue, setBudgetEditValue] = useState(null)
+  const [budgetSaving, setBudgetSaving] = useState(false)
   const [rebudgeting, setRebudgeting] = useState(false)
   const [selectedAdjustmentIndexes, setSelectedAdjustmentIndexes] = useState([])
   const [rebudgetChangelog, setRebudgetChangelog] = useState([])
@@ -556,6 +559,35 @@ export default function AiTravelDurationView() {
       setRebudgeting(false)
     }
   }, [activeIdx, activeStopIdx, selectedAdjustmentIndexes, selectedAdjustmentCost, todayAvailable, remainingAdjustableCost, showToast])
+
+  const handleBudgetSave = useCallback(async () => {
+    const nights = schedule.length
+    const inputWon = Math.round(parseFloat(budgetEditValue) * 10000)
+    if (!inputWon || inputWon <= 0) return
+    const newTotal = budgetEditMode === 'daily' ? inputWon * (nights || 1) : inputWon
+
+    setBudgetSaving(true)
+    try {
+      const planId = getGeneratedPlanId(readGeneratedPlanResult())
+      if (planId) await updatePlanBudget(planId, newTotal)
+
+      setTravelData(prev => ({ ...prev, totalBudgetWon: newTotal }))
+      const planResult = readGeneratedPlanResult()
+      if (planResult) {
+        sessionStorage.setItem('aiPlanResult', JSON.stringify({
+          ...planResult,
+          tripInfo: { ...(planResult.tripInfo || {}), budget: String(newTotal) },
+        }))
+      }
+      setBudgetEditValue(null)
+      showToast('✓', '예산 업데이트 완료', `총 예산이 ${Math.round(newTotal / 10000).toLocaleString()}만원으로 변경되었습니다.`, 'ok')
+    } catch {
+      showToast('!', '저장 실패', '예산 저장에 실패했습니다. 다시 시도해주세요.', 'warn')
+    } finally {
+      setBudgetSaving(false)
+    }
+  }, [budgetEditMode, budgetEditValue, schedule, showToast])
+
 
   // ── 액션 핸들러 ───────────────────────────────────────────
   const handle = useCallback(async (action) => {
@@ -1065,6 +1097,67 @@ export default function AiTravelDurationView() {
             </div>
             <div className="sec-body">
               <div className="budget-cols">
+                <div className="b-block budget-edit-block">
+                  <div className="budget-edit-summary">
+                    <div className="budget-edit-summary-left">
+                      <span className="budget-edit-label">예산 충당</span>
+                      <span className="budget-edit-amount">{total ? formatKrw(total) : '미설정'}</span>
+                      {total > 0 && schedule.length > 0 && (
+                        <span className="budget-edit-daily-hint">· 하루 {formatKrw(Math.round(total / schedule.length))}</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className={`budget-edit-toggle${budgetEditValue !== null ? ' open' : ''}`}
+                      onClick={() => setBudgetEditValue(prev => prev === null ? '' : null)}
+                    >
+                      {budgetEditValue !== null ? '닫기' : '예산 충당하기'}
+                    </button>
+                  </div>
+                  <div className={`budget-edit-panel${budgetEditValue !== null ? ' open' : ''}`}>
+                    <div className="budget-edit-inner">
+                      <div className="budget-edit-mode-toggle">
+                        <button
+                          type="button"
+                          className={`bet-tab${budgetEditMode === 'total' ? ' active' : ''}`}
+                          onClick={() => setBudgetEditMode('total')}
+                        >총 예산</button>
+                        <button
+                          type="button"
+                          className={`bet-tab${budgetEditMode === 'daily' ? ' active' : ''}`}
+                          onClick={() => setBudgetEditMode('daily')}
+                        >하루 예산</button>
+                      </div>
+                      <div className="budget-edit-row">
+                        <div className="budget-edit-input-wrap">
+                          <input
+                            className="budget-edit-input"
+                            type="number"
+                            min="1"
+                            placeholder={budgetEditMode === 'total' ? '총 예산 입력' : '하루 예산 입력'}
+                            value={budgetEditValue || ''}
+                            onChange={e => setBudgetEditValue(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') handleBudgetSave() }}
+                          />
+                          <span className="budget-edit-unit">만원</span>
+                        </div>
+                        {budgetEditMode === 'daily' && budgetEditValue && schedule.length > 0 && (
+                          <div className="budget-edit-calc">
+                            총 {formatKrw(Math.round(parseFloat(budgetEditValue || 0) * 10000) * schedule.length)}
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          className="budget-edit-save"
+                          disabled={!budgetEditValue || budgetSaving}
+                          onClick={handleBudgetSave}
+                        >
+                          {budgetSaving ? '저장 중' : '저장'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div className="b-block">
                   <div className="b-block-title">카테고리별 지출 비중</div>
                   <div>

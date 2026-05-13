@@ -1,7 +1,7 @@
 // AiTravelDuration.js - 여행 일정 비즈니스 로직 및 순수 유틸리티 함수 모음
 
 import { EUR_TO_KRW } from '../data/AiTravelDuration'
-import { apiGet, apiPost, apiDelete } from '../api/apiClient'
+import { apiGet, apiPost, apiPut, apiDelete } from '../api/apiClient'
 import EMERGENCY_NUMBERS from '../data/emergencyNumbers.json'
 
 /* global google */
@@ -739,6 +739,11 @@ export async function deleteExpense(planId, expenseId) {
 export async function rebudgetPlanDay(planId, payload) {
   if (!planId) return null
   return apiPost(`/ai-travel/plans/${planId}/rebudget-day`, payload)
+}
+
+export async function updatePlanBudget(planId, totalBudgetWon) {
+  if (!planId) return null
+  return apiPut(`/ai-travel/plans/${planId}/budget`, { totalBudgetWon })
 }
 
 export async function fetchExchangeRate(destination) {

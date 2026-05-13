@@ -64,6 +64,8 @@ export default function AiCollabLoading() {
   const [progress, setProgress] = useState(6)
   const [messageIndex, setMessageIndex] = useState(0)
   const [isFinishing, setIsFinishing] = useState(false)
+  const [error, setError] = useState('')
+  const [retryCount, setRetryCount] = useState(0)
   const params = useMemo(() => readCollabParams(), [])
   const roomId = useMemo(() => sessionStorage.getItem('aiCollabRoomId') || '', [])
   const memberCount = useMemo(() => Number(sessionStorage.getItem('aiCollabMemberCount') || 2), [])
@@ -134,15 +136,25 @@ export default function AiCollabLoading() {
         setProgress(100)
         setTimeout(() => navigate('/ai-generation-schedule'), 650)
       })
-      .catch(() => {
+      .catch(err => {
         if (cancelled) return
-        setIsFinishing(true)
-        setProgress(100)
-        setTimeout(() => navigate('/ai-generation-schedule'), 650)
+        const msg = String(err?.message || '')
+        if (msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('high demand')) {
+          setError('현재 사용량이 많아 일정을 생성하지 못했습니다. 잠시 후 다시 시도해주세요.')
+        } else {
+          setError('일정 생성 중 오류가 발생했습니다. 다시 시도해주세요.')
+        }
       })
 
     return () => { cancelled = true }
-  }, [isHost, navigate, params, roomId])
+  }, [isHost, navigate, params, roomId, retryCount])
+
+  function handleRetry() {
+    calledRef.current = false
+    setError('')
+    setProgress(6)
+    setRetryCount(c => c + 1)
+  }
 
   return (
     <AiGenerationLoadingView
@@ -150,6 +162,9 @@ export default function AiCollabLoading() {
       progress={progress}
       messageIndex={messageIndex}
       isFinishing={isFinishing}
+      error={error}
+      onRetry={handleRetry}
+      onBack={() => navigate(-1)}
     />
   )
 }

@@ -1597,6 +1597,19 @@
         min-height: 74px;
       }
     }
+    .ai-generation-input-form-page .input-error {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+    }
+
+    .ai-generation-input-form-page .budget-error-msg {
+      margin: 8px 0 0;
+      color: #b42318;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.5;
+    }
+
     .ai-generation-input-form-page .preference-textarea {
       width: 100%;
       min-height: 110px;

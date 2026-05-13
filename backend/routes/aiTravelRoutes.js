@@ -9,6 +9,7 @@ const {
   createPlanExpense,
   updatePlanExpense,
   deletePlanExpense,
+  updatePlanBudget,
   rebudgetPlanDay,
   translateText,
 } = require('../controllers/aiTravelController');
@@ -61,6 +62,7 @@ const router = Router();
 router.post('/ai-travel/generate', aiLimiter, optionalAuth, generatePlan);
 
 router.get('/ai-travel/plans', requireAuth, getUserPlans);
+router.put('/ai-travel/plans/:id/budget', requireAuth, updatePlanBudget);
 router.post('/ai-travel/plans/:id/rebudget-day', requireAuth, rebudgetPlanDay);
 router.get('/ai-travel/plans/:id/expenses', requireAuth, getPlanExpenses);
 router.post('/ai-travel/plans/:id/expenses', requireAuth, createPlanExpense);

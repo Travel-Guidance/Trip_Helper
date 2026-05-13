@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import CalendarPicker from '../common/CalendarPicker'
+import { validateBudget } from '../../utils/budgetValidation'
 import {
   CONTINENTS,
   INTENSITY_LABELS,
@@ -17,6 +18,7 @@ export default function AiGenerationInputFormView() {
   const [travelMode, setTravelMode] = useState('personal')
   const [counts, setCounts] = useState({ adults: 1, teens: 0, children: 0, infants: 0 })
   const [budgetText, setBudgetText] = useState('')
+  const [budgetError, setBudgetError] = useState('')
   const [intensity, setIntensity] = useState(0)
   const [intensityTouched, setIntensityTouched] = useState(false)
   const [travelPreference, setTravelPreference] = useState('')
@@ -112,6 +114,24 @@ export default function AiGenerationInputFormView() {
     if (next > 1 && !(dates.startDate && dates.endDate && getNights() > 0)) {
       setCurrentStep(1)
       showStepWarning(1, '일정을 먼저 입력해주세요.')
+      return false
+    }
+
+    if (next > 2 && !budgetText.trim()) {
+      setCurrentStep(2)
+      showStepWarning(2, '예산을 입력해주세요.')
+      return false
+    }
+
+    if (next > 2 && !validateBudget(budgetText).valid) {
+      setCurrentStep(2)
+      showStepWarning(2, '올바른 예산 형식으로 수정해주세요.')
+      return false
+    }
+
+    if (next > 3 && !intensityTouched) {
+      setCurrentStep(3)
+      showStepWarning(3, '여행 강도를 설정해주세요.')
       return false
     }
 
@@ -327,7 +347,7 @@ export default function AiGenerationInputFormView() {
                 <p>한 번에 전부 묻지 않고, 여행을 설계하는 순서대로 짧게 이어갑니다.</p>
               </div>
               <div className="progress" aria-hidden="true">
-                <span id="progressFill" style={{ width: `${((hasDestination ? 1 : 0) + (hasDates ? 1 : 0)) / 2 * 100}%`, backgroundSize: '420px 100%' }}></span>
+                <span id="progressFill" style={{ width: `${(currentStep + 1) / STEPS.length * 100}%` }}></span>
               </div>
             </header>
 
@@ -561,18 +581,25 @@ export default function AiGenerationInputFormView() {
                     </div>
                     <div className="input-row">
                       <input
-                        className="input"
+                        className={`input ${budgetError ? 'input-error' : ''}`}
                         id="budgetInput"
                         type="text"
                         placeholder="예: 100만원, 150만원, 200만원"
                         value={budgetText}
-                        onChange={(e) => setBudgetText(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setBudgetText(val)
+                          const result = validateBudget(val)
+                          setBudgetError(result.valid ? '' : result.message)
+                        }}
                       />
                     </div>
+                    {budgetError && <p className="budget-error-msg">{budgetError}</p>}
                     <p className="hint">입력한 예산은 일정 생성과 현지 예산 추적에 활용됩니다.</p>
                   </section>
                 </div>
-                <div className="step-actions">
+                <div className="step-actions has-back">
+                  <p className={`step-warning ${warning.step === 2 ? 'show' : ''}`}>{warning.message}</p>
                   <button className="step-action light" type="button" onClick={() => goStep(1)}>이전</button>
                   <button className="step-action" type="button" onClick={() => { if (canGoStep(3)) goStep(3) }}>여행 강도 조정</button>
                 </div>
@@ -617,7 +644,8 @@ export default function AiGenerationInputFormView() {
                     </div>
                   </div>
                 </section>
-                <div className="step-actions">
+                <div className="step-actions has-back">
+                  <p className={`step-warning ${warning.step === 3 ? 'show' : ''}`}>{warning.message}</p>
                   <button className="step-action light" type="button" onClick={() => goStep(2)}>이전</button>
                   <button className="step-action" type="button" onClick={() => { if (canGoStep(4)) goStep(4) }}>스타일 선택</button>
                 </div>
@@ -702,7 +730,7 @@ export default function AiGenerationInputFormView() {
                     <button className="submit" id="submitBtn" type="button" disabled={!ready} onClick={openConfirmModal}>일정 생성하기</button>
                   </div>
                 </section>
-                <div className="step-actions">
+                <div className="step-actions has-back">
                   <button className="step-action light" type="button" onClick={() => goStep(3)}>이전</button>
                 </div>
               </section>

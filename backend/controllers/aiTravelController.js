@@ -473,6 +473,28 @@ async function deletePlanExpense(req, res, next) {
   }
 }
 
+async function updatePlanBudget(req, res, next) {
+  try {
+    const planId = Number(req.params.id);
+    if (!Number.isInteger(planId) || planId <= 0) {
+      return res.status(400).json({ error: '유효하지 않은 요청입니다.' });
+    }
+    const totalBudgetWon = Number(req.body.totalBudgetWon);
+    if (!Number.isFinite(totalBudgetWon) || totalBudgetWon <= 0) {
+      return res.status(400).json({ error: '유효하지 않은 예산입니다.' });
+    }
+
+    const plan = await getOwnedPlan(planId, req.user.id);
+    if (!plan) return res.status(404).json({ error: '일정을 찾을 수 없습니다.' });
+
+    await pool.query('UPDATE travel_plans SET budget = ? WHERE id = ?', [String(totalBudgetWon), planId]);
+
+    res.json({ success: true, totalBudgetWon });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function rebudgetPlanDay(req, res, next) {
   try {
     const planId = Number(req.params.id);
@@ -824,6 +846,7 @@ module.exports = {
   createPlanExpense,
   updatePlanExpense,
   deletePlanExpense,
+  updatePlanBudget,
   rebudgetPlanDay,
   translateText,
 };

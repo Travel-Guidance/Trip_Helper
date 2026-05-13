@@ -106,11 +106,9 @@ export default function CalendarPicker({ value, onChange, onClose, minDate, rang
           <button className="cal-nav" onClick={nextMonth} aria-label="다음 달">›</button>
         </div>
 
-        {rangeStart && previewNights !== null && (
-          <div className="cal-nights">
-            {previewNights}박 {previewNights + 1}일
-          </div>
-        )}
+        <div className="cal-nights" style={{ visibility: rangeStart && previewNights !== null ? 'visible' : 'hidden' }}>
+          {previewNights !== null ? `${previewNights}박 ${previewNights + 1}일` : '0박 1일'}
+        </div>
 
         <div className="cal-grid">
           {DAY_LABELS.map((d, i) => (
@@ -129,9 +127,9 @@ export default function CalendarPicker({ value, onChange, onClose, minDate, rang
             const isEdge = isRangeStart || isRangeEnd || isSelected
 
             let cls = 'cal-day'
-            if (isSelected) cls += ' cal-day--selected'
+            if (isRangeEnd) cls += ' cal-day--range-end'
             else if (isRangeStart) cls += ' cal-day--range-start'
-            else if (isRangeEnd) cls += ' cal-day--range-end'
+            else if (isSelected) cls += ' cal-day--selected'
             if (isInRange) cls += ' cal-day--in-range'
             if (isDisabled) cls += ' cal-day--disabled'
             if (isToday && !isEdge) cls += ' cal-day--today'
