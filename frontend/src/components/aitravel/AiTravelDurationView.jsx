@@ -1,6 +1,6 @@
 // AiTravelDurationView.jsx - 여행 일정 메인 뷰 (상태·렌더링 통합 React 컴포넌트)
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { apiPost } from '../../api/apiClient'
+import { apiPost, apiGet } from '../../api/apiClient'
 import {
   buildGeneratedTravelData, getDayStops, getRouteInfo, getRouteSegment,
   haversineMeters, formatDistance, lookupEmergencyNumber, heroImageForDestination,
@@ -11,7 +11,7 @@ import {
   parseBudgetWon,
   normalizeSavedExpense, fetchSavedExpenses, persistExpense, fetchExchangeRate,
   fetchConsulateInfo, fetchEmergencyNearbyInfo, fetchNearbyAmenities, buildGoogleMapsRouteUrl,
-  requestSimpleRoute, requestTransitRoute, renderRouteMap,
+  requestSimpleRoute, requestTransitRoute, renderRouteMap, renderSafeRouteMap,
   getGeneratedPlanId, readGeneratedPlanResult,
   BUDGET_CATEGORIES, GOOGLE_MAP_SCRIPT_ID, GOOGLE_MAP_SCRIPT_SRC, EMERGENCY_RADIUS_METERS,
 } from '../../utils/AiTravelDuration'
@@ -138,6 +138,10 @@ export default function AiTravelDurationView() {
   const [expName, setExpName]       = useState('')
   const [expAmt,  setExpAmt]        = useState('')
   const [expCat,  setExpCat]        = useState('meal')
+  const [safetyData,    setSafetyData]    = useState(null)
+  const [safetyLoading, setSafetyLoading] = useState(false)
+  const [safetyBadge,   setSafetyBadge]   = useState(null) // { level, label } — 구간 이동 시 자동 분석 결과
+  const safetyAbortRef = useRef(null)
 
   const toastTimerRef        = useRef(null)
   const lastAutoExpNameRef   = useRef('')
@@ -286,6 +290,36 @@ export default function AiTravelDurationView() {
     }
   }, [activeIdx, activeStopIdx]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── 구간 이동 시 안전 뱃지 자동 분석 (백그라운드) ────────────
+  useEffect(() => {
+    const stop = dayStops[activeStopIdx]
+    if (!stop?.lat || !stop?.lng) { setSafetyBadge(null); return }
+
+    safetyAbortRef.current?.abort()
+    const controller = new AbortController()
+    safetyAbortRef.current = controller
+
+    setSafetyBadge(null)
+    setSafetyData(null)
+
+    const base = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
+    fetch(`${base}/api/safety/incidents?lat=${stop.lat}&lng=${stop.lng}&radius=2&days=90`, { signal: controller.signal })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return
+        const icon = data.level === 'warn' ? '⚠️' : data.level === 'caution' ? '🔶' : '✅'
+        const label = data.level === 'warn' ? '위험 구간' : data.level === 'caution' ? '주의 구간' : '안전 구간'
+        setSafetyBadge({ level: data.level, icon, label, desc: data.safeRouteDesc })
+        setRouteCard(prev => ({
+          ...prev,
+          title: `${icon} ${label}: ${stop.name || '현재 구간'}`,
+        }))
+      })
+      .catch(() => {})
+
+    return () => controller.abort()
+  }, [activeIdx, activeStopIdx]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── 토스트 ────────────────────────────────────────────────
   const showToast = useCallback((icon, title, msg, type, actions = []) => {
     clearTimeout(toastTimerRef.current)
@@ -346,7 +380,7 @@ export default function AiTravelDurationView() {
   }, [expName, expAmt, expCat, localToKrw, total, totalSpent, currentDayNumber, activeStopIdx, exchangeRate, dayStops, showToast, formatLocalAmount, formatExpense, todayAvailable])
 
   // ── 액션 핸들러 ───────────────────────────────────────────
-  const handle = useCallback((action) => {
+  const handle = useCallback(async (action) => {
     switch (action) {
       case 'wxReroute':
         showToast('☔', '오후 비 예보 감지', '기존 루트에서 멀지 않은 실내 코스로 재경로할까요?', 'warn', [
@@ -356,12 +390,51 @@ export default function AiTravelDurationView() {
         setToast(t => ({ ...t, show: false }))
         setRouteCard({ title: '실내 재경로: 피카소 미술관 우선', desc: '야외 산책 → 실내 코스. +9분' })
         showToast('✓', '실내 루트 적용됨', '기존 관광 순서 유지. 야외 구간만 실내로 전환됩니다.', 'ok'); break
-      case 'safeRoute':
-        setRouteCard({ title: '안전 우회: Passeig de Gracia', desc: '최단 경로 +6분 · 사고 이력 없음 · 조명 충분' })
-        showToast('🛡', '안전 우회 경로 적용', '대로변으로 안내합니다.', 'ok'); break
+      case 'safeRoute': {
+        const currentStop = dayStops[activeStopIdx]
+        const lat = currentStop?.lat
+        const lng = currentStop?.lng
+        if (!lat || !lng) {
+          setRouteCard({ title: '안전 우회 경로', desc: '현재 구간 위치 정보가 없습니다.' })
+          showToast('🛡', '안전 우회', '위치 정보를 찾을 수 없습니다.', 'warn')
+          break
+        }
+        setSafetyLoading(true)
+        setSafetyData(null)
+        try {
+          const data = await apiGet(`/safety/incidents?lat=${lat}&lng=${lng}&radius=2&days=90`)
+          setSafetyData(data)
+          const levelIcon = data.level === 'warn' ? '⚠️' : data.level === 'caution' ? '🔶' : '✅'
+          setRouteCard({ title: `${levelIcon} 안전 분석: ${currentStop.name || '현재 구간'}`, desc: data.safeRouteDesc })
+          if (data.level === 'warn' || data.level === 'caution') {
+            renderSafeRouteMap('liveMap', mapState(), ({ extraMin, hasAlternative }) => {
+              if (hasAlternative && extraMin !== null) {
+                const extraLabel = extraMin > 0 ? ` · 우회 시 +${extraMin}분 추가` : extraMin < 0 ? ` · 우회 시 ${Math.abs(extraMin)}분 단축` : ' · 소요 시간 동일'
+                setRouteCard(prev => ({ ...prev, desc: prev.desc + extraLabel }))
+              } else if (!hasAlternative) {
+                setRouteCard(prev => ({ ...prev, desc: prev.desc + ' · 대안 경로 없음, 주의하며 이동' }))
+              }
+            })
+            showToast('🛡', '안전 우회 경로 적용', '위험 구간(빨강)을 피해 대로변(초록)으로 안내합니다.', 'ok')
+          } else {
+            showToast('🛡', '안전 구간 확인됨', '현재 경로가 안전합니다.', 'ok')
+          }
+        } catch {
+          setRouteCard({ title: '안전 우회 경로', desc: '안전 데이터를 불러오지 못했습니다.' })
+          showToast('🛡', '안전 우회', '데이터 조회 실패, 잠시 후 다시 시도해주세요.', 'warn')
+        } finally {
+          setSafetyLoading(false)
+        }
+        break
+      }
       case 'restore':
         setMealRerouteOpen(false)
-        setToast(t => ({ ...t, show: false })); break
+        setToast(t => ({ ...t, show: false }))
+        setSafetyData(null)
+        setSafetyBadge(null)
+        setRouteCard({ title: '현재 구간 경로', desc: '이동 수단을 선택하면 경로가 표시됩니다.' })
+        renderRouteMap('liveMap', mapState())
+        break
       case 'applyMeal':
         setMealRerouteOpen(false)
         setRouteCard({ title: `식당 변경: 평균 ${formatEurAsKrw(19)} 타파스 바 적용`, desc: '루트 420m 이내 · 관광 순서 유지됨' })
@@ -385,7 +458,7 @@ export default function AiTravelDurationView() {
       case '_dismiss':
         setToast(t => ({ ...t, show: false })); break
     }
-  }, [showToast, fatigueVal, formatEurAsKrw, schedule, activeIdx, activeStopIdx, cityData, selectedTravelMode, routeModeResults, emergencyMapUrl])
+  }, [showToast, fatigueVal, formatEurAsKrw, schedule, activeIdx, activeStopIdx, cityData, selectedTravelMode, routeModeResults, emergencyMapUrl, dayStops])
 
   // ── 모달 ──────────────────────────────────────────────────
   const openModal  = useCallback((key) => { setActiveModalKey(key); setModalOpen(true) }, [])
@@ -851,6 +924,11 @@ export default function AiTravelDurationView() {
             <div className="map-route-card">
               <strong>{routeCard.title}</strong>
               <span>{routeCard.desc}</span>
+              {safetyBadge && !safetyData && (
+                <span className={`safety-badge safety-badge--${safetyBadge.level}`}>
+                  {safetyBadge.icon} {safetyBadge.label} · 안전 우회 버튼으로 경로 변경 가능
+                </span>
+              )}
             </div>
             <div className="map-btns">
               <button className="map-btn primary" onClick={() => handle('safeRoute')}>🛡 안전 우회</button>
@@ -1314,9 +1392,44 @@ function ModalContent({
 
   if (modalKey === 'safety') return (
     <div>
-      <div className="mi-emergency"><strong>⚠️ Carrer de Sant Pau</strong><span>최근 3년 소매치기 5건 · 야간 단독 비권장</span></div>
-      <div className="mi-safe"><strong>✓ Passeig de Gracia</strong><span>+6분 · 조명 충분 · 사고 이력 없음</span></div>
-      <div className="mi-row"><strong>권고</strong><span>야간 이동 시 대로변 우선, 스마트폰 노출 최소화</span></div>
+      {safetyLoading && (
+        <div className="mi-row"><span>NSW 사고 데이터 조회 중...</span></div>
+      )}
+      {!safetyLoading && safetyData && (
+        <>
+          <div className={safetyData.level === 'warn' ? 'mi-emergency' : 'mi-safe'}>
+            <strong>
+              {safetyData.level === 'warn' ? '⚠️' : safetyData.level === 'caution' ? '🔶' : '✅'} 현재 구간 분석
+            </strong>
+            <span>{safetyData.safeRouteDesc}</span>
+          </div>
+          {safetyData.rawIncidents?.length > 0 && (
+            <div className="mi-row">
+              <strong>최근 사고 이력</strong>
+              <span>
+                {safetyData.rawIncidents.map((inc, i) => (
+                  <span key={i} style={{ display: 'block', fontSize: '0.85em' }}>
+                    • {inc.title}{inc.date ? ` (${inc.date.slice(0, 10)})` : ''}
+                  </span>
+                ))}
+              </span>
+            </div>
+          )}
+          <div className="mi-row">
+            <strong>권고</strong>
+            <span>
+              {safetyData.level === 'warn'
+                ? '해당 구간 야간 이동 자제, 대로변 우회 경로 사용 권장'
+                : safetyData.level === 'caution'
+                ? '야간 이동 시 대로변 우선, 스마트폰 노출 최소화'
+                : '비교적 안전한 구간입니다. 야간에도 주의는 유지하세요.'}
+            </span>
+          </div>
+        </>
+      )}
+      {!safetyLoading && !safetyData && (
+        <div className="mi-row"><span>안전 우회 버튼을 눌러 실시간 사고 데이터를 조회하세요.</span></div>
+      )}
     </div>
   )
 

@@ -623,6 +623,93 @@ export function renderRouteMap(targetId, { schedule, activeIdx, activeStopIdx, s
   })
 }
 
+export function renderSafeRouteMap(targetId, { schedule, activeIdx, activeStopIdx, selectedTravelMode, routeModeResults, cityData, transitResults, activeTransitStepIdx }, onDurationDiff) {
+  const el = document.getElementById(targetId)
+  if (!el || !window.google) return
+  el.innerHTML = ''
+
+  const s = schedule[activeIdx]
+  const key = transitPanelKey(s.day, activeStopIdx)
+  const modeKey = selectedTravelMode === 'TAXI' ? 'taxi' : selectedTravelMode === 'WALKING' ? 'walk' : ''
+  const modeRoute = modeKey ? routeModeResults[modeResultKey(s.day, activeStopIdx, modeKey)]?.route : null
+  const liveTransit = transitResults?.[key]
+  const transitStep = activeTransitStepIdx !== null ? (liveTransit?.[activeTransitStepIdx]?.route) : null
+  const selectedRoute = transitStep || modeRoute
+
+  const p = selectedRoute?.start && selectedRoute?.end
+    ? [selectedRoute.start, selectedRoute.end]
+    : getRouteSegment(s.base, activeStopIdx, cityData)
+
+  if (!p || p.length < 2) return
+
+  const map = new google.maps.Map(el, { center: p[0], zoom: 13, mapTypeControl: false, streetViewControl: false, fullscreenControl: false })
+  const bounds = new google.maps.LatLngBounds()
+
+  // 위험 구간(출발) 빨간 마커, 안전 도착 초록 마커
+  const markerDefs = [
+    { pos: p[0],             label: '위험', color: '#EF4444' },
+    { pos: p[p.length - 1], label: '도',   color: '#10B981' },
+  ]
+  markerDefs.forEach(({ pos, label, color }) => {
+    bounds.extend(pos)
+    new google.maps.Marker({
+      position: pos, map,
+      label: { text: label, color: '#fff', fontWeight: '800', fontSize: '9px' },
+      icon:  { path: google.maps.SymbolPath.CIRCLE, scale: 13, fillColor: color, fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 3 },
+    })
+  })
+  map.fitBounds(bounds, 48)
+
+  const travelMode = selectedTravelMode === 'TAXI'
+    ? google.maps.TravelMode.DRIVING
+    : google.maps.TravelMode[selectedTravelMode] || google.maps.TravelMode.WALKING
+
+  const drawFallback = () => {
+    new google.maps.Polyline({ path: p, map, strokeColor: '#10B981', strokeOpacity: 0.88, strokeWeight: 5 })
+  }
+
+  if (!google.maps.DirectionsService || !google.maps.DirectionsRenderer) {
+    drawFallback(); return
+  }
+
+  const svc = new google.maps.DirectionsService()
+  svc.route({
+    origin: p[0], destination: p[p.length - 1],
+    travelMode,
+    provideRouteAlternatives: true,
+    optimizeWaypoints: false,
+    transitOptions: selectedTravelMode === 'TRANSIT' ? { departureTime: new Date() } : undefined,
+  }, (result, status) => {
+    if (status !== 'OK' || !result) { drawFallback(); return }
+
+    const routes = result.routes
+    if (routes.length >= 2) {
+      const origSec = routes[0].legs.reduce((s, l) => s + (l.duration?.value ?? 0), 0)
+      const safeSec = routes[1].legs.reduce((s, l) => s + (l.duration?.value ?? 0), 0)
+      const extraMin = Math.round((safeSec - origSec) / 60)
+      onDurationDiff?.({ extraMin, hasAlternative: true })
+
+      // 원래 경로(위험): 빨간 반투명
+      new google.maps.DirectionsRenderer({
+        map, suppressMarkers: true, routeIndex: 0, preserveViewport: true,
+        polylineOptions: { strokeColor: '#EF4444', strokeOpacity: 0.45, strokeWeight: 4 },
+      }).setDirections(result)
+      // 대안 경로(안전 우회): 초록 실선
+      new google.maps.DirectionsRenderer({
+        map, suppressMarkers: true, routeIndex: 1, preserveViewport: false,
+        polylineOptions: { strokeColor: '#10B981', strokeOpacity: 0.9, strokeWeight: 5 },
+      }).setDirections(result)
+    } else {
+      onDurationDiff?.({ extraMin: null, hasAlternative: false })
+      // 대안 없음: 주황 경고 표시
+      new google.maps.DirectionsRenderer({
+        map, suppressMarkers: true, preserveViewport: false,
+        polylineOptions: { strokeColor: '#F59E0B', strokeOpacity: 0.88, strokeWeight: 5 },
+      }).setDirections(result)
+    }
+  })
+}
+
 // ── API 액션 ────────────────────────────────────────────────────
 
 export async function fetchSavedExpenses(planId) {

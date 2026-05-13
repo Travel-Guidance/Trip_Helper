@@ -83,8 +83,8 @@ export default function TravelChatDrawer({ destination }) {
 
       {open && (
         <div
-          className="fixed inset-x-0 bottom-0 z-40 flex flex-col bg-white rounded-t-2xl border-t border-zinc-200"
-          style={{ height: '70vh', maxWidth: '512px', margin: '0 auto', boxShadow: '0 -8px 40px rgba(0,0,0,0.12)' }}
+          className="fixed right-6 bottom-20 z-40 flex flex-col bg-white rounded-2xl border border-zinc-200"
+          style={{ height: '70vh', width: '380px', boxShadow: '0 8px 40px rgba(0,0,0,0.15)' }}
         >
           <div className="flex items-center gap-3 px-5 py-4 border-b border-zinc-100 flex-shrink-0">
             <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0">
