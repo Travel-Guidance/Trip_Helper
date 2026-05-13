@@ -10,7 +10,7 @@ import {
   getCurrentDaySpent, getTodayAvailableBudget, getCategoryBreakdown,
   parseBudgetWon,
   normalizeSavedExpense, fetchSavedExpenses, persistExpense, fetchExchangeRate,
-  fetchConsulateInfo, fetchEmergencyNearbyInfo, buildGoogleMapsRouteUrl,
+  fetchConsulateInfo, fetchEmergencyNearbyInfo, fetchNearbyAmenities, buildGoogleMapsRouteUrl,
   requestSimpleRoute, requestTransitRoute, renderRouteMap,
   getGeneratedPlanId, readGeneratedPlanResult,
   BUDGET_CATEGORIES, GOOGLE_MAP_SCRIPT_ID, GOOGLE_MAP_SCRIPT_SRC, EMERGENCY_RADIUS_METERS,
@@ -1080,6 +1080,10 @@ function ModalContent({
   const [nearbyHtml,     setNearbyHtml]     = useState('')
   const [consulateLoading, setConsulateLoading] = useState(true)
   const [nearbyLoading,    setNearbyLoading]    = useState(true)
+  const [amenitiesLoading, setAmenitiesLoading] = useState(false)
+  const [amenitiesData, setAmenitiesData] = useState(null)
+  const [amenitiesError, setAmenitiesError] = useState('')
+
 
   useEffect(() => {
     if (modalKey !== 'emergency') return
@@ -1155,6 +1159,32 @@ function ModalContent({
   const info      = lookupEmergencyNumber(travelData?.destination)
   const currentStop = dayStops[activeStopIdx]
   const dayNum      = String(schedule[activeIdx]?.day || 1).padStart(2, '0')
+  const currentDay = schedule[activeIdx]
+  const selectedSegment = currentDay
+    ? getRouteSegment(currentDay.base, activeStopIdx, cityData)
+    : []
+
+  const selectedAmenityPoint = selectedSegment[selectedSegment.length - 1]
+
+  useEffect(() => {
+    if (modalKey !== 'nearby') return
+
+    if (!selectedAmenityPoint) {
+      setAmenitiesData(null)
+      setAmenitiesError('선택한 일정의 좌표가 없습니다.')
+      setAmenitiesLoading(false)
+      return
+    }
+
+    setAmenitiesLoading(true)
+    setAmenitiesError('')
+    setAmenitiesData(null)
+
+    fetchNearbyAmenities(selectedAmenityPoint, 1500)
+      .then(data => setAmenitiesData(data))
+      .catch(() => setAmenitiesError('주변 편의시설을 불러오지 못했습니다.'))
+      .finally(() => setAmenitiesLoading(false))
+  }, [modalKey, selectedAmenityPoint?.lat, selectedAmenityPoint?.lng])
 
   if (modalKey === 'translate') return (
     <TranslateModal destination={travelData?.destination || ''} />
@@ -1182,9 +1212,37 @@ function ModalContent({
 
   if (modalKey === 'nearby') return (
     <div>
-      {['💊 약국 — 현재 위치 기준 조회 예정', '🏥 병원 — 현재 위치 기준 조회 예정', '🛒 편의점 — 현재 위치 기준 조회 예정', '💸 ATM — 현재 위치 기준 조회 예정', '🚻 공공 화장실 — 현재 위치 기준 조회 예정'].map(t => {
-        const [k, v] = t.split(' — ')
-        return <div key={k} className="mi-row"><strong>{k}</strong><span>{v}</span></div>
+      <div className="mi-row">
+        <strong>기준 위치</strong>
+        <span>{currentStop?.name || '선택한 일정'}</span>
+      </div>
+
+      {amenitiesLoading && (
+        <div className="mi-row">
+          <strong>조회 중</strong>
+          <span className="mi-muted">선택한 일정 주변 편의시설을 찾고 있습니다.</span>
+        </div>
+      )}
+
+      {amenitiesError && (
+        <div className="mi-row">
+          <strong>조회 실패</strong>
+          <span className="mi-muted">{amenitiesError}</span>
+        </div>
+      )}
+
+      {!amenitiesLoading && !amenitiesError && amenitiesData?.groups?.map(group => {
+        const first = group.places?.[0]
+        return (
+          <div key={group.key} className="mi-row">
+            <strong>{group.icon} {group.label}</strong>
+            <span>
+              {first
+                ? `${first.name} · ${first.distanceText}`
+                : '주변 결과 없음'}
+            </span>
+          </div>
+        )
       })}
     </div>
   )

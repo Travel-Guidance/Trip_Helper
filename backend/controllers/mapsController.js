@@ -13,6 +13,14 @@ const EMERGENCY_PLACE_TYPES = [
   { key: 'fire_station', type: 'fire_station', label: '소방서' },
   { key: 'hospital', type: 'hospital', label: '병원' },
 ]
+const AMENITY_PLACE_TYPES = [
+  { key: 'pharmacy', type: 'pharmacy', label: '약국', icon: '💊' },
+  { key: 'hospital', type: 'hospital', label: '병원', icon: '🏥' },
+  { key: 'convenience_store', type: 'convenience_store', label: '편의점', icon: '🛒' },
+  { key: 'atm', type: 'atm', label: 'ATM', icon: '💸' },
+  { key: 'public_bathroom', type: 'public_bathroom', label: '공공 화장실', icon: '🚻' },
+]
+
 
 function getCachedRoute(key) {
   const item = routeCache.get(key)
@@ -292,4 +300,97 @@ const getEmergencyPlaces = async (req, res, next) => {
   }
 }
 
-module.exports = { getEmbedUrl, getRoute, geocode, getEmergencyPlaces }
+function normalizeAmenityPlace(place, category, center) {
+  const lat = place.location?.latitude
+  const lng = place.location?.longitude
+  const meters = Number.isFinite(lat) && Number.isFinite(lng)
+    ? Math.round(haversineKm(center.lat, center.lng, lat, lng) * 1000)
+    : null
+
+  const walkMinutes = meters == null ? null : Math.max(1, Math.round(meters / 80))
+
+  return {
+    id: place.id,
+    category: category.key,
+    categoryLabel: category.label,
+    icon: category.icon,
+    name: place.displayName?.text || category.label,
+    address: place.formattedAddress || '',
+    rating: place.rating || null,
+    openNow: place.regularOpeningHours?.openNow ?? null,
+    googleMapsUri: place.googleMapsUri || '',
+    lat,
+    lng,
+    distanceMeters: meters,
+    distanceText: meters == null ? '' : meters < 1000 ? `${meters}m` : `${(meters / 1000).toFixed(1)}km`,
+    durationText: walkMinutes == null ? '' : `도보 ${walkMinutes}분`,
+  }
+}
+
+async function searchNearbyAmenities({ lat, lng, radius, category, key }) {
+  const response = await fetch('https://places.googleapis.com/v1/places:searchNearby', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': key,
+      'X-Goog-FieldMask': [
+        'places.id',
+        'places.displayName',
+        'places.formattedAddress',
+        'places.location',
+        'places.rating',
+        'places.regularOpeningHours',
+        'places.googleMapsUri',
+      ].join(','),
+    },
+    body: JSON.stringify({
+      includedTypes: [category.type],
+      languageCode: 'ko',
+      rankPreference: 'DISTANCE',
+      maxResultCount: 3,
+      locationRestriction: {
+        circle: {
+          center: { latitude: lat, longitude: lng },
+          radius,
+        },
+      },
+    }),
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`Google Places ${response.status}: ${text}`)
+  }
+
+  const data = await response.json()
+  return (data.places || []).map(place => normalizeAmenityPlace(place, category, { lat, lng }))
+}
+
+const getNearbyAmenities = async (req, res, next) => {
+  try {
+    const key = requireEnv('GOOGLE_MAPS_API_KEY')
+    const lat = Number(req.query.lat)
+    const lng = Number(req.query.lng)
+    const radius = Math.min(Math.max(Number(req.query.radius) || 1500, 300), 5000)
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      throw createError('lat과 lng가 필요합니다.', 400)
+    }
+
+    const groups = await Promise.all(AMENITY_PLACE_TYPES.map(async category => ({
+      ...category,
+      places: await searchNearbyAmenities({ lat, lng, radius, category, key }),
+    })))
+
+    res.json({
+      found: groups.some(group => group.places.length > 0),
+      center: { lat, lng },
+      radius,
+      groups,
+    })
+  } catch (err) {
+    next(err)
+  }
+}
+
+module.exports = { getEmbedUrl, getRoute, geocode, getEmergencyPlaces, getNearbyAmenities }

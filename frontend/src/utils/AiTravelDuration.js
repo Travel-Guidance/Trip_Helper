@@ -654,3 +654,7 @@ export async function fetchConsulateInfo(destination) {
 export async function fetchEmergencyNearbyInfo(point, radius) {
   return apiGet(`/maps/emergency-places?lat=${point.lat}&lng=${point.lng}&radius=${radius}`)
 }
+
+export async function fetchNearbyAmenities(point, radius = 1500) {
+  return apiGet(`/maps/nearby-amenities?lat=${point.lat}&lng=${point.lng}&radius=${radius}`)
+}
