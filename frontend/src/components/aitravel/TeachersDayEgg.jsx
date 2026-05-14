@@ -5,45 +5,22 @@ import confetti from 'canvas-confetti'
 
 const HEARTS = ['❤️', '💕', '💖', '💗', '💝', '🌹', '💓', '💞']
 const COLORS = ['#ff69b4', '#ff1493', '#ff6347', '#ffd700', '#ff4500', '#c0392b', '#e91e63', '#f48fb1']
+const Z = 10000  // 오버레이(9999) 위에 confetti 캔버스가 올라와야 함
 
-// 로켓이 아래서 위로 올라가 상공에서 360° 폭발하는 효과
+function fire(opts) {
+  confetti({ zIndex: Z, ...opts })
+}
+
 function launchRocket(x, burstY, delay) {
   setTimeout(() => {
-    // 1단계: 좁은 스프레이로 로켓 궤적 표현
-    confetti({
-      particleCount: 12,
-      angle: 90,
-      spread: 6,
-      origin: { x, y: 1.0 },
-      startVelocity: 80,
-      ticks: 90,
-      colors: ['#ffffff', '#fffbe6', '#ffe0b2'],
-      gravity: 0.4,
-      scalar: 0.7,
+    fire({
+      particleCount: 12, angle: 90, spread: 6,
+      origin: { x, y: 1.0 }, startVelocity: 80, ticks: 90,
+      colors: ['#ffffff', '#fffbe6', '#ffe0b2'], gravity: 0.4, scalar: 0.7,
     })
-    // 2단계: 800ms 후 상공에서 폭발
     setTimeout(() => {
-      confetti({
-        particleCount: 120,
-        spread: 360,
-        origin: { x, y: burstY },
-        startVelocity: 28,
-        ticks: 80,
-        colors: COLORS,
-        gravity: 0.8,
-        scalar: 1.1,
-      })
-      // 반짝이 잔여물
-      confetti({
-        particleCount: 40,
-        spread: 360,
-        origin: { x, y: burstY },
-        startVelocity: 14,
-        ticks: 120,
-        colors: ['#ffffff', '#ffd700'],
-        gravity: 0.5,
-        scalar: 0.6,
-      })
+      fire({ particleCount: 120, spread: 360, origin: { x, y: burstY }, startVelocity: 28, ticks: 80, colors: COLORS, gravity: 0.8, scalar: 1.1 })
+      fire({ particleCount: 40,  spread: 360, origin: { x, y: burstY }, startVelocity: 14, ticks: 120, colors: ['#ffffff', '#ffd700'], gravity: 0.5, scalar: 0.6 })
     }, 780)
   }, delay)
 }
@@ -55,11 +32,9 @@ export default function TeachersDayEgg({ onClose }) {
     if (launched.current) return
     launched.current = true
 
-    // 개막: 화면 중앙 즉시 대폭발
-    confetti({ particleCount: 180, spread: 100, origin: { x: 0.5, y: 0.55 }, colors: COLORS, scalar: 1.3 })
-    confetti({ particleCount: 60,  spread: 100, origin: { x: 0.5, y: 0.55 }, colors: ['#fff', '#ffd700'], scalar: 0.7, ticks: 120 })
+    fire({ particleCount: 180, spread: 100, origin: { x: 0.5, y: 0.55 }, colors: COLORS, scalar: 1.3 })
+    fire({ particleCount: 60,  spread: 100, origin: { x: 0.5, y: 0.55 }, colors: ['#fff', '#ffd700'], scalar: 0.7, ticks: 120 })
 
-    // 로켓 발사 스케줄: (x위치, 폭발높이, 지연ms)
     const rockets = [
       [0.2,  0.18, 400],
       [0.8,  0.18, 600],
@@ -74,11 +49,10 @@ export default function TeachersDayEgg({ onClose }) {
     ]
     rockets.forEach(([x, y, d]) => launchRocket(x, y, d))
 
-    // 피날레: 4.2초 후 양쪽 동시 대폭발
     setTimeout(() => {
-      confetti({ particleCount: 150, spread: 360, origin: { x: 0.2, y: 0.3 }, colors: COLORS, startVelocity: 35, ticks: 100 })
-      confetti({ particleCount: 150, spread: 360, origin: { x: 0.8, y: 0.3 }, colors: COLORS, startVelocity: 35, ticks: 100 })
-      confetti({ particleCount: 100, spread: 360, origin: { x: 0.5, y: 0.2 }, colors: ['#fff', '#ffd700'], startVelocity: 25, ticks: 120 })
+      fire({ particleCount: 150, spread: 360, origin: { x: 0.2, y: 0.3 }, colors: COLORS, startVelocity: 35, ticks: 100 })
+      fire({ particleCount: 150, spread: 360, origin: { x: 0.8, y: 0.3 }, colors: COLORS, startVelocity: 35, ticks: 100 })
+      fire({ particleCount: 100, spread: 360, origin: { x: 0.5, y: 0.2 }, colors: ['#fff', '#ffd700'], startVelocity: 25, ticks: 120 })
     }, 4200)
 
     const timer = setTimeout(onClose, 9000)
@@ -103,11 +77,8 @@ export default function TeachersDayEgg({ onClose }) {
       </div>
       <div className="tde-hearts" aria-hidden="true">
         {hearts.map(h => (
-          <span
-            key={h.id}
-            className="tde-heart"
-            style={{ left: h.left, animationDelay: h.delay, animationDuration: h.duration, fontSize: h.size }}
-          >
+          <span key={h.id} className="tde-heart"
+            style={{ left: h.left, animationDelay: h.delay, animationDuration: h.duration, fontSize: h.size }}>
             {h.emoji}
           </span>
         ))}
