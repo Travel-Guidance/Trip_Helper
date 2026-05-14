@@ -62,6 +62,7 @@ async function withRetry(fn, maxRetries = MAX_RETRIES) {
       const baseMs = Math.max(hintMs, expMs);
       const delayMs = Math.round(baseMs * (0.8 + Math.random() * 0.4));
 
+
       console.warn(
         `[Gemini] ${is429 ? '429 rate limit' : '503/unavailable'}; retrying in ${Math.round(delayMs / 1000)}s `
         + `(attempt ${attempt + 1}/${maxRetries})`
