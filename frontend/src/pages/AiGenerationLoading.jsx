@@ -6,6 +6,7 @@ import { API_BASE } from '../api/config'
 import { DEFAULT_TRIP, LOADING_MESSAGES } from '../data/AiGenerationLoading'
 
 const DIFFICULTY_MAP = { '여유': 'relaxed', '여유롭게': 'relaxed', '보통': 'normal', '활동적': 'active', '빡빡': 'intense' }
+const DRAFT_RESTORE_KEY = 'aiTripDraftRestore'
 
 function parseIntensityScore(value) {
   const match = String(value || '').match(/(\d{1,3})\s*\/\s*100|^(\d{1,3})$/)
@@ -154,6 +155,11 @@ export default function AiGenerationLoading() {
     return () => abortController.abort()
   }, [navigate, trip])
 
+  const handleBackToForm = () => {
+    sessionStorage.setItem(DRAFT_RESTORE_KEY, 'true')
+    navigate('/ai-generation-inputform')
+  }
+
   return (
     <AiGenerationLoadingView
       trip={trip}
@@ -163,7 +169,7 @@ export default function AiGenerationLoading() {
       isFinishing={isFinishing}
       error={error}
       onRetry={() => window.location.reload()}
-      onBack={() => navigate('/ai-generation-inputform')}
+      onBack={handleBackToForm}
     />
   )
 }

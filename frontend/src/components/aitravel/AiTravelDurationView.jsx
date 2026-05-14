@@ -381,6 +381,9 @@ export default function AiTravelDurationView() {
     const state = { schedule, activeIdx, cityData, destination: travelData.destination }
     dayStops.forEach((_, i) => {
       if (i === 0) return
+      requestSimpleRoute(i, 'walk', state, (key, result) => {
+        setRouteModeResults(prev => ({ ...prev, [key]: result }))
+      })
       requestSimpleRoute(i, 'taxi', state, (key, result) => {
         setRouteModeResults(prev => ({ ...prev, [key]: result }))
       })
@@ -1017,7 +1020,9 @@ export default function AiTravelDurationView() {
                                   className="tl-transit-toggle"
                                   onClick={e => {
                                     e.stopPropagation()
-                                    selectStop(i)
+                                    setActiveStopIdx(i)
+                                    setActiveTransitStepIdx(null)
+                                    setCatPickerOpen(false)
                                     setOpenTransitKey(prev => prev === transitKey ? '' : transitKey)
                                   }}
                                 >
@@ -1096,7 +1101,7 @@ export default function AiTravelDurationView() {
                                         setSelectedTravelMode(newMode)
                                         setActiveTransitStepIdx(null)
                                         setOpenTransitKey(transitPanelKey(day?.day, i))
-                                        if (opt.mode === 'taxi') handleSimpleRouteRequest(i, 'taxi')
+                                        handleSimpleRouteRequest(i, opt.mode)
                                       }}
                                     >
                                       <div className="tl-transit-mode">{opt.icon}</div>

@@ -91,6 +91,8 @@ function readDraft() {
   } catch { return null }
 }
 
+const DRAFT_RESTORE_KEY = 'aiTripDraftRestore'
+
 export default function AiGenerationInputFormView() {
   // ── 상태 관리 ──
   const [currentStep, setCurrentStep] = useState(0)
@@ -108,6 +110,13 @@ export default function AiGenerationInputFormView() {
   const [styles, setStyles] = useState([])
 
   useEffect(() => {
+    const shouldRestoreDraft = sessionStorage.getItem(DRAFT_RESTORE_KEY) === 'true'
+    sessionStorage.removeItem(DRAFT_RESTORE_KEY)
+    if (!shouldRestoreDraft) {
+      sessionStorage.removeItem('aiTripDraft')
+      return
+    }
+
     const draft = readDraft()
     if (!draft) return
     if (draft.destinations?.length) setDestinations(draft.destinations)
@@ -811,19 +820,19 @@ export default function AiGenerationInputFormView() {
             <h3 id="confirmTitle">입력한 조건을 확인해주세요</h3>
             <p>이 내용 그대로 AI 여행 일정을 생성합니다.</p>
           </div>
-          <dl className="confirm-body">
+          <div className="confirm-body">
             {confirmItems.map(({ icon, label, value, type }) => (
               <div key={label} className={`confirm-row ${type ? `is-${type}` : ''}`}>
                 <span className="confirm-row-icon" aria-hidden="true">{icon}</span>
-                <dt>{label}</dt>
-                <dd>
+                <span className="confirm-row-label">{label}</span>
+                <p className="confirm-row-value">
                   {type === 'chips' && Array.isArray(value)
                     ? value.map(item => <span key={item} className="confirm-value-chip">{item}</span>)
                     : value}
-                </dd>
+                </p>
               </div>
             ))}
-          </dl>
+          </div>
           <div className="confirm-actions">
             <button className="confirm-button light" type="button" onClick={() => setShowModals(prev => ({ ...prev, confirm: false }))}>수정하기</button>
             <button className="confirm-button primary" type="button" onClick={submitPlan}>이대로 생성하기</button>

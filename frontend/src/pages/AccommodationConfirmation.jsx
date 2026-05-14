@@ -48,6 +48,7 @@ export default function AccommodationConfirmation() {
       sessionStorage.removeItem('accom_booking_queue')
       sessionStorage.removeItem('accom_booking_index')
       sessionStorage.removeItem('accom_return_url')
+      sessionStorage.removeItem('accom_booking_source')
       navigate(returnUrl)
       return
     }

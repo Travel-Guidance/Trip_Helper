@@ -1228,9 +1228,9 @@
   color: var(--brand);
 }
 
-.ai-generation-input-form-page .confirm-row dt { color: #64748b; font-size: 11.5px; font-weight: 900; }
+.ai-generation-input-form-page .confirm-row-label { color: #64748b; font-size: 11.5px; font-weight: 900; }
 
-.ai-generation-input-form-page .confirm-row dd {
+.ai-generation-input-form-page .confirm-row-value {
   margin: 0;
   color: var(--ink);
   font-size: 13.5px;
@@ -1241,11 +1241,14 @@
 
 .ai-generation-input-form-page .confirm-row.is-strong { border-color: #c2daff; background: #eef5ff; }
 
-.ai-generation-input-form-page .confirm-row.is-strong dd { color: var(--brand); font-size: 16px; font-weight: 950; }
+.ai-generation-input-form-page .confirm-row.is-strong .confirm-row-value { color: var(--brand); font-size: 16px; font-weight: 950; }
 
-.ai-generation-input-form-page .confirm-row.is-note { align-items: start; }
+.ai-generation-input-form-page .confirm-row.is-note { align-items: center; }
 
-.ai-generation-input-form-page .confirm-row.is-note dd {
+.ai-generation-input-form-page .confirm-row.is-note .confirm-row-value {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
   padding: 8px 10px;
   border-radius: 7px;
   color: #374151;

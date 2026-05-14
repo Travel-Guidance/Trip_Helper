@@ -996,6 +996,7 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
                               sessionStorage.setItem('accom_booking_queue', JSON.stringify(queue))
                               sessionStorage.setItem('accom_booking_index', '0')
                               sessionStorage.setItem('accom_return_url', window.location.pathname + window.location.search)
+                              sessionStorage.setItem('accom_booking_source', 'ai-generation-schedule')
                               const { name: _n, ...first } = queue[0]
                               navigate(`/accommodation/results?${new URLSearchParams(first)}`)
                             }}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { CalendarDays, MapPin, Search, SlidersHorizontal, User, X } from 'lucide-react'
 import BottomNav from '../components/layout/BottomNav'
@@ -25,6 +25,8 @@ const SORT_OPTIONS = {
   priceHigh: { value: 'priceHigh', label: '높은가격순' },
 }
 
+const AI_ACCOM_BOOKING_SOURCE = 'ai-generation-schedule'
+
 function formatDateLabel(value) {
   if (!value) return ''
   const date = new Date(`${value}T00:00:00`)
@@ -42,6 +44,12 @@ function compactAmenities(amenities) {
     .map(item => typeof item === 'string' ? item : item?.text || item?.name)
     .filter(Boolean)
     .slice(0, 3)
+}
+
+function isSameBookingSearch(current, queued) {
+  if (!queued) return false
+  return ['countryKey', 'destination', 'checkIn', 'checkOut', 'guests', 'children']
+    .every(key => String(current[key] || '') === String(queued[key] || ''))
 }
 
 export default function AccSearchResults() {
@@ -92,13 +100,24 @@ export default function AccSearchResults() {
   const [error, setError] = useState('')
   const [sortBy, setSortBy] = useState('')
 
-  const [bookingQueue] = useState(() => {
+  const bookingQueue = useMemo(() => {
     try {
+      const source = sessionStorage.getItem('accom_booking_source')
+      if (source !== AI_ACCOM_BOOKING_SOURCE) return null
+
       const queue = JSON.parse(sessionStorage.getItem('accom_booking_queue') || 'null')
       const idx   = Number(sessionStorage.getItem('accom_booking_index') || '0')
-      return queue ? { items: queue, index: idx } : null
+      const current = {
+        countryKey,
+        destination,
+        checkIn,
+        checkOut,
+        guests: String(guests),
+        children: String(searchParams.get('children') || 0),
+      }
+      return queue && isSameBookingSearch(current, queue[idx]) ? { items: queue, index: idx } : null
     } catch { return null }
-  })
+  }, [checkIn, checkOut, countryKey, destination, guests, searchParams])
 
   const goNextBooking = () => {
     if (!bookingQueue) return
@@ -108,6 +127,7 @@ export default function AccSearchResults() {
       sessionStorage.removeItem('accom_booking_queue')
       sessionStorage.removeItem('accom_booking_index')
       sessionStorage.removeItem('accom_return_url')
+      sessionStorage.removeItem('accom_booking_source')
       navigate(returnUrl)
       return
     }
