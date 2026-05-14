@@ -34,7 +34,7 @@ function NavLink({ to, children }) {
 
 function UserMenu() {
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user, logout, profilePic } = useAuth()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -70,8 +70,8 @@ function UserMenu() {
         onClick={() => setOpen(v => !v)}
         className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
       >
-        <div className="w-7 h-7 bg-sky-500 text-white rounded-full flex items-center justify-center text-sm font-bold select-none">
-          {user.name[0]}
+        <div className="w-7 h-7 bg-sky-500 text-white rounded-full flex items-center justify-center text-sm font-bold select-none overflow-hidden">
+          {profilePic ? <img src={profilePic} alt="프로필" className="w-full h-full object-cover" /> : user.name[0]}
         </div>
         <span className="text-sm font-medium text-gray-700 max-w-[80px] truncate">{user.name}</span>
       </button>
@@ -158,8 +158,8 @@ export default function Navbar() {
             {user ? (
               <>
                 <div className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700">
-                  <div className="w-7 h-7 bg-sky-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                    {user.name[0]}
+                  <div className="w-7 h-7 bg-sky-500 text-white rounded-full flex items-center justify-center text-sm font-bold overflow-hidden">
+                    {profilePic ? <img src={profilePic} alt="프로필" className="w-full h-full object-cover" /> : user.name[0]}
                   </div>
                   {user.name}
                 </div>

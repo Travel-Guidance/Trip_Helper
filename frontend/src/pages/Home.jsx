@@ -32,12 +32,16 @@ function getTodayDateParam() {
   return toDateParam(departure)
 }
 
-function countryCodeToFlag(code) {
-  const countryCode = String(code || '').trim().toUpperCase()
-  if (!/^[A-Z]{2}$/.test(countryCode)) return '🌍'
-  return [...countryCode]
-    .map(char => String.fromCodePoint(127397 + char.charCodeAt(0)))
-    .join('')
+function FlagImg({ code }) {
+  const lower = String(code || '').trim().toLowerCase()
+  if (!/^[a-z]{2}$/.test(lower)) return <span style={{ fontSize: 20 }}>🌍</span>
+  return (
+    <img
+      src={`https://flagcdn.com/w40/${lower}.png`}
+      alt={lower}
+      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+    />
+  )
 }
 
 export default function Home() {
@@ -124,7 +128,7 @@ export default function Home() {
               <div key={ri} className="popular-items-row">
                 {row.map((dest) => (
                   <div key={dest.id} className="popular-item" onClick={() => handlePopularClick(dest)}>
-                    <div className="popular-flag">{countryCodeToFlag(dest.country)}</div>
+                    <div className="popular-flag"><FlagImg code={dest.country} /></div>
                     <div>
                       <div className="popular-city">{dest.city}</div>
                       <div className="popular-price">{dest.price.toLocaleString('ko-KR')}원</div>

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import { SearchProvider } from './store/SearchContext'
 import { AuthProvider, useAuth } from './store/AuthContext'
+import MusicPlayer from './components/main/MusicPlayer'
 import MainPage from './pages/MainPage'
 import AiGenerationInputForm from './pages/AiGenerationInputForm'
 import AiGenerationLoading from './pages/AiGenerationLoading'
@@ -122,6 +123,7 @@ export default function App() {
           <Route path="/auth/kakao/callback" element={<OAuthCallback />} />
           <Route path="/auth/google/callback" element={<OAuthCallback />} />
         </Routes>
+        <MusicPlayer />
       </BrowserRouter>
     </SearchProvider>
     </AuthProvider>

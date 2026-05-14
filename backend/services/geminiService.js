@@ -26,11 +26,13 @@ async function withRetry(fn, maxRetries = MAX_RETRIES) {
       return await fn()
     } catch (err) {
       const is429 = err.message?.includes('429') || err.status === 429
+      const is503 = err.message?.includes('503') || err.status === 503
+
       if (is429 && isDailyQuotaExceeded(err)) {
         console.warn('[Gemini] 429 — 일일 할당량 초과, 재시도하지 않음')
         throw toQuotaError(err)
       }
-      if (!is429 || attempt === maxRetries) throw err
+      if ((!is429 && !is503) || attempt === maxRetries) throw err
 
       // API가 제안한 대기 시간 파싱 (있으면 우선 사용)
       const hintMatch = err.message?.match(/retry in (\d+(?:\.\d+)?)s/i)
@@ -43,8 +45,9 @@ async function withRetry(fn, maxRetries = MAX_RETRIES) {
       const baseMs  = Math.max(hintMs, expMs)
       const delayMs = Math.round(baseMs * (0.8 + Math.random() * 0.4))
 
+      const code = is503 ? '503' : '429'
       console.warn(
-        `[Gemini] 429 — 지수 백오프 ${Math.round(delayMs / 1000)}s 대기` +
+        `[Gemini] ${code} — 지수 백오프 ${Math.round(delayMs / 1000)}s 대기` +
         ` (시도 ${attempt + 1}/${maxRetries})`
       )
       await new Promise(r => setTimeout(r, delayMs))

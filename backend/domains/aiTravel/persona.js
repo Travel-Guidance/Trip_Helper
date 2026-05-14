@@ -1,13 +1,13 @@
 'use strict';
 
 const PERSONA_MAP = {
-  '호주':       { name: 'Fancy',    emoji: '🦘', greeting: "G'day! 물어보면 일단은 대답은 해드릴텐데 토큰 제한 있으니 많이는 묻지 마세요" },
-  '시드니':     { name: 'Fancy',    emoji: '🦘', greeting: "G'day G'day! 물어보면 일단은 대답은 해드릴텐데 토큰 제한 있으니 많이는 묻지 마세요" },
-  '멜버른':     { name: 'Fancy',    emoji: '☕', greeting: "G'day! G'day! 물어보면 일단은 대답은 해드릴텐데 토큰 제한 있으니 많이는 묻지 마세요" },
-  '골드코스트': { name: 'Fancy',    emoji: '🏄', greeting: "G'day! 물어보면 일단은 대답은 해드릴텐데 토큰 제한 있으니 많이는 묻지 마세요" },
-  '케언즈':     { name: 'Fancy',    emoji: '🤿', greeting: "가고싶은곳도 많은 거 보니 돈 많으시나 보네요 부럽다" },
-  '울루루':     { name: 'Fancy',    emoji: '🪨', greeting: "G'day! 귀찮으니까 짧게만 물어보시죠" },
-  '브리즈번':   { name: 'Fancy',    emoji: '🐨', greeting: "G'day! 브리즈번 볼 거 없으니 돌아가시죠" },
+  '호주':       { name: '병아리',    emoji: '🦘', greeting: "G'day! 물어보면 일단은 대답은 해드릴텐데 토큰 제한 있으니 많이는 묻지 마세요" },
+  '시드니':     { name: '병아리',    emoji: '🦘', greeting: "G'day G'day! 물어보면 일단은 대답은 해드릴텐데 토큰 제한 있으니 많이는 묻지 마세요" },
+  '멜버른':     { name: '병아리',    emoji: '☕', greeting: "G'day! G'day! 물어보면 일단은 대답은 해드릴텐데 토큰 제한 있으니 많이는 묻지 마세요" },
+  '골드코스트': { name: '병아리',    emoji: '🏄', greeting: "G'day! 물어보면 일단은 대답은 해드릴텐데 토큰 제한 있으니 많이는 묻지 마세요" },
+  '케언즈':     { name: '병아리',    emoji: '🤿', greeting: "가고싶은곳도 많은 거 보니 돈 많으시나 보네요 부럽다" },
+  '울루루':     { name: '병아리',    emoji: '🪨', greeting: "G'day! 귀찮으니까 짧게만 물어보시죠" },
+  '브리즈번':   { name: '병아리',    emoji: '🐨', greeting: "G'day! 브리즈번 볼 거 없으니 돌아가시죠" },
   '일본':       { name: 'Yuki',     emoji: '⛩️', greeting: '안녕하세요! 일본 가이드 유키입니다. 무엇이든 물어보세요.' },
   '도쿄':       { name: 'Yuki',     emoji: '🗼', greeting: '안녕하세요! 도쿄 로컬 유키입니다. 뭐든 도움드릴게요!' },
   '프랑스':     { name: 'Sophie',   emoji: '🗼', greeting: 'Bonjour! 파리 현지인 Sophie예요. 뭐든 물어보세요~' },

@@ -1,21 +1,22 @@
 /* ══════════════════════════════════════════════════════════
-   프로필 v2 (pf2-*) — MainPage Tailwind 디자인 기반
-   sky-500 포인트 / 흰 카드 / rounded-2xl / shadow hover
+   Profile — 여행 플랫폼 스타일
+   Airbnb/Expedia 레퍼런스: 화이트 + 하늘색/코랄 포인트
+   큰 radius · soft shadow · 넉넉한 여백
    ══════════════════════════════════════════════════════════ */
 
 .pf2-page {
   min-height: 100vh;
-  background: #f9fafb;
+  background: #f6f7f9;
   padding-top: 64px;
   padding-bottom: 80px;
 }
 
 .pf2-layout {
-  max-width: 1200px;
+  max-width: 1140px;
   margin: 0 auto;
-  padding: 28px 24px;
+  padding: 32px 24px;
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 268px 1fr;
   gap: 24px;
   align-items: start;
 }
@@ -23,75 +24,78 @@
 /* ── 사이드바 ─────────────────────────────────────────── */
 .pf2-sidebar {
   background: #ffffff;
-  border-radius: 16px;
-  border: 1px solid #f3f4f6;
-  padding: 28px 20px 20px;
+  border-radius: 22px;
+  padding: 32px 22px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   position: sticky;
   top: 80px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 8px 28px rgba(0,0,0,0.06);
 }
 
 .pf2-avatar-wrap { position: relative; }
 
 .pf2-avatar {
-  width: 72px;
-  height: 72px;
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
-  background: #1e3a5f;
+  background: linear-gradient(145deg, #0c4a6e, #0ea5e9);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 800;
   color: #ffffff;
   letter-spacing: -1px;
+  box-shadow: 0 6px 20px rgba(14,165,233,0.28);
 }
 
 .pf2-avatar-edit {
   position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 22px;
-  height: 22px;
+  bottom: 2px;
+  right: 2px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: #ffffff;
-  border: 1px solid #e5e7eb;
+  border: 2px solid #f6f7f9;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #6b7280;
-  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+  color: #71717a;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.14);
   transition: background 0.12s;
 }
-.pf2-avatar-edit:hover { background: #f3f4f6; }
+.pf2-avatar-edit:hover { background: #f4f4f5; }
 
 .pf2-sidebar-name {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
-  color: #111827;
-  letter-spacing: -0.3px;
+  color: #18181b;
+  letter-spacing: -0.4px;
+  margin-top: -4px;
 }
 
 .pf2-sidebar-email {
   font-size: 12px;
-  color: #9ca3af;
-  margin-top: -6px;
+  color: #a1a1aa;
+  margin-top: -8px;
 }
 
 .pf2-provider-badge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 12px;
+  padding: 5px 14px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
-  border: 1px solid #e5e7eb;
+  background: #f4f4f5;
+  color: #52525b;
+  border: none;
 }
 
 .pf2-sidebar-btns {
@@ -103,31 +107,33 @@
 .pf2-edit-btn,
 .pf2-grade-btn {
   flex: 1;
-  height: 34px;
-  border-radius: 8px;
+  height: 36px;
+  border-radius: 10px;
   font-size: 12px;
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 5px;
   cursor: pointer;
-  border: 1px solid #e5e7eb;
-  background: #f3f4f6;
-  color: #6b7280;
+  border: 1.5px solid #e4e4e7;
+  background: #ffffff;
+  color: #52525b;
   font-family: inherit;
-  transition: background 0.12s;
+  transition: background 0.12s, border-color 0.12s;
 }
 .pf2-edit-btn:hover,
-.pf2-grade-btn:hover { background: #e5e7eb; }
+.pf2-grade-btn:hover { background: #f9f9f9; border-color: #d4d4d8; }
 
 .pf2-stats-title {
   width: 100%;
-  font-size: 14px;
+  font-size: 10px;
   font-weight: 700;
-  color: #111827;
-  padding-top: 6px;
-  border-top: 1px solid #f3f4f6;
+  color: #a1a1aa;
+  padding-top: 8px;
+  border-top: 1px solid #f4f4f5;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
 }
 
 .pf2-stats-grid {
@@ -138,44 +144,45 @@
 }
 
 .pf2-stat-item {
-  background: #f9fafb;
-  border: 1px solid #f3f4f6;
-  border-radius: 10px;
-  padding: 12px 8px 10px;
+  background: #fafafa;
+  border-radius: 14px;
+  padding: 14px 8px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
+  transition: background 0.14s;
 }
+.pf2-stat-item:hover { background: #f0f9ff; }
 
 .pf2-stat-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
+  color: #0ea5e9;
 }
 
 .pf2-stat-value {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
-  color: #111827;
+  color: #18181b;
   line-height: 1.1;
+  letter-spacing: -0.5px;
 }
 
 .pf2-stat-label {
   font-size: 10px;
-  color: #6b7280;
+  color: #a1a1aa;
   font-weight: 500;
 }
 
 .pf2-quick-menu {
   width: 100%;
-  background: #ffffff;
-  border: 1px solid #f3f4f6;
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  border: 1.5px solid #f4f4f5;
 }
 
 .pf2-menu-item {
@@ -183,100 +190,120 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 13px 16px;
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: #3f3f46;
   background: #ffffff;
   border: none;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid #f4f4f5;
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background 0.12s, padding-left 0.15s;
   text-align: left;
   font-family: inherit;
 }
 .pf2-menu-item:last-child { border-bottom: none; }
-.pf2-menu-item:hover { background: #f9fafb; }
+.pf2-menu-item:hover { background: #fafafa; padding-left: 20px; }
 
 .pf2-menu-danger { color: #ef4444; }
 .pf2-menu-danger .pf2-menu-icon { color: #ef4444; }
 .pf2-menu-danger:hover { background: #fff5f5; }
 
-.pf2-menu-icon { width: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #6b7280; }
+.pf2-menu-icon { width: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #a1a1aa; }
 .pf2-menu-label { flex: 1; }
-.pf2-menu-chevron { color: #d1d5db; flex-shrink: 0; }
+.pf2-menu-chevron { color: #d4d4d8; flex-shrink: 0; }
 
 /* ── 메인 콘텐츠 ─────────────────────────────────────── */
 .pf2-main {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   min-width: 0;
 }
 
-/* 웰컴 배너 — HeroSection 느낌 */
+/* 배너 */
 .pf2-banner {
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0369a1 100%);
-  border-radius: 16px;
-  padding: 24px 28px;
+  background: linear-gradient(130deg, #0c4a6e 0%, #0369a1 52%, #0ea5e9 100%);
+  border-radius: 22px;
+  padding: 28px 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  box-shadow: 0 4px 6px rgba(0,0,0,.07), 0 10px 15px rgba(0,0,0,.1);
+  box-shadow: 0 4px 20px rgba(3,105,161,0.18);
+  position: relative;
+  overflow: hidden;
+}
+
+.pf2-banner::before {
+  content: '';
+  position: absolute;
+  top: -50px; right: -30px;
+  width: 220px; height: 220px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.pf2-banner::after {
+  content: '';
+  position: absolute;
+  bottom: -70px; right: 100px;
+  width: 160px; height: 160px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 .pf2-banner-title {
-  font-size: 20px;
+  font-size: 21px;
   font-weight: 700;
   color: #ffffff;
   letter-spacing: -0.5px;
+  position: relative;
 }
 
 .pf2-banner-sub {
   font-size: 13px;
-  color: rgba(255,255,255,.65);
-  margin-top: 4px;
+  color: rgba(255,255,255,0.58);
+  margin-top: 5px;
+  position: relative;
 }
 
 .pf2-banner-btn {
   flex-shrink: 0;
-  padding: 10px 22px;
-  background: #0ea5e9;
+  padding: 11px 24px;
+  background: rgba(255,255,255,0.14);
   color: #ffffff;
-  border: none;
+  border: 1.5px solid rgba(255,255,255,0.28);
   border-radius: 50px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   font-family: inherit;
-  transition: background 0.15s, transform 0.2s;
-  box-shadow: 0 4px 6px rgba(14,165,233,.35);
+  transition: background 0.2s;
+  backdrop-filter: blur(6px);
+  position: relative;
 }
-.pf2-banner-btn:hover {
-  background: #38bdf8;
-  transform: scale(1.03);
-}
+.pf2-banner-btn:hover { background: rgba(255,255,255,0.24); }
 
-/* 탭 — pill 스타일 */
+/* 탭 */
 .pf2-tabs {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   background: #ffffff;
-  border-radius: 12px;
-  padding: 4px;
-  border: 1px solid #f3f4f6;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  border-radius: 16px;
+  padding: 5px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05), 0 6px 20px rgba(0,0,0,0.04);
 }
 
 .pf2-tab {
   flex: 1;
-  padding: 9px 12px;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
   font-size: 13px;
   font-weight: 500;
-  color: #9ca3af;
+  color: #a1a1aa;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -284,15 +311,15 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: all 0.15s;
+  transition: all 0.18s ease;
   font-family: inherit;
 }
-.pf2-tab:hover { color: #374151; background: #f9fafb; }
+.pf2-tab:hover { color: #52525b; background: #f9f9f9; }
 .pf2-tab.active {
   background: #0ea5e9;
   color: #ffffff;
   font-weight: 700;
-  box-shadow: 0 1px 3px rgba(14,165,233,.4);
+  box-shadow: 0 2px 10px rgba(14,165,233,0.28);
 }
 
 .pf2-tab-count {
@@ -300,167 +327,159 @@
   font-size: 11px;
   font-weight: 700;
   padding: 1px 7px;
-  background: rgba(255,255,255,.25);
+  background: rgba(255,255,255,0.22);
   color: inherit;
 }
 .pf2-tab:not(.active) .pf2-tab-count {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: #f4f4f5;
+  color: #a1a1aa;
 }
 
 /* 카드 목록 */
 .pf2-cards {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
-/* 카드 공통 — ServiceCard 스타일 */
+/* 카드 공통 */
 .pf2-card {
   background: #ffffff;
-  border: 1px solid #f3f4f6;
-  border-radius: 16px;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06);
-  transition: box-shadow 0.3s, transform 0.3s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 6px 20px rgba(0,0,0,0.05);
+  transition: box-shadow 0.28s ease, transform 0.28s ease;
 }
 .pf2-card:hover {
-  box-shadow: 0 20px 40px rgba(0,0,0,.1);
-  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.07), 0 20px 48px rgba(0,0,0,0.09);
+  transform: translateY(-3px);
 }
-.pf2-card--cancelled { opacity: 0.5; }
-.pf2-card--cancelled:hover { transform: none; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.pf2-card--cancelled { opacity: 0.46; }
+.pf2-card--cancelled:hover { transform: none; box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 6px 20px rgba(0,0,0,0.05); }
 
 .pf2-card-head {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px 18px 12px;
-  border-bottom: 1px solid #f3f4f6;
+  padding: 20px 22px 15px;
+  border-bottom: 1px solid #f4f4f5;
 }
 
-/* 항공권 아이콘 — sky 그라디언트 */
 .pf2-flight-icon-wrap {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  background: linear-gradient(140deg, #38bdf8, #2563eb);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
   flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(14,165,233,0.22);
 }
 
-/* 숙소 아이콘 — orange 그라디언트 */
 .pf2-stay-icon-wrap {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #f97316, #f59e0b);
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  background: linear-gradient(140deg, #fb923c, #f59e0b);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
   flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(249,115,22,0.22);
 }
 
 .pf2-stay-thumb {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
   object-fit: cover;
 }
 
-.pf2-stay-icon { font-size: 20px; }
 .pf2-flight-info { flex: 1; min-width: 0; }
 
 .pf2-flight-route {
   font-size: 17px;
   font-weight: 700;
-  color: #111827;
-  letter-spacing: -0.3px;
+  color: #18181b;
+  letter-spacing: -0.4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.pf2-arrow { color: #9ca3af; margin: 0 4px; }
+.pf2-arrow { color: #d4d4d8; margin: 0 6px; }
 
 .pf2-flight-airline {
   font-size: 12px;
-  color: #6b7280;
+  color: #a1a1aa;
   margin-top: 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .pf2-badge {
   flex-shrink: 0;
   font-size: 11px;
   font-weight: 600;
-  padding: 4px 10px;
+  padding: 5px 11px;
   border-radius: 20px;
 }
 
-.pf2-badge--confirmed {
-  background: #dcfce7;
-  color: #16a34a;
-  border: 1px solid #bbf7d0;
-}
-
-.pf2-badge--cancelled {
-  background: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-}
+.pf2-badge--confirmed { background: #dcfce7; color: #15803d; }
+.pf2-badge--cancelled { background: #fee2e2; color: #dc2626; }
 
 .pf2-flight-meta {
   display: flex;
-  padding: 12px 18px;
-  border-bottom: 1px solid #f3f4f6;
-  background: #f9fafb;
+  padding: 14px 22px;
+  background: #fafafa;
+  border-bottom: 1px solid #f4f4f5;
 }
 
 .pf2-meta-col {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding-right: 14px;
+  gap: 4px;
+  padding-right: 16px;
 }
 
 .pf2-meta-col + .pf2-meta-col {
-  padding-left: 14px;
-  padding-right: 14px;
-  border-left: 1px solid #e5e7eb;
+  padding-left: 16px;
+  padding-right: 16px;
+  border-left: 1px solid #e4e4e7;
 }
 
 .pf2-meta-label {
   font-size: 11px;
-  color: #9ca3af;
+  color: #a1a1aa;
   font-weight: 500;
+  letter-spacing: 0.2px;
 }
 
 .pf2-meta-value {
   font-size: 14px;
   font-weight: 700;
-  color: #111827;
+  color: #18181b;
 }
 
 .pf2-card-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 18px;
+  padding: 14px 22px;
   gap: 10px;
 }
 
 .pf2-amount {
-  font-size: 16px;
-  font-weight: 700;
-  color: #111827;
+  font-size: 18px;
+  font-weight: 800;
+  color: #18181b;
+  letter-spacing: -0.5px;
 }
 
 .pf2-foot-right {
@@ -472,55 +491,54 @@
 .pf2-ref {
   font-size: 11px;
   font-weight: 500;
-  color: #6b7280;
-  background: #f3f4f6;
+  color: #a1a1aa;
+  background: #f4f4f5;
   border-radius: 6px;
-  padding: 3px 8px;
-  letter-spacing: 0.3px;
+  padding: 3px 9px;
+  letter-spacing: 0.4px;
 }
 
 .pf2-cancel-btn {
   font-size: 12px;
   font-weight: 600;
   color: #dc2626;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  padding: 5px 12px;
+  background: transparent;
+  border: 1.5px solid #fecaca;
+  border-radius: 9px;
+  padding: 6px 14px;
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background 0.14s, border-color 0.14s;
   font-family: inherit;
 }
-.pf2-cancel-btn:hover:not(:disabled) { background: #fee2e2; }
-.pf2-cancel-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.pf2-cancel-btn:hover:not(:disabled) { background: #fef2f2; border-color: #fca5a5; }
+.pf2-cancel-btn:disabled { opacity: 0.38; cursor: not-allowed; }
 
-/* AI 일정 카드 — violet 그라디언트 */
+/* AI 일정 카드 */
 .pf2-plan-card {
-  padding: 16px 18px;
+  padding: 20px 22px;
   display: flex;
   align-items: center;
   gap: 14px;
   cursor: pointer;
-  transition: background 0.12s;
 }
-.pf2-plan-card:hover { background: #f9fafb; }
+.pf2-plan-card:hover { background: transparent; }
 
 .pf2-plan-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  background: linear-gradient(140deg, #a78bfa, #6d28d9);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
   flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(109,40,217,0.18);
 }
 
 .pf2-icon-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -528,43 +546,43 @@
   border: none;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.1s, color 0.1s;
-  color: #d1d5db;
+  transition: background 0.12s, color 0.12s;
+  color: #d4d4d8;
 }
-.pf2-delete-btn:hover { background: #fee2e2; color: #ef4444; }
+.pf2-delete-btn:hover { background: #fef2f2; color: #ef4444; }
 
 /* 최근 활동 */
 .pf2-activity {
   background: #ffffff;
-  border: 1px solid #f3f4f6;
-  border-radius: 16px;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 6px 20px rgba(0,0,0,0.05);
 }
 
 .pf2-activity-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
-  color: #111827;
-  padding: 16px 18px 12px;
-  border-bottom: 1px solid #f3f4f6;
+  color: #18181b;
+  padding: 20px 22px 15px;
+  border-bottom: 1px solid #f4f4f5;
+  letter-spacing: -0.3px;
 }
 
 .pf2-activity-item {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px 18px;
-  border-bottom: 1px solid #f3f4f6;
+  padding: 13px 22px;
+  border-bottom: 1px solid #f9f9f9;
   transition: background 0.1s;
 }
 .pf2-activity-item:last-child { border-bottom: none; }
-.pf2-activity-item:hover { background: #f9fafb; }
+.pf2-activity-item:hover { background: #fafafa; }
 
 .pf2-activity-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -576,7 +594,7 @@
 .pf2-activity-text {
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: #52525b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -584,27 +602,26 @@
 
 .pf2-activity-time {
   font-size: 11px;
-  color: #9ca3af;
+  color: #a1a1aa;
   margin-top: 2px;
 }
 
 /* 빈 상태 */
 .pf2-empty {
-  padding: 48px 24px;
+  padding: 60px 24px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
   background: #ffffff;
-  border: 1px solid #f3f4f6;
-  border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 6px 20px rgba(0,0,0,0.05);
 }
 
 .pf2-empty-btn {
   margin-top: 4px;
-  padding: 10px 24px;
+  padding: 11px 28px;
   background: #0ea5e9;
   color: #ffffff;
   border-radius: 50px;
@@ -614,9 +631,9 @@
   cursor: pointer;
   transition: background 0.15s;
   font-family: inherit;
-  box-shadow: 0 4px 6px rgba(14,165,233,.3);
+  box-shadow: 0 4px 14px rgba(14,165,233,0.28);
 }
-.pf2-empty-btn:hover { background: #38bdf8; }
+.pf2-empty-btn:hover { background: #0284c7; }
 
 /* 로딩 */
 .pf2-loading {
@@ -628,7 +645,7 @@
 .pf2-spinner {
   width: 28px;
   height: 28px;
-  border: 3px solid #e5e7eb;
+  border: 2.5px solid #e4e4e7;
   border-top-color: #0ea5e9;
   border-radius: 50%;
   animation: pf2-spin 0.7s linear infinite;
@@ -650,8 +667,8 @@
   .pf2-banner {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
-    padding: 20px;
+    gap: 14px;
+    padding: 24px;
   }
   .pf2-banner-btn { width: 100%; text-align: center; }
 }
@@ -1003,3 +1020,90 @@
   .pf-flight-route { font-size: 16px; }
   .pf-stay-img, .pf-stay-img-placeholder { width: 80px; }
 }
+
+/* ── 토스트 ─────────────────────────────────────────────── */
+.pf2-toast-wrap {
+  position: fixed;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.pf2-toast-wrap.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+.pf2-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 300px;
+  max-width: 380px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.05);
+  background: #fff;
+}
+
+.pf2-toast--ok     { background: #fff; box-shadow: 0 2px 16px rgba(0,0,0,0.10), 0 0 0 1px rgba(22,163,74,0.2); }
+.pf2-toast--danger { background: #fff; box-shadow: 0 2px 16px rgba(0,0,0,0.10), 0 0 0 1px rgba(220,38,38,0.2); }
+.pf2-toast--confirm { background: #fff; box-shadow: 0 2px 16px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.08); }
+
+.pf2-toast-icon-wrap {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.pf2-toast--ok     .pf2-toast-icon-wrap { color: #16a34a; }
+.pf2-toast--danger .pf2-toast-icon-wrap { color: #dc2626; }
+.pf2-toast--confirm .pf2-toast-icon-wrap { color: #f59e0b; }
+
+.pf2-toast-body { flex: 1; min-width: 0; }
+
+.pf2-toast-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.3;
+}
+
+.pf2-toast-msg {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.pf2-toast-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.pf2-toast-btn {
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.pf2-toast-btn:hover { background: #e5e7eb; }
+
+.pf2-toast-btn.primary {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+}
+
+.pf2-toast-btn.primary:hover { background: #dc2626; }

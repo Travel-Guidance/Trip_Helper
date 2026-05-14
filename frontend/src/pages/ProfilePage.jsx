@@ -4,6 +4,7 @@ import {
   Trash2, ChevronRight, Pencil,
   Plane, Building2, Sparkles, BookOpen, Heart, LogOut,
   Globe, Calendar, Trophy, MapPin, Star, Mail, MessageSquare, Map,
+  CheckCircle2, XCircle, AlertCircle,
 } from 'lucide-react'
 import Navbar from '../components/layout/Navbar'
 import BottomNav from '../components/layout/BottomNav'
@@ -67,22 +68,30 @@ const PROVIDER_INFO = {
 }
 
 // ── 항공권 카드 ──────────────────────────────────────────
-function FlightCard({ booking, onCancel }) {
+function FlightCard({ booking, onCancel, showToast }) {
   const [cancelling, setCancelling] = useState(false)
   const cancelled = booking.status === 'cancelled'
   const route = getFlightRoute(booking.slices)
 
-  const handleCancel = async () => {
-    if (!window.confirm('항공권 예약을 취소하시겠습니까?\n취소 후에는 되돌릴 수 없습니다.')) return
-    setCancelling(true)
-    try {
-      await cancelFlightBooking(booking.id)
-      onCancel(booking.id)
-    } catch {
-      alert('취소에 실패했습니다. 다시 시도해 주세요.')
-    } finally {
-      setCancelling(false)
-    }
+  const handleCancel = () => {
+    showToast('항공권 예약 취소', '취소 후에는 되돌릴 수 없습니다.', 'confirm', [
+      {
+        label: '취소하기', primary: true,
+        action: async () => {
+          setCancelling(true)
+          try {
+            await cancelFlightBooking(booking.id)
+            onCancel(booking.id)
+            showToast('취소 완료', '항공권 예약이 취소되었습니다.', 'ok')
+          } catch {
+            showToast('취소 실패', '취소에 실패했습니다. 다시 시도해 주세요.', 'danger')
+          } finally {
+            setCancelling(false)
+          }
+        },
+      },
+      { label: '유지', primary: false, action: null },
+    ])
   }
 
   return (
@@ -134,21 +143,29 @@ function FlightCard({ booking, onCancel }) {
 }
 
 // ── 숙소 카드 ────────────────────────────────────────────
-function StayCard({ booking, onCancel }) {
+function StayCard({ booking, onCancel, showToast }) {
   const [cancelling, setCancelling] = useState(false)
   const cancelled = booking.status === 'cancelled'
 
-  const handleCancel = async () => {
-    if (!window.confirm('숙소 예약을 취소하시겠습니까?\n취소 후에는 되돌릴 수 없습니다.')) return
-    setCancelling(true)
-    try {
-      await cancelStayBooking(booking.id)
-      onCancel(booking.id)
-    } catch {
-      alert('취소에 실패했습니다. 다시 시도해 주세요.')
-    } finally {
-      setCancelling(false)
-    }
+  const handleCancel = () => {
+    showToast('숙소 예약 취소', '취소 후에는 되돌릴 수 없습니다.', 'confirm', [
+      {
+        label: '취소하기', primary: true,
+        action: async () => {
+          setCancelling(true)
+          try {
+            await cancelStayBooking(booking.id)
+            onCancel(booking.id)
+            showToast('취소 완료', '숙소 예약이 취소되었습니다.', 'ok')
+          } catch {
+            showToast('취소 실패', '취소에 실패했습니다. 다시 시도해 주세요.', 'danger')
+          } finally {
+            setCancelling(false)
+          }
+        },
+      },
+      { label: '유지', primary: false, action: null },
+    ])
   }
 
   return (
@@ -206,22 +223,30 @@ function StayCard({ booking, onCancel }) {
 }
 
 // ── AI 일정 카드 ─────────────────────────────────────────
-function PlanCard({ plan, onDelete }) {
+function PlanCard({ plan, onDelete, showToast }) {
   const navigate = useNavigate()
   const [deleting, setDeleting] = useState(false)
 
-  const handleDelete = async (e) => {
+  const handleDelete = (e) => {
     e.stopPropagation()
-    if (!window.confirm('이 일정을 삭제하시겠습니까?')) return
-    setDeleting(true)
-    try {
-      await deletePlan(plan.id)
-      onDelete(plan.id)
-    } catch {
-      alert('삭제에 실패했습니다.')
-    } finally {
-      setDeleting(false)
-    }
+    showToast('AI 일정 삭제', '이 일정을 삭제하시겠습니까?', 'confirm', [
+      {
+        label: '삭제하기', primary: true,
+        action: async () => {
+          setDeleting(true)
+          try {
+            await deletePlan(plan.id)
+            onDelete(plan.id)
+            showToast('삭제 완료', '일정이 삭제되었습니다.', 'ok')
+          } catch {
+            showToast('삭제 실패', '삭제에 실패했습니다. 다시 시도해 주세요.', 'danger')
+          } finally {
+            setDeleting(false)
+          }
+        },
+      },
+      { label: '유지', primary: false, action: null },
+    ])
   }
 
   return (
@@ -261,14 +286,28 @@ function EmptyState({ tab }) {
 
 // ── 메인 페이지 ──────────────────────────────────────────
 export default function ProfilePage() {
-  const { user, logout } = useAuth()
+  const { user, logout, profilePic, updateProfilePic } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('flights')
   const [data, setData]       = useState({ flights: [], stays: [], plans: [] })
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
-  const [profilePic, setProfilePic] = useState(null)
   const fileInputRef = useRef(null)
+  const [toast, setToast] = useState({ show: false, icon: '', title: '', msg: '', type: '', actions: [] })
+  const toastTimerRef = useRef(null)
+
+  const showToast = (title, msg, type, actions = []) => {
+    clearTimeout(toastTimerRef.current)
+    setToast({ show: true, title, msg, type, actions })
+    if (!actions.length) {
+      toastTimerRef.current = setTimeout(() => setToast(t => ({ ...t, show: false })), 3000)
+    }
+  }
+
+  const handleToastAction = (action) => {
+    setToast(t => ({ ...t, show: false }))
+    if (action) action()
+  }
 
   useEffect(() => {
     if (!user) { navigate('/login', { replace: true }); return }
@@ -278,21 +317,12 @@ export default function ProfilePage() {
       .finally(() => setLoading(false))
   }, [user, navigate])
 
-  useEffect(() => {
-    if (user?.id) {
-      const saved = localStorage.getItem(`profilePic_${user.id}`)
-      if (saved) setProfilePic(saved)
-    }
-  }, [user?.id])
-
   const handleFileChange = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
     reader.onload = (ev) => {
-      const base64 = ev.target.result
-      setProfilePic(base64)
-      localStorage.setItem(`profilePic_${user.id}`, base64)
+      updateProfilePic(user.id, ev.target.result)
     }
     reader.readAsDataURL(file)
   }
@@ -470,17 +500,17 @@ export default function ProfilePage() {
               <>
                 {activeTab === 'flights' && (
                   data.flights.length > 0
-                    ? data.flights.map(b => <FlightCard key={b.id} booking={b} onCancel={handleCancelFlight} />)
+                    ? data.flights.map(b => <FlightCard key={b.id} booking={b} onCancel={handleCancelFlight} showToast={showToast} />)
                     : <EmptyState tab="flights" />
                 )}
                 {activeTab === 'stays' && (
                   data.stays.length > 0
-                    ? data.stays.map(b => <StayCard key={b.id} booking={b} onCancel={handleCancelStay} />)
+                    ? data.stays.map(b => <StayCard key={b.id} booking={b} onCancel={handleCancelStay} showToast={showToast} />)
                     : <EmptyState tab="stays" />
                 )}
                 {activeTab === 'plans' && (
                   data.plans.length > 0
-                    ? data.plans.map(p => <PlanCard key={p.id} plan={p} onDelete={handleDeletePlan} />)
+                    ? data.plans.map(p => <PlanCard key={p.id} plan={p} onDelete={handleDeletePlan} showToast={showToast} />)
                     : <EmptyState tab="plans" />
                 )}
               </>
@@ -506,6 +536,34 @@ export default function ProfilePage() {
       </div>
 
       <BottomNav />
+
+      {/* ── 토스트 ── */}
+      <div className={`pf2-toast-wrap${toast.show ? ' show' : ''}`}>
+        <div className={`pf2-toast pf2-toast--${toast.type}`}>
+          <div className="pf2-toast-icon-wrap">
+            {toast.type === 'ok'      && <CheckCircle2 size={18} />}
+            {toast.type === 'danger'  && <XCircle size={18} />}
+            {toast.type === 'confirm' && <AlertCircle size={18} />}
+          </div>
+          <div className="pf2-toast-body">
+            <div className="pf2-toast-title">{toast.title}</div>
+            <div className="pf2-toast-msg">{toast.msg}</div>
+            {toast.actions.length > 0 && (
+              <div className="pf2-toast-actions">
+                {toast.actions.map((a, i) => (
+                  <button
+                    key={i}
+                    className={`pf2-toast-btn${a.primary ? ' primary' : ''}`}
+                    onClick={() => handleToastAction(a.action)}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

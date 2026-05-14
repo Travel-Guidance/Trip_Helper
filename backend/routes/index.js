@@ -1,5 +1,6 @@
 ﻿const { Router } = require('express');
 
+const chatbotRoutes      = require('./chatbotRoutes');
 const flightRoutes       = require('./flightRoutes');
 const orderRoutes        = require('./orderRoutes');
 const seatRoutes         = require('./seatRoutes');
@@ -21,6 +22,7 @@ const weatherRoutes      = require('./weatherRoutes');
 const router = Router();
 
 router.use(healthRoutes);
+router.use(chatbotRoutes);
 router.use(flightRoutes);
 router.use(orderRoutes);
 router.use(seatRoutes);

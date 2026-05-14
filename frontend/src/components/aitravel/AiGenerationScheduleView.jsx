@@ -22,6 +22,91 @@ const CITY_COUNTRY_CODE = {
   뉴질랜드: 'NZ',
 }
 
+const COUNTRY_TIMEZONES = {
+  // 아시아
+  일본: 'Asia/Tokyo', 도쿄: 'Asia/Tokyo', 오사카: 'Asia/Tokyo', 교토: 'Asia/Tokyo', 후쿠오카: 'Asia/Tokyo',
+  태국: 'Asia/Bangkok', 방콕: 'Asia/Bangkok', 치앙마이: 'Asia/Bangkok', 푸켓: 'Asia/Bangkok',
+  베트남: 'Asia/Ho_Chi_Minh', 호치민: 'Asia/Ho_Chi_Minh', 하노이: 'Asia/Bangkok',
+  싱가포르: 'Asia/Singapore',
+  인도네시아: 'Asia/Jakarta', 발리: 'Asia/Makassar',
+  대만: 'Asia/Taipei',
+  홍콩: 'Asia/Hong_Kong',
+  말레이시아: 'Asia/Kuala_Lumpur', 쿠알라룸푸르: 'Asia/Kuala_Lumpur',
+  필리핀: 'Asia/Manila', 마닐라: 'Asia/Manila',
+  // 유럽
+  프랑스: 'Europe/Paris', 파리: 'Europe/Paris',
+  이탈리아: 'Europe/Rome', 로마: 'Europe/Rome', 밀라노: 'Europe/Rome',
+  스페인: 'Europe/Madrid', 바르셀로나: 'Europe/Madrid', 마드리드: 'Europe/Madrid',
+  영국: 'Europe/London', 런던: 'Europe/London',
+  독일: 'Europe/Berlin', 베를린: 'Europe/Berlin',
+  체코: 'Europe/Prague', 프라하: 'Europe/Prague',
+  포르투갈: 'Europe/Lisbon', 리스본: 'Europe/Lisbon',
+  그리스: 'Europe/Athens', 아테네: 'Europe/Athens',
+  스위스: 'Europe/Zurich', 취리히: 'Europe/Zurich',
+  // 아메리카
+  미국: 'America/New_York', 뉴욕: 'America/New_York', 로스앤젤레스: 'America/Los_Angeles', 라스베가스: 'America/Los_Angeles',
+  캐나다: 'America/Toronto', 토론토: 'America/Toronto', 밴쿠버: 'America/Vancouver',
+  멕시코: 'America/Mexico_City',
+  브라질: 'America/Sao_Paulo',
+  페루: 'America/Lima',
+  아르헨티나: 'America/Argentina/Buenos_Aires',
+  쿠바: 'America/Havana',
+  칠레: 'America/Santiago',
+  // 오세아니아
+  호주: 'Australia/Sydney', 시드니: 'Australia/Sydney', 멜버른: 'Australia/Melbourne',
+  골드코스트: 'Australia/Brisbane', 브리즈번: 'Australia/Brisbane',
+  케언즈: 'Australia/Brisbane', 퍼스: 'Australia/Perth', 애들레이드: 'Australia/Adelaide',
+  뉴질랜드: 'Pacific/Auckland', 오클랜드: 'Pacific/Auckland',
+  피지: 'Pacific/Fiji',
+  괌: 'Pacific/Guam',
+  사이판: 'Pacific/Saipan',
+  하와이: 'Pacific/Honolulu',
+  // 중동·아프리카
+  튀르키예: 'Europe/Istanbul', 이스탄불: 'Europe/Istanbul',
+  '두바이(UAE)': 'Asia/Dubai', 두바이: 'Asia/Dubai',
+  모로코: 'Africa/Casablanca',
+  이집트: 'Africa/Cairo', 카이로: 'Africa/Cairo',
+  케냐: 'Africa/Nairobi',
+  남아공: 'Africa/Johannesburg',
+  요르단: 'Asia/Amman',
+}
+
+function resolveTimezone(dest) {
+  if (!dest) return null
+  for (const [key, tz] of Object.entries(COUNTRY_TIMEZONES)) {
+    if (dest.includes(key)) return tz
+  }
+  return null
+}
+
+function LocalTime({ country }) {
+  const [time, setTime] = useState('')
+  const tz = resolveTimezone(country)
+
+  useEffect(() => {
+    if (!tz) return
+    const fmt = new Intl.DateTimeFormat('ko-KR', {
+      timeZone: tz,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    })
+    const tick = () => setTime(fmt.format(new Date()))
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [tz])
+
+  if (!tz || !time) return null
+  return (
+    <div className="hero-stat">
+      <span>현지 시간</span>
+      <strong style={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '0.02em' }}>{time}</strong>
+    </div>
+  )
+}
+
 function resolveCountryCode(location, fallback) {
   if (!location) return CITY_COUNTRY_CODE[fallback] || ''
   for (const [key, code] of Object.entries(CITY_COUNTRY_CODE)) {

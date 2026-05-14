@@ -121,8 +121,11 @@ export default function HeroSection() {
                 여행 계획 시작하기
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </button>
-              <button className="inline-flex items-center bg-white border border-gray-200 text-gray-700 text-sm font-medium px-7 py-3.5 rounded-full hover:border-gray-300 hover:shadow-md transition-all duration-200">
-                서비스 둘러보기
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('open-chatbot'))}
+                className="inline-flex items-center gap-2 bg-amber-400 text-amber-900 text-sm font-semibold px-7 py-3.5 rounded-full shadow-lg shadow-amber-200 hover:bg-amber-300 hover:shadow-xl hover:shadow-amber-200 hover:scale-[1.02] active:scale-95 transition-all duration-200"
+              >
+                🦆 오리랑 대화하기
               </button>
             </div>
             <div className="flex items-center gap-2 pt-1" aria-label="히어로 이미지 선택">

@@ -378,11 +378,10 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--bg);
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
   flex-shrink: 0;
 }
 .popular-city {
