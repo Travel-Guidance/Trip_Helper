@@ -906,14 +906,28 @@
     @keyframes pop-in { from{opacity:0;transform:scale(.94) translateY(12px)} to{opacity:1;transform:none} }
     .ai-travel-duration-page .modal-title { font-size: 18px; font-weight: 800; color: var(--navy); margin-bottom: 14px; }
     .ai-travel-duration-page .image-translate-modal .modal-title {
-      font-family: 'CookieRun', 'Pretendard', system-ui, sans-serif;
+      color: var(--navy);
+      font-size: 18px;
+      font-weight: 800;
       letter-spacing: 0;
     }
     .ai-travel-duration-page #modalContent { margin-bottom: 14px; }
-    .ai-travel-duration-page .modal-footer { display: flex; justify-content: flex-end; gap: 7px; }
+    .ai-travel-duration-page .modal-footer { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
     .ai-travel-duration-page .mf { padding: 9px 18px; border-radius: 999px; font-size: 13px; font-weight: 700; }
     .ai-travel-duration-page .mf.ghost { background: var(--bg); border: 1px solid var(--border2); color: var(--muted); }
     .ai-travel-duration-page .mf.primary { background: var(--blue-g); color: #fff; box-shadow: 0 4px 14px rgba(41,171,226,.3); }
+    .ai-travel-duration-page .mi-podcast-toggle {
+      width: 40px; height: 40px; margin-right: auto; padding: 4px; border-radius: 999px;
+      border: 1px solid rgba(41,171,226,.24); background: rgba(41,171,226,.08);
+      display: grid; place-items: center; cursor: pointer; transition: border-color .2s, background .2s, opacity .2s;
+    }
+    .ai-travel-duration-page .mi-podcast-toggle img { width: 30px; height: 30px; display: block; object-fit: contain; }
+    .ai-travel-duration-page .mi-podcast-toggle.on {
+      background: rgba(41,171,226,.14); border-color: rgba(41,171,226,.48);
+      box-shadow: 0 4px 14px rgba(41,171,226,.2);
+    }
+    .ai-travel-duration-page .mi-podcast-toggle.off { background: var(--bg); border-color: var(--border2); opacity: .76; }
+    .ai-travel-duration-page .mi-podcast-toggle.off img { filter: grayscale(1) saturate(0) opacity(.48); }
     .ai-travel-duration-page .map-modal-box {
       width: min(920px,100%); height: min(74vh,680px);
       background: var(--card); border: 1px solid var(--border);
@@ -951,19 +965,16 @@
     .ai-travel-duration-page .mi-pronunciation { margin-top: 7px; padding: 9px 12px; border-radius: 10px; background: rgba(11,185,122,.06); border: 1px solid rgba(11,185,122,.2); font-size: 13px; font-weight: 600; color: var(--green); letter-spacing: 0.3px; font-style: italic; }
     .ai-travel-duration-page .mi-image-translate,
     .ai-travel-duration-page .mi-image-translate * {
-      font-family: 'CookieRun', 'Pretendard', system-ui, sans-serif;
+      font-family: inherit;
       letter-spacing: 0;
     }
     .ai-travel-duration-page .mi-image-translate { min-height: 420px; }
     .ai-travel-duration-page .mi-image-drop {
       width: 100%; min-height: 390px; display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 12px;
-      border: 0; border-radius: 22px; cursor: pointer; color: var(--blue-d);
-      background:
-        radial-gradient(circle, rgba(41,171,226,.16) 0 2px, transparent 3px) 0 0 / 18px 18px,
-        radial-gradient(circle, rgba(41,171,226,.08) 0 2px, transparent 3px) 9px 9px / 18px 18px,
-        linear-gradient(180deg, #ffffff 0%, #f8fcff 100%);
-      box-shadow: inset 0 0 0 1px rgba(41,171,226,.14);
+      border: 1px solid rgba(41,171,226,.16); border-radius: 22px;
+      cursor: pointer; color: var(--blue-d); background: #fff;
+      box-shadow: inset 0 0 0 1px rgba(41,171,226,.04);
     }
     .ai-travel-duration-page .mi-image-upload-ring {
       width: 106px; height: 106px; border-radius: 999px; display: grid; place-items: center;
@@ -975,6 +986,19 @@
       min-height: 300px; display: flex; flex-direction: column; align-items: center;
       justify-content: center; gap: 16px; border-radius: 22px; background: #fff;
       box-shadow: inset 0 0 0 1px rgba(41,171,226,.12);
+      position: relative; overflow: hidden;
+    }
+    .ai-travel-duration-page .mi-image-processing.done { min-height: 250px; padding: 12px; }
+    .ai-travel-duration-page .mi-image-preview-card { width: 100%; height: 100%; min-height: 226px; position: relative; }
+    .ai-travel-duration-page .mi-image-preview-card img {
+      width: 100%; height: 100%; min-height: 226px; max-height: 300px;
+      object-fit: cover; display: block; border-radius: 16px;
+    }
+    .ai-travel-duration-page .mi-image-preview-card button {
+      position: absolute; top: 10px; right: 10px; width: 30px; height: 30px;
+      border: 0; border-radius: 999px; background: rgba(255,255,255,.92);
+      color: var(--blue); font-size: 18px; font-weight: 900;
+      box-shadow: 0 4px 12px rgba(15,39,68,.18);
     }
     .ai-travel-duration-page .mi-image-progress {
       --progress: 0%;
@@ -1006,7 +1030,7 @@
       background: rgba(239,68,68,.06); border: 1px solid rgba(239,68,68,.18);
       color: var(--rose); font-size: 12px; font-weight: 800;
     }
-    .ai-travel-duration-page .mi-image-result { margin-top: 12px; display: grid; gap: 8px; }
+    .ai-travel-duration-page .mi-image-result { margin-top: 12px; margin-bottom: 12px; display: grid; gap: 10px; }
     .ai-travel-duration-page .mi-image-result-box {
       padding: 11px 12px; border-radius: 12px; background: var(--bg);
       border: 1px solid var(--border); color: var(--navy);

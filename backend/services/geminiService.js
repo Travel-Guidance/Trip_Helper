@@ -2,52 +2,71 @@
 
 const { genAI, chatModel, embeddingModel, CHAT_MODEL_NAME } = require('../config/gemini');
 
-const BASE_DELAY_MS = 10_000   
-const MAX_DELAY_MS  = 120_000  
-const MAX_RETRIES   = 4
+const BASE_DELAY_MS = 10_000;
+const TRANSIENT_BASE_DELAY_MS = 2_000;
+const MAX_DELAY_MS = 120_000;
+const MAX_RETRIES = 4;
+
+function getErrorText(err) {
+  return [
+    err?.message,
+    err?.status,
+    err?.statusText,
+    err?.errorDetails && JSON.stringify(err.errorDetails),
+  ].filter(Boolean).join(' ');
+}
 
 function isDailyQuotaExceeded(err) {
-  const message = String(err.message || '')
-  return /GenerateRequestsPerDay|free_tier_requests|current quota|quota exceeded/i.test(message)
+  return /GenerateRequestsPerDay|free_tier_requests|current quota|quota exceeded/i.test(getErrorText(err));
+}
+
+function isRateLimitError(err) {
+  return err?.status === 429 || /\b429\b|rate.?limit|quota/i.test(getErrorText(err));
+}
+
+function isTransientGeminiError(err) {
+  return (
+    err?.status === 503
+    || /\b503\b|service unavailable|unavailable|high demand|temporar/i.test(getErrorText(err))
+  );
 }
 
 function toQuotaError(err) {
   const quotaError = new Error(
-    'Gemini 무료 사용량 한도를 초과했습니다. 잠시 후 다시 시도하거나 Gemini API 결제/쿼터 설정을 확인해 주세요.'
-  )
-  quotaError.status = 429
-  quotaError.cause = err
-  return quotaError
+    'Gemini free-tier daily quota has been exceeded. Please try again later or check your Gemini API billing/quota settings.'
+  );
+  quotaError.status = 429;
+  quotaError.cause = err;
+  return quotaError;
 }
 
 async function withRetry(fn, maxRetries = MAX_RETRIES) {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await fn()
+      return await fn();
     } catch (err) {
-      const is429 = err.message?.includes('429') || err.status === 429
+      const is429 = isRateLimitError(err);
+      const isTransient = isTransientGeminiError(err);
+
       if (is429 && isDailyQuotaExceeded(err)) {
-        console.warn('[Gemini] 429 — 일일 할당량 초과, 재시도하지 않음')
-        throw toQuotaError(err)
+        console.warn('[Gemini] Daily quota exceeded; skipping retries.');
+        throw toQuotaError(err);
       }
-      if (!is429 || attempt === maxRetries) throw err
 
-      // API가 제안한 대기 시간 파싱 (있으면 우선 사용)
-      const hintMatch = err.message?.match(/retry in (\d+(?:\.\d+)?)s/i)
-      const hintMs = hintMatch ? Math.ceil(parseFloat(hintMatch[1])) * 1000 : 0
+      if ((!is429 && !isTransient) || attempt === maxRetries) throw err;
 
-      // 지수 백오프: BASE * 2^attempt, 최대 MAX_DELAY_MS
-      const expMs = Math.min(BASE_DELAY_MS * Math.pow(2, attempt), MAX_DELAY_MS)
-
-      // API 힌트와 지수값 중 더 큰 값 채택 + ±20% 지터
-      const baseMs  = Math.max(hintMs, expMs)
-      const delayMs = Math.round(baseMs * (0.8 + Math.random() * 0.4))
+      const hintMatch = getErrorText(err).match(/retry in (\d+(?:\.\d+)?)s/i);
+      const hintMs = hintMatch ? Math.ceil(parseFloat(hintMatch[1])) * 1000 : 0;
+      const baseDelayMs = is429 ? BASE_DELAY_MS : TRANSIENT_BASE_DELAY_MS;
+      const expMs = Math.min(baseDelayMs * Math.pow(2, attempt), MAX_DELAY_MS);
+      const baseMs = Math.max(hintMs, expMs);
+      const delayMs = Math.round(baseMs * (0.8 + Math.random() * 0.4));
 
       console.warn(
-        `[Gemini] 429 — 지수 백오프 ${Math.round(delayMs / 1000)}s 대기` +
-        ` (시도 ${attempt + 1}/${maxRetries})`
-      )
-      await new Promise(r => setTimeout(r, delayMs))
+        `[Gemini] ${is429 ? '429 rate limit' : '503/unavailable'}; retrying in ${Math.round(delayMs / 1000)}s `
+        + `(attempt ${attempt + 1}/${maxRetries})`
+      );
+      await new Promise(resolve => setTimeout(resolve, delayMs));
     }
   }
 }
@@ -55,15 +74,18 @@ async function withRetry(fn, maxRetries = MAX_RETRIES) {
 async function generateText(prompt, systemInstruction = null) {
   const model = systemInstruction
     ? genAI.getGenerativeModel({ model: CHAT_MODEL_NAME, systemInstruction })
-    : chatModel
+    : chatModel;
   return withRetry(async () => {
-    const result = await model.generateContent(prompt)
-    return result.response.text()
-  })
+    const result = await model.generateContent(prompt);
+    return result.response.text();
+  });
 }
 
-async function generateFromImage(prompt, imageBuffer, mimeType) {
-  const model = genAI.getGenerativeModel({ model: CHAT_MODEL_NAME })
+async function generateFromImage(prompt, imageBuffer, mimeType, generationConfig = null) {
+  const modelConfig = generationConfig
+    ? { model: CHAT_MODEL_NAME, generationConfig }
+    : { model: CHAT_MODEL_NAME };
+  const model = genAI.getGenerativeModel(modelConfig);
   return withRetry(async () => {
     const result = await model.generateContent([
       prompt,
@@ -73,27 +95,27 @@ async function generateFromImage(prompt, imageBuffer, mimeType) {
           mimeType,
         },
       },
-    ])
-    return result.response.text()
-  })
+    ]);
+    return result.response.text();
+  });
 }
 
 async function getEmbedding(text) {
   return withRetry(async () => {
-    const result = await embeddingModel.embedContent(text)
-    return result.embedding.values
-  })
+    const result = await embeddingModel.embedContent(text);
+    return result.embedding.values;
+  });
 }
 
 async function chat(history = [], message, systemInstruction = null) {
   const model = systemInstruction
     ? genAI.getGenerativeModel({ model: CHAT_MODEL_NAME, systemInstruction })
-    : chatModel
+    : chatModel;
   return withRetry(async () => {
-    const session = model.startChat({ history })
-    const result = await session.sendMessage(message)
-    return result.response.text()
-  })
+    const session = model.startChat({ history });
+    const result = await session.sendMessage(message);
+    return result.response.text();
+  });
 }
 
-module.exports = { generateText, generateFromImage, getEmbedding, chat, withRetry }
+module.exports = { generateText, generateFromImage, getEmbedding, chat, withRetry };
