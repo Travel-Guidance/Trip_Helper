@@ -1,5 +1,5 @@
-const { Router } = require('express');
-const multer = require('multer');
+const { Router } = require("express");
+const multer = require("multer");
 const {
   generatePlan,
   chatbot,
@@ -15,18 +15,18 @@ const {
   rebudgetPlanDay,
   translateText,
   translateImage,
-} = require('../controllers/aiTravelController');
-const { generateCollabPlan } = require('../controllers/collabController');
-const { aiLimiter } = require('../middlewares/rateLimiter');
-const optionalAuth = require('../middlewares/optionalAuth');
-const requireAuth = require('../middlewares/requireAuth');
+} = require("../controllers/aiTravelController");
+const { generateCollabPlan } = require("../controllers/collabController");
+const { aiLimiter } = require("../middlewares/rateLimiter");
+const optionalAuth = require("../middlewares/optionalAuth");
+const requireAuth = require("../middlewares/requireAuth");
 
 const router = Router();
 const imageUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 },
   fileFilter(req, file, cb) {
-    cb(null, file.mimetype.startsWith('image/'));
+    cb(null, file.mimetype.startsWith("image/"));
   },
 });
 
@@ -69,18 +69,26 @@ const imageUpload = multer({
  *       200:
  *         description: 생성된 여행 일정
  */
-router.post('/ai-travel/generate', aiLimiter, optionalAuth, generatePlan);
+router.post("/ai-travel/generate", aiLimiter, optionalAuth, generatePlan);
 
-router.post('/ai-travel/plans', requireAuth, createPlan);
-router.get('/ai-travel/plans', requireAuth, getUserPlans);
-router.put('/ai-travel/plans/:id/budget', requireAuth, updatePlanBudget);
-router.post('/ai-travel/plans/:id/rebudget-day', requireAuth, rebudgetPlanDay);
-router.get('/ai-travel/plans/:id/expenses', requireAuth, getPlanExpenses);
-router.post('/ai-travel/plans/:id/expenses', requireAuth, createPlanExpense);
-router.put('/ai-travel/plans/:id/expenses/:expenseId', requireAuth, updatePlanExpense);
-router.delete('/ai-travel/plans/:id/expenses/:expenseId', requireAuth, deletePlanExpense);
-router.get('/ai-travel/plans/:id', requireAuth, getPlanById);
-router.delete('/ai-travel/plans/:id', requireAuth, deletePlan);
+router.post("/ai-travel/plans", requireAuth, createPlan);
+router.get("/ai-travel/plans", requireAuth, getUserPlans);
+router.put("/ai-travel/plans/:id/budget", requireAuth, updatePlanBudget);
+router.post("/ai-travel/plans/:id/rebudget-day", requireAuth, rebudgetPlanDay);
+router.get("/ai-travel/plans/:id/expenses", requireAuth, getPlanExpenses);
+router.post("/ai-travel/plans/:id/expenses", requireAuth, createPlanExpense);
+router.put(
+  "/ai-travel/plans/:id/expenses/:expenseId",
+  requireAuth,
+  updatePlanExpense,
+);
+router.delete(
+  "/ai-travel/plans/:id/expenses/:expenseId",
+  requireAuth,
+  deletePlanExpense,
+);
+router.get("/ai-travel/plans/:id", requireAuth, getPlanById);
+router.delete("/ai-travel/plans/:id", requireAuth, deletePlan);
 
 /**
  * @swagger
@@ -103,13 +111,23 @@ router.delete('/ai-travel/plans/:id', requireAuth, deletePlan);
  *       200:
  *         description: 챗봇 응답
  */
-router.post('/ai-travel/chat', aiLimiter, chatbot);
+router.post("/ai-travel/chat", aiLimiter, chatbot);
 
 // 공동작업 일정 생성 전용 라우트
-router.post('/ai-travel/generate-collab', aiLimiter, optionalAuth, generateCollabPlan);
+router.post(
+  "/ai-travel/generate-collab",
+  aiLimiter,
+  optionalAuth,
+  generateCollabPlan,
+);
 
 // 실시간 번역
-router.post('/translate', aiLimiter, translateText);
-router.post('/translate-image', aiLimiter, imageUpload.single('image'), translateImage);
+router.post("/translate", aiLimiter, translateText);
+router.post(
+  "/translate-image",
+  aiLimiter,
+  imageUpload.single("image"),
+  translateImage,
+);
 
 module.exports = router;

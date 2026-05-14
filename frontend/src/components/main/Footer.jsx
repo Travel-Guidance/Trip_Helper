@@ -1,4 +1,11 @@
+import { Link } from 'react-router-dom'
 import { Smartphone } from 'lucide-react'
+
+const serviceLinks = [
+  { key: 'travel', label: '여행 계획', to: '/ai-travel' },
+  { key: 'flights', label: '항공권', to: '/flights' },
+  { key: 'esim', label: 'eSIM', to: '/esim' },
+]
 
 export default function Footer() {
   return (
@@ -18,9 +25,9 @@ export default function Footer() {
           <div className="flex flex-col gap-3">
             <h4 className="text-white text-sm font-semibold">서비스</h4>
             <ul className="flex flex-col gap-2">
-              {['여행 계획', '항공권', 'eSIM'].map((item) => (
-                <li key={item}>
-                  <a href="#" className="text-sm hover:text-white transition-colors">{item}</a>
+              {serviceLinks.map(({ key, label, to }) => (
+                <li key={key}>
+                  <Link to={to} className="text-sm hover:text-white transition-colors">{label}</Link>
                 </li>
               ))}
             </ul>
