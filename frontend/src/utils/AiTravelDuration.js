@@ -1,7 +1,7 @@
 // AiTravelDuration.js - 여행 일정 비즈니스 로직 및 순수 유틸리티 함수 모음
 
 import { EUR_TO_KRW } from '../data/AiTravelDuration'
-import { apiGet, apiPost } from '../api/apiClient'
+import { apiGet, apiPost, apiPut, apiDelete } from '../api/apiClient'
 import EMERGENCY_NUMBERS from '../data/emergencyNumbers.json'
 
 /* global google */
@@ -12,6 +12,7 @@ export const BUDGET_CATEGORIES = [
   { key: 'transport', label: '교통',   icon: '🚇', color: 'var(--blue)'   },
   { key: 'entry',     label: '입장비', icon: '🏛', color: 'var(--green)'  },
   { key: 'shop',      label: '쇼핑',   icon: '🛍', color: 'var(--purple)' },
+  { key: 'other',     label: '기타',   icon: '⋯', color: 'var(--muted)'  },
 ]
 export const EMERGENCY_RADIUS_METERS = 3000
 
@@ -58,20 +59,19 @@ export function heroImageForDestination(destination) {
 }
 
 // 여행 예산으로 비현실적인 값(10억 초과)은 0으로 처리
-const MAX_BUDGET_WON = 1_000_000_000
+const MAX_BUDGET_WON = 100_000_000
 
 export function parseBudgetWon(value) {
   const text = String(value ?? '').trim().replace(/,/g, '')
   if (!text) return 0
   const compact = text.replace(/\s+/g, '')
   const units = [
-    { pattern: /(\d+(?:\.\d+)?)억/, multiplier: 100000000 },
-    { pattern: /(\d+(?:\.\d+)?)만/, multiplier: 10000 },
-    { pattern: /(\d+(?:\.\d+)?)천/, multiplier: 1000 },
+    { pattern: /(\d+(?:\.\d+)?)억/g, multiplier: 100000000 },
+    { pattern: /(\d+(?:\.\d+)?)만/g, multiplier: 10000 },
+    { pattern: /(\d+(?:\.\d+)?)천/g, multiplier: 1000 },
   ]
   const unitTotal = units.reduce((sum, u) => {
-    const m = compact.match(u.pattern)
-    return m ? sum + Number(m[1]) * u.multiplier : sum
+    return sum + [...compact.matchAll(u.pattern)].reduce((s, m) => s + Number(m[1]) * u.multiplier, 0)
   }, 0)
   if (unitTotal > 0) return unitTotal > MAX_BUDGET_WON ? 0 : Math.round(unitTotal)
   const number = Number(compact.replace(/[^\d.]/g, ''))
@@ -283,7 +283,7 @@ export function getTodayAvailableBudget(total, expenses, schedule, activeIdx) {
   const dayNumber   = getCurrentDayNumber(schedule, activeIdx)
   const dailyBudget = getDailyBudgetWon(total, schedule)
   if (!dailyBudget) return 0
-  return Math.max(0, dailyBudget * dayNumber - getSpentThroughDay(expenses, dayNumber))
+  return dailyBudget * dayNumber - getSpentThroughDay(expenses, dayNumber)
 }
 
 export function getCategoryBreakdown(expenses, schedule, activeIdx) {
@@ -588,7 +588,7 @@ export function renderRouteMap(targetId, { schedule, activeIdx, activeStopIdx, s
   const p     = selectedRoute?.start && selectedRoute?.end ? [selectedRoute.start, selectedRoute.end] : getRouteSegment(s.base, activeStopIdx, cityData)
   const map   = new google.maps.Map(el, { center: p[0], zoom: 13, mapTypeControl: false, streetViewControl: false, fullscreenControl: false })
   const bounds = new google.maps.LatLngBounds()
-  const labels = p.length === 1 ? ['숙'] : selectedRoute ? ['S', 'E'] : ['출', '도']
+  const labels = p.length === 1 ? [''] : selectedRoute ? ['S', 'E'] : ['출', '도']
   const colors = p.length === 1 ? ['#0BB97A'] : selectedRoute ? ['#F59E0B', '#29ABE2'] : ['#0BB97A', '#29ABE2']
 
   p.forEach((pt, i) => {
@@ -730,9 +730,19 @@ export async function persistExpense(planId, expense) {
   })
 }
 
+export async function deleteExpense(planId, expenseId) {
+  if (!planId || !expenseId) return null
+  return apiDelete(`/ai-travel/plans/${planId}/expenses/${expenseId}`)
+}
+
 export async function rebudgetPlanDay(planId, payload) {
   if (!planId) return null
   return apiPost(`/ai-travel/plans/${planId}/rebudget-day`, payload)
+}
+
+export async function updatePlanBudget(planId, totalBudgetWon) {
+  if (!planId) return null
+  return apiPut(`/ai-travel/plans/${planId}/budget`, { totalBudgetWon })
 }
 
 export async function fetchExchangeRate(destination) {

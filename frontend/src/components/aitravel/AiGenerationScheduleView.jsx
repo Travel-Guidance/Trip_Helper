@@ -35,7 +35,7 @@ const DESTINATION_IMAGES = {
   '멜버른':    'https://images.unsplash.com/photo-1545044846-351ba102b6d5?auto=format&fit=crop&w=1800&q=88',
   '골드코스트': 'https://images.unsplash.com/photo-1587400892770-8cce9b80c8c6?auto=format&fit=crop&w=1800&q=88',
   '케언즈':    'https://images.unsplash.com/photo-1559494007-9f5847c49d94?auto=format&fit=crop&w=1800&q=88',
-  '호주':      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1800&q=88',
+  '호주':      'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?auto=format&fit=crop&w=1800&q=88',
   '일본':      'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=1800&q=88',
   '도쿄':      'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=1800&q=88',
   '오사카':    'https://images.unsplash.com/photo-1590559899731-a382839e5549?auto=format&fit=crop&w=1800&q=88',
@@ -374,10 +374,16 @@ function pointFromItem(item) {
   return { lat, lng, title: item.name, time: item.time }
 }
 
-function clearMapOverlays(markersRef, polylineRef) {
+function shouldResolveMapPoint(item) {
+  const itemType = getItemType(item)
+  return itemType.label === '숙소'
+}
+
+function clearMapOverlays(markersRef, polylinesRef) {
   markersRef.current.forEach(marker => marker.setMap(null))
   markersRef.current = []
-  if (polylineRef.current) polylineRef.current.setMap(null)
+  polylinesRef.current.forEach(polyline => polyline.setMap(null))
+  polylinesRef.current = []
 }
 
 function clearSpiderOverlays(spiderRef) {
@@ -421,6 +427,8 @@ function spreadOverlappingPoints(points) {
     return { ...point, lat: point.lat + Math.sin(angle) * distance, lng: point.lng + Math.cos(angle) * distance }
   })
 }
+
+const ROUTE_SEGMENT_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899']
 
 function markerIcon(maps, index) {
   const svg = `
@@ -503,6 +511,7 @@ function drawMarkersForClusters(maps, map, clusters, markersRef, spiderRef) {
         map,
         icon: markerIcon(maps, idx),
         title: point.title,
+        zIndex: 20 + idx,
       })
     } else {
       marker = new maps.Marker({
@@ -510,7 +519,7 @@ function drawMarkersForClusters(maps, map, clusters, markersRef, spiderRef) {
         map,
         icon: clusterIcon(maps, cluster.members.length),
         title: cluster.members.map(m => m.point.title).join(' · '),
-        zIndex: 5,
+        zIndex: 10,
       })
       marker.addListener('click', () => {
         const key = cluster.members.map(m => m.idx).sort().join(',')
@@ -530,22 +539,14 @@ function openSpider(maps, map, center, group, key, spiderRef) {
   clearSpiderOverlays(spiderRef)
   const count = group.length
   const zoom = map.getZoom() || 13
-
-  // 줌레벨에 관계없이 화면에서 항상 ~70px 거리로 펼침
   const metersPerPx = 156543.03392 * Math.cos(center.lat * Math.PI / 180) / Math.pow(2, zoom)
   const spread = Math.max(0.001, (70 * metersPerPx) / 111319)
-
-  // 부채꼴: 150° 호를 위쪽(북) 방향으로 펼침
-  const FAN_ANGLE = (5 / 6) * Math.PI   // 150°
-  const FAN_CENTER = Math.PI / 2         // 북쪽(위)
-  const angleStart = FAN_CENTER - FAN_ANGLE / 2
-  const angleStep = count > 1 ? FAN_ANGLE / (count - 1) : 0
-
+  const angleStep = (Math.PI * 2) / count
   const spiderLines = []
   const spiderMarkers = []
 
   group.forEach((point, i) => {
-    const angle = count === 1 ? FAN_CENTER : angleStart + angleStep * i
+    const angle = -Math.PI / 2 + angleStep * i
     const pos = {
       lat: center.lat + spread * Math.sin(angle),
       lng: center.lng + spread * Math.cos(angle),
@@ -563,7 +564,7 @@ function openSpider(maps, map, center, group, key, spiderRef) {
       map,
       icon: markerIcon(maps, point.index),
       title: `${point.title} (${point.time})`,
-      zIndex: 20,
+      zIndex: 30 + point.index,
     }))
   })
 
@@ -595,13 +596,13 @@ function RouteMap({ routeItems, activeDay, dest }) {
   const mapElRef = useRef(null)
   const mapRef = useRef(null)
   const markersRef = useRef([])
-  const polylineRef = useRef(null)
+  const polylinesRef = useRef([])
   const spiderRef = useRef(null)
   const mapClickListenerRef = useRef(null)
   const idleListenerRef = useRef(null)
   const [useFallback, setUseFallback] = useState(false)
   const spotItems = useMemo(
-    () => (routeItems ?? []).filter(item => !item.isHotel && getItemType(item).label !== '숙소'),
+    () => (routeItems ?? []).filter(item => !item.isHotel),
     [routeItems]
   )
   const fallbackSrc = useMemo(() => buildPlaceSrc(spotItems, dest), [spotItems, dest])
@@ -618,18 +619,14 @@ function RouteMap({ routeItems, activeDay, dest }) {
       .then(async maps => {
         if (cancelled || !mapElRef.current) return
 
-        const fixedPoints = spotItems.map(pointFromItem)
-        let points = filterOutliers(fixedPoints.filter(Boolean))
-        if (points.length < 2) {
-          const resolved = await Promise.all(spotItems.map(async item => {
-            const point = pointFromItem(item)
-            if (point) return point
-            const position = await geocodePlace(`${item.name}, ${dest}`)
-            return position ? { ...position, title: item.name, time: item.time } : null
-          }))
-          if (cancelled) return
-          points = filterOutliers(resolved.filter(Boolean))
-        }
+        const resolved = await Promise.all(spotItems.map(async item => {
+          const point = pointFromItem(item)
+          if (point && !shouldResolveMapPoint(item)) return point
+          const position = await geocodePlace(`${item.name}, ${dest}`)
+          return position ? { ...position, title: item.name, time: item.time } : point
+        }))
+        if (cancelled) return
+        const points = filterOutliers(resolved.filter(Boolean))
 
         if (points.length < 2) {
           setUseFallback(true)
@@ -650,30 +647,32 @@ function RouteMap({ routeItems, activeDay, dest }) {
         const map = mapRef.current
 
         // 겹친 마커 제거 후 폴리라인 그리기
-        clearMapOverlays(markersRef, polylineRef)
+        clearMapOverlays(markersRef, polylinesRef)
         clearSpiderOverlays(spiderRef)
 
-        const orderedLinePoints = dedupeSequentialPoints(filterOutliers(
-          (routeItems ?? []).map(pointFromItem).filter(Boolean)
-        ))
-        const linePoints = orderedLinePoints.length >= 2 ? orderedLinePoints : points
         const markerPoints = spreadOverlappingPoints(points)
+        const orderedLinePoints = dedupeSequentialPoints(markerPoints)
+        const linePoints = orderedLinePoints.length >= 2 ? orderedLinePoints : markerPoints
         const bounds = new maps.LatLngBounds()
         linePoints.forEach(p => bounds.extend({ lat: p.lat, lng: p.lng }))
 
-        polylineRef.current = new maps.Polyline({
-          path: linePoints.map(p => ({ lat: p.lat, lng: p.lng })),
-          map,
-          strokeColor: '#0099ff',
-          strokeOpacity: 0.86,
-          strokeWeight: 4,
+        polylinesRef.current = linePoints.slice(0, -1).map((point, i) => {
+          const next = linePoints[i + 1]
+          return new maps.Polyline({
+            path: [
+              { lat: point.lat, lng: point.lng },
+              { lat: next.lat, lng: next.lng },
+            ],
+            map,
+            strokeColor: ROUTE_SEGMENT_COLORS[i % ROUTE_SEGMENT_COLORS.length],
+            strokeOpacity: 0.88,
+            strokeWeight: 4,
+          })
         })
 
-        // 지도 클릭 → 스파이더 닫기
         if (mapClickListenerRef.current) maps.event.removeListener(mapClickListenerRef.current)
         mapClickListenerRef.current = map.addListener('click', () => clearSpiderOverlays(spiderRef))
 
-        // idle 이벤트 → 줌 변경마다 클러스터 재계산
         if (idleListenerRef.current) maps.event.removeListener(idleListenerRef.current)
         idleListenerRef.current = map.addListener('idle', () => {
           if (cancelled) return
@@ -692,7 +691,7 @@ function RouteMap({ routeItems, activeDay, dest }) {
   }, [spotItems, activeDay, dest, routeItems])
 
   useEffect(() => () => {
-    clearMapOverlays(markersRef, polylineRef)
+    clearMapOverlays(markersRef, polylinesRef)
     clearSpiderOverlays(spiderRef)
     if (window.google?.maps) {
       if (mapClickListenerRef.current) window.google.maps.event.removeListener(mapClickListenerRef.current)
@@ -873,6 +872,35 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
                   </div>
                 ))}
               </div>
+            </aside>
+          )}
+
+          {(planData?.feasibility?.status === 'needs_adjustment' || planData?.feasibility?.status === 'impossible' || planData?.omittedPlaces?.length > 0) && (
+            <aside className="intel-card omitted-card">
+              <h2>조정된 요청</h2>
+              {planData?.feasibility?.message && (
+                <p className="omitted-summary">{planData.feasibility.message}</p>
+              )}
+              {planData?.feasibility?.suggestedAdjustments?.length > 0 && (
+                <div className="adjustment-list">
+                  {planData.feasibility.suggestedAdjustments.map((item, i) => (
+                    <span key={i}>{item}</span>
+                  ))}
+                </div>
+              )}
+              {planData?.omittedPlaces?.length > 0 && (
+                <div className="omitted-list">
+                  {planData.omittedPlaces.map((place, i) => (
+                    <div key={i} className="omitted-item">
+                      <p className="omitted-name">{place.name}</p>
+                      <p className="omitted-reason">{place.reason}</p>
+                      {place.alternative && (
+                        <p className="omitted-alt">대안: {place.alternative}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </aside>
           )}
 

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { Check, Copy, Share2 } from 'lucide-react'
-import { BUDGETS, STYLE_SUGGESTIONS } from '../data/AiGenerationInputForm'
+import { STYLE_SUGGESTIONS } from '../data/AiGenerationInputForm'
+import { validateBudget } from '../utils/budgetValidation'
 import '../styles/AiCollaborationPlanning.css'
 
 const MEMBER_COLORS = ['#0f6bff', '#00a676', '#ffb020', '#ef4444', '#7c3aed', '#db2777']
@@ -51,8 +52,6 @@ function buildRoomUrl(roomId, memberCount, draft) {
   return `${window.location.origin}/ai-collaboration-planning/${roomId}?${params.toString()}`
 }
 
-const BUDGET_ORDER = ['low', 'mid', 'high']
-
 function intensityToDifficulty(value) {
   if (value <= 30) return 'relaxed'
   if (value <= 55) return 'normal'
@@ -61,11 +60,7 @@ function intensityToDifficulty(value) {
 }
 
 function aggregatePreferences(preferences, draft) {
-  const budgets = preferences.map(p => p.budget).filter(Boolean)
-  const avgBudgetIdx = budgets.length
-    ? Math.round(budgets.reduce((sum, b) => sum + BUDGET_ORDER.indexOf(b), 0) / budgets.length)
-    : 1
-  const budget = BUDGET_ORDER[Math.max(0, Math.min(2, avgBudgetIdx))]
+  const budget = preferences.map(p => p.budget).filter(Boolean).join(', ')
 
   const avgIntensity = Math.round(
     preferences.reduce((sum, p) => sum + Number(p.intensity ?? 50), 0) / Math.max(1, preferences.length)
@@ -73,6 +68,7 @@ function aggregatePreferences(preferences, draft) {
   const difficulty = intensityToDifficulty(avgIntensity)
 
   const styles = [...new Set(preferences.flatMap(p => p.styles || []))]
+  const travelPreference = preferences.map(p => p.travelPreference).filter(Boolean).join(' / ')
   const places = [...new Set([
     ...(Array.isArray(draft.places) ? draft.places : []),
     ...preferences.flatMap(p => p.places || []),
@@ -96,6 +92,7 @@ function aggregatePreferences(preferences, draft) {
     adults: Number(draft.adults || 0) + Number(draft.teens || 0),
     children: Number(draft.children || 0) + Number(draft.infants || 0),
     mustVisit: places.join(', '),
+    travelPreference,
     hasAccommodation: draft.hasAccommodation ?? null,
     accommodations: draft.accommodations || [],
     isCollab: true,
@@ -111,7 +108,8 @@ function createPreference(index) {
     styles: [],
     styleInput: '',
     placeInput: '',
-    places: []
+    places: [],
+    travelPreference: ''
   }
 }
 
@@ -132,6 +130,7 @@ export default function AiCollaborationPlanning() {
   const [draft, setDraft] = useState(() => readDraft(searchParams))
   const memberCount = Math.min(20, Math.max(2, parseInt(searchParams.get('members') || sessionStorage.getItem('aiCollabMemberCount') || '2', 10) || 2))
   const [preferences, setPreferences] = useState(() => Array.from({ length: memberCount }, (_, i) => createPreference(i)))
+  const [budgetErrors, setBudgetErrors] = useState(() => Array(memberCount).fill(''))
   const [connectedCount, setConnectedCount] = useState(1)
   const [connectionState, setConnectionState] = useState('연결 중')
   const [assignedMemberIndex, setAssignedMemberIndex] = useState(null)
@@ -314,7 +313,7 @@ export default function AiCollaborationPlanning() {
                       ? '✓ 입력 완료'
                       : member.budget || member.styles.length
                         ? '입력 중'
-                        : '대기 중'}
+                        : i < connectedCount ? '입장' : '대기 중'}
                   </small>
                 </div>
                 {member.budget && member.styles.length > 0 && (
@@ -399,7 +398,6 @@ export default function AiCollaborationPlanning() {
 
         <section className="collab-board" aria-label="참여자별 여행 취향">
           {preferences.map((member, index) => {
-            const selectedBudget = BUDGETS.find(b => b.key === member.budget)
             const color = MEMBER_COLORS[index % MEMBER_COLORS.length]
             const isMine = index === assignedMemberIndex
 
@@ -412,7 +410,7 @@ export default function AiCollaborationPlanning() {
                   <div>
                     <h3>{member.name}</h3>
                     <p>
-                      {selectedBudget ? selectedBudget.label : '예산 미선택'} · 강도 {member.intensity} · 스타일 {member.styles.length}개
+                      {member.budget || '예산 미입력'} · 강도 {member.intensity} · 스타일 {member.styles.length}개
                     </p>
                   </div>
                   <span className="collab-card-lock">{isMine ? '내 카드' : '읽기 전용'}</span>
@@ -420,24 +418,27 @@ export default function AiCollaborationPlanning() {
 
                 <div className="collab-field">
                   <div className="collab-field-header">
-                    <strong>개인 예산</strong>
-                    <small>하루 1인 기준</small>
+                    <strong>개인 총 예산</strong>
+                    <small>항공권 제외 총 예산</small>
                   </div>
-                  <div className="collab-budget-grid">
-                    {BUDGETS.map(budget => (
-                      <button
-                        key={budget.key}
-                        type="button"
-                        className={`collab-budget-btn${member.budget === budget.key ? ' active' : ''}`}
-                        disabled={!isMine}
-                        onClick={() => updatePreference(index, { budget: budget.key })}
-                      >
-                        <span className="budget-icon">{budget.icon}</span>
-                        <strong>{budget.label}</strong>
-                        <small>{budget.sub}</small>
-                      </button>
-                    ))}
-                  </div>
+                  <input
+                    className={`collab-input collab-budget-input${budgetErrors[index] ? ' collab-input-error' : ''}`}
+                    type="text"
+                    placeholder="예: 100만원, 1인당 50만원"
+                    value={member.budget}
+                    disabled={!isMine}
+                    onChange={e => {
+                      updatePreference(index, { budget: e.target.value })
+                      const { valid, message } = validateBudget(e.target.value)
+                      setBudgetErrors(prev => {
+                        const next = [...prev]
+                        next[index] = valid ? '' : message
+                        return next
+                      })
+                    }}
+                  />
+                  {budgetErrors[index] && <p className="collab-budget-error">{budgetErrors[index]}</p>}
+                  <p className="collab-hint">입력한 예산은 일정 생성에 반영됩니다.</p>
                 </div>
 
                 <div className="collab-field">
@@ -469,7 +470,7 @@ export default function AiCollaborationPlanning() {
                   </div>
                 </div>
 
-                <div className="collab-field">
+                <div className="collab-field collab-style-panel">
                   <div className="collab-field-header">
                     <div className="collab-style-title">
                       <span>✨</span>
@@ -507,9 +508,9 @@ export default function AiCollaborationPlanning() {
                           disabled={!isMine}
                           style={member.styles.includes(style) ? { '--chip-color': color } : {}}
                           onClick={() => toggleStyle(index, style)}
-                      >
-                        #{style}
-                      </button>
+                        >
+                          {style}
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -522,6 +523,27 @@ export default function AiCollaborationPlanning() {
                       ))}
                     </div>
                   )}
+                </div>
+
+                <div className="collab-field">
+                  <div className="collab-field-header">
+                    <div className="collab-style-title">
+                      <span>💬</span>
+                      <div>
+                        <strong>여행 선호 방식</strong>
+                        <small>어떤 식으로 여행하는 걸 좋아하는지 자유롭게 적어주세요.</small>
+                      </div>
+                    </div>
+                    <em>선택</em>
+                  </div>
+                  <textarea
+                    className="collab-preference-textarea"
+                    placeholder="예: 아침 일찍 출발해서 저녁엔 느긋하게 즐겨요. 식사에 많은 시간을 투자하고 싶어요. 걷는 걸 좋아해서 대중교통 선호해요."
+                    rows={3}
+                    value={member.travelPreference}
+                    disabled={!isMine}
+                    onChange={e => updatePreference(index, { travelPreference: e.target.value })}
+                  />
                 </div>
 
                 <div className="collab-field">

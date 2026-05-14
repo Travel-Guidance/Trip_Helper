@@ -56,6 +56,10 @@ export function apiPost(path, body, options) {
   return apiRequest(path, { ...options, method: 'POST', body })
 }
 
+export function apiPut(path, body, options) {
+  return apiRequest(path, { ...options, method: 'PUT', body })
+}
+
 export function apiDelete(path, options) {
   return apiRequest(path, { ...options, method: 'DELETE' })
 }

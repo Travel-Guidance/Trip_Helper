@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Smartphone, Mail, Lock, Eye, EyeOff, User } from 'lucide-react'
 import loginBg from '../assets/login_bg.png'
 import { API_BASE } from '../api/config'
 import { useAuth } from '../store/AuthContext'
+import { hasPendingPlanSaveAfterAuth, savePendingPlanAfterAuth } from '../utils/pendingPlanSave'
 
 const DESTINATIONS = [
   { emoji: '🏖️', name: '보라카이', top: '12%',  right: '8%',  delay: '0s'   },
@@ -16,6 +17,10 @@ const DESTINATIONS = [
 const KAKAO_AUTH_URL = `${API_BASE}/auth/kakao/start`
 const GOOGLE_AUTH_URL = `${API_BASE}/auth/google/start`
 
+function getAuthSuccessPath() {
+  return hasPendingPlanSaveAfterAuth() ? '/ai-generation-schedule' : '/home'
+}
+
 function Seagull({ style }) {
   return (
     <svg width="34" height="16" viewBox="0 0 34 16" fill="none" style={style}>
@@ -26,12 +31,13 @@ function Seagull({ style }) {
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { login } = useAuth()
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [name, setName]         = useState('')
   const [showPw, setShowPw]     = useState(false)
-  const [tab, setTab]           = useState('login')
+  const [tab, setTab]           = useState(() => location.state?.tab === 'signup' ? 'signup' : 'login')
   const [animDir, setAnimDir]   = useState('right')
   const [animKey, setAnimKey]   = useState(0)
   const [error, setError]       = useState('')
@@ -70,7 +76,16 @@ export default function LoginPage() {
       }
 
       login(data.user, data.token)
-      navigate('/home')
+      const authSuccessPath = getAuthSuccessPath()
+      try {
+        if (hasPendingPlanSaveAfterAuth()) {
+          await savePendingPlanAfterAuth()
+        }
+      } catch {
+        setError('로그인은 완료됐지만 일정 저장에 실패했습니다. 다시 시도해주세요.')
+        return
+      }
+      navigate(authSuccessPath, { replace: true })
     } catch {
       setError('서버에 연결할 수 없습니다.')
     } finally {

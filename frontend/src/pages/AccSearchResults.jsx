@@ -3,9 +3,21 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { CalendarDays, MapPin, Search, SlidersHorizontal, User, X } from 'lucide-react'
 import BottomNav from '../components/layout/BottomNav'
 import Navbar from '../components/layout/Navbar'
+import DestinationSearch from '../components/accommodation/DestinationSearch'
+import AccomCalendar, { formatKo } from '../components/accommodation/AccomCalendar'
 import { formatKrwPrice, toKrw } from '../utils/currency'
 import { searchStays } from '../api/accommodationApi'
+import { getCountryCode } from '../data/mockHotels'
 import '../styles/accommodation.css'
+
+function getDefaultDates() {
+  const ci = new Date()
+  ci.setDate(ci.getDate() + 30)
+  const co = new Date(ci)
+  co.setDate(co.getDate() + 1)
+  const fmt = (d) => d.toISOString().slice(0, 10)
+  return { checkIn: fmt(ci), checkOut: fmt(co) }
+}
 
 const SORT_OPTIONS = {
   rating: { value: 'rating', label: '고객평점순' },
@@ -42,6 +54,38 @@ export default function AccSearchResults() {
   const checkIn = searchParams.get('checkIn') || ''
   const checkOut = searchParams.get('checkOut') || ''
   const guests = Number(searchParams.get('guests') || 2)
+
+  const [editDest,        setEditDest]        = useState(destination)
+  const [editCountryKey,  setEditCountryKey]  = useState(countryKey)
+  const [editCountryCode, setEditCountryCode] = useState(countryCode)
+  const [editCheckIn,     setEditCheckIn]     = useState(checkIn)
+  const [editCheckOut,    setEditCheckOut]    = useState(checkOut)
+  const [editAdults,      setEditAdults]      = useState(guests)
+  const [editChildren,    setEditChildren]    = useState(Number(searchParams.get('children') || 0))
+  const [calOpen,         setCalOpen]         = useState(false)
+  const [destOpen,        setDestOpen]        = useState(false)
+  const [guestOpen,       setGuestOpen]       = useState(false)
+
+  const editGuestLabel = [
+    `성인 ${editAdults}명`,
+    editChildren > 0 ? `아동 ${editChildren}명` : '',
+  ].filter(Boolean).join(' · ')
+
+  const handleSearch = () => {
+    if (!editCountryKey && !editDest) return
+    const defaults = getDefaultDates()
+    const params = new URLSearchParams({
+      destination: editDest || editCountryKey || '',
+      countryKey:  editCountryKey || '',
+      countryCode: editCountryCode || getCountryCode(editCountryKey),
+      checkIn:     editCheckIn  || defaults.checkIn,
+      checkOut:    editCheckOut || defaults.checkOut,
+      guests:      String(editAdults),
+      children:    String(editChildren),
+    })
+    setGuestOpen(false)
+    navigate(`/accommodation/results?${params}`)
+  }
 
   const [hotels, setHotels] = useState([])
   const [loading, setLoading] = useState(true)
@@ -130,33 +174,76 @@ export default function AccSearchResults() {
       <Navbar />
 
       <div className="asr-search-panel">
-        <div className="asr-search-cell">
+        <div className="asr-search-cell asr-search-cell--btn" onClick={() => setDestOpen(true)}>
           <Search size={24} />
           <div>
             <span>여행지</span>
-            <strong>{destination || '여행지 선택'}</strong>
+            <strong>{editDest || '여행지 선택'}</strong>
           </div>
-          {destination && <X size={20} className="asr-search-clear" />}
+          {editDest && (
+            <X size={20} className="asr-search-clear"
+              onClick={e => { e.stopPropagation(); setEditDest(''); setEditCountryKey(''); setEditCountryCode('') }}
+            />
+          )}
         </div>
 
-        <div className="asr-search-cell">
+        <div className="asr-search-cell asr-search-cell--btn" onClick={() => setCalOpen(true)}>
           <CalendarDays size={24} />
           <div>
             <span>일정</span>
-            <strong>{formatDateLabel(checkIn)} - {formatDateLabel(checkOut)}</strong>
+            <strong>
+              {editCheckIn ? formatKo(editCheckIn) : '체크인'} - {editCheckOut ? formatKo(editCheckOut) : '체크아웃'}
+            </strong>
           </div>
-          {(checkIn || checkOut) && <X size={20} className="asr-search-clear" />}
+          {(editCheckIn || editCheckOut) && (
+            <X size={20} className="asr-search-clear"
+              onClick={e => { e.stopPropagation(); setEditCheckIn(''); setEditCheckOut('') }}
+            />
+          )}
         </div>
 
-        <div className="asr-search-cell">
-          <User size={24} />
-          <div>
-            <span>숙박 인원</span>
-            <strong>성인 {guests}명</strong>
+        <div className="asr-search-cell asr-guest-wrap" style={{ position: 'relative' }}>
+          <div className="asr-search-cell--btn" style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}
+            onClick={() => setGuestOpen(o => !o)}>
+            <User size={24} />
+            <div>
+              <span>숙박 인원</span>
+              <strong>{editGuestLabel}</strong>
+            </div>
           </div>
+          {guestOpen && (
+            <>
+              <div className="ac-guest-dimmer" onClick={() => setGuestOpen(false)} />
+              <div className="ac-guest-dropdown">
+                <div className="ac-guest-row">
+                  <div className="ac-guest-row-info">
+                    <span className="ac-guest-row-label">성인</span>
+                    <span className="ac-guest-row-sub">만 18세 이상</span>
+                  </div>
+                  <div className="ac-guests-ctrl">
+                    <button className="ac-guest-btn" onClick={() => setEditAdults(a => Math.max(1, a - 1))}>−</button>
+                    <span className="ac-guests-num">{editAdults}</span>
+                    <button className="ac-guest-btn" onClick={() => setEditAdults(a => a + 1)}>+</button>
+                  </div>
+                </div>
+                <div className="ac-guest-row">
+                  <div className="ac-guest-row-info">
+                    <span className="ac-guest-row-label">청소년/아동</span>
+                    <span className="ac-guest-row-sub">만 17세 이하</span>
+                  </div>
+                  <div className="ac-guests-ctrl">
+                    <button className="ac-guest-btn" onClick={() => setEditChildren(c => Math.max(0, c - 1))}>−</button>
+                    <span className="ac-guests-num">{editChildren}</span>
+                    <button className="ac-guest-btn" onClick={() => setEditChildren(c => c + 1)}>+</button>
+                  </div>
+                </div>
+                <button className="ac-guest-confirm" onClick={() => setGuestOpen(false)}>확인</button>
+              </div>
+            </>
+          )}
         </div>
 
-        <button className="asr-search-submit" onClick={() => navigate('/accommodation')}>숙소 검색</button>
+        <button className="asr-search-submit" onClick={handleSearch}>숙소 검색</button>
       </div>
 
       {bookingQueue && (
@@ -289,6 +376,26 @@ export default function AccSearchResults() {
           )}
         </main>
       </div>
+
+      {destOpen && (
+        <DestinationSearch
+          onSelect={(item) => {
+            setEditDest(item.city)
+            setEditCountryKey(item.key)
+            setEditCountryCode(item.countryCode || getCountryCode(item.key, item.flag))
+          }}
+          onClose={() => setDestOpen(false)}
+        />
+      )}
+
+      {calOpen && (
+        <AccomCalendar
+          checkIn={editCheckIn}
+          checkOut={editCheckOut}
+          onSelect={(ci, co) => { setEditCheckIn(ci); setEditCheckOut(co) }}
+          onClose={() => setCalOpen(false)}
+        />
+      )}
 
       <BottomNav />
     </div>

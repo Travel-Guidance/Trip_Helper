@@ -6,9 +6,8 @@ function extractJsonObject(text) {
   // 마크다운 코드블록 제거
   const stripped = source.replace(/```(?:json)?\s*([\s\S]*?)```/g, '$1').trim();
 
-  // { ... } 형태 탐색
-  const match = stripped.match(/\{[\s\S]*\}/);
-  if (!match) {
+  const rawJson = findBalancedJsonObject(stripped);
+  if (!rawJson) {
     console.error('[responseParser] JSON 없는 응답:', stripped.slice(0, 300));
     throw new Error('AI response did not contain a JSON object');
   }
@@ -20,26 +19,72 @@ function extractJsonObject(text) {
     )
   }
 
+  function normalize(raw) {
+    return raw
+      .replace(/,\s*([}\]])/g, '$1')
+      .replace(/\u0000/g, '');
+  }
+
   try {
-    return JSON.parse(match[0]);
+    return JSON.parse(rawJson);
   } catch {
     try {
-      return JSON.parse(sanitize(match[0]));
+      return JSON.parse(sanitize(normalize(rawJson)));
     } catch {
       // 끝부분이 잘린 경우 — 마지막 완전한 일차까지만 복구
-      const partial = match[0].replace(/,\s*\{[^{}]*$/, '') + ']}';
+      const partial = rawJson.replace(/,\s*\{[^{}]*$/, '') + ']}';
       try {
-        return JSON.parse(partial);
+        return JSON.parse(normalize(partial));
       } catch {
         try {
-          return JSON.parse(sanitize(partial));
+          return JSON.parse(sanitize(normalize(partial)));
         } catch {
-          console.error('[responseParser] JSON 파싱 실패:', match[0].slice(0, 300));
+          console.error('[responseParser] JSON 파싱 실패:', rawJson.slice(0, 300));
           throw new Error('AI response JSON was malformed');
         }
       }
     }
   }
+}
+
+function findBalancedJsonObject(text) {
+  const source = String(text || '');
+  let start = -1;
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+
+  for (let i = 0; i < source.length; i++) {
+    const ch = source[i];
+
+    if (start < 0) {
+      if (ch === '{') {
+        start = i;
+        depth = 1;
+      }
+      continue;
+    }
+
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (ch === '\\') {
+      escape = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+
+    if (ch === '{') depth++;
+    if (ch === '}') depth--;
+    if (depth === 0) return source.slice(start, i + 1);
+  }
+
+  return start >= 0 ? source.slice(start) : null;
 }
 
 module.exports = { extractJsonObject };

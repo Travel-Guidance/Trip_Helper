@@ -3,6 +3,7 @@ const multer = require('multer');
 const {
   generatePlan,
   chatbot,
+  createPlan,
   getUserPlans,
   getPlanById,
   deletePlan,
@@ -10,6 +11,7 @@ const {
   createPlanExpense,
   updatePlanExpense,
   deletePlanExpense,
+  updatePlanBudget,
   rebudgetPlanDay,
   translateText,
   translateImage,
@@ -69,7 +71,9 @@ const imageUpload = multer({
  */
 router.post('/ai-travel/generate', aiLimiter, optionalAuth, generatePlan);
 
+router.post('/ai-travel/plans', requireAuth, createPlan);
 router.get('/ai-travel/plans', requireAuth, getUserPlans);
+router.put('/ai-travel/plans/:id/budget', requireAuth, updatePlanBudget);
 router.post('/ai-travel/plans/:id/rebudget-day', requireAuth, rebudgetPlanDay);
 router.get('/ai-travel/plans/:id/expenses', requireAuth, getPlanExpenses);
 router.post('/ai-travel/plans/:id/expenses', requireAuth, createPlanExpense);

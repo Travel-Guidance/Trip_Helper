@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import CalendarPicker from '../common/CalendarPicker'
+import { validateBudget } from '../../utils/budgetValidation'
 import {
   CONTINENTS,
   INTENSITY_LABELS,
@@ -17,6 +18,7 @@ export default function AiGenerationInputFormView() {
   const [travelMode, setTravelMode] = useState('personal')
   const [counts, setCounts] = useState({ adults: 1, teens: 0, children: 0, infants: 0 })
   const [budgetText, setBudgetText] = useState('')
+  const [budgetError, setBudgetError] = useState('')
   const [intensity, setIntensity] = useState(0)
   const [intensityTouched, setIntensityTouched] = useState(false)
   const [travelPreference, setTravelPreference] = useState('')
@@ -112,6 +114,24 @@ export default function AiGenerationInputFormView() {
     if (next > 1 && !(dates.startDate && dates.endDate && getNights() > 0)) {
       setCurrentStep(1)
       showStepWarning(1, '일정을 먼저 입력해주세요.')
+      return false
+    }
+
+    if (next > 2 && !budgetText.trim()) {
+      setCurrentStep(2)
+      showStepWarning(2, '예산을 입력해주세요.')
+      return false
+    }
+
+    if (next > 2 && !validateBudget(budgetText).valid) {
+      setCurrentStep(2)
+      showStepWarning(2, '올바른 예산 형식으로 수정해주세요.')
+      return false
+    }
+
+    if (next > 3 && !intensityTouched) {
+      setCurrentStep(3)
+      showStepWarning(3, '여행 강도를 설정해주세요.')
       return false
     }
 
@@ -269,6 +289,17 @@ export default function AiGenerationInputFormView() {
 
   const intensityColor = intensity <= 30 ? '#0f6bff' : intensity <= 60 ? '#00a676' : intensity <= 80 ? '#ffb020' : '#ef4444'
 
+  const confirmItems = [
+    { icon: '🌍', label: '여행지', value: destinationLabel(), type: 'strong' },
+    { icon: '📅', label: '여행 기간', value: `${formatDate(dates.startDate)} ~ ${formatDate(dates.endDate)} (${nights}박 ${nights + 1}일)` },
+    { icon: '👤', label: '인원', value: travelerText() },
+    { icon: '📍', label: '꼭 갈 장소', value: places.length ? places : ['선택 안 함'], type: 'chips' },
+    { icon: '💰', label: '예산', value: budgetText.trim() || '선택 안 함' },
+    { icon: '⚡', label: '여행 강도', value: intensityTouched ? `${intensity}/100 · ${intensityDesc}` : '선택 안 함' },
+    { icon: '✨', label: '여행 스타일', value: styles.length ? styles.map(s => `#${s}`) : ['선택 안 함'], type: 'chips' },
+    { icon: '💬', label: '여행 선호 방식', value: travelPreference.trim() || '선택 안 함', type: 'note' }
+  ]
+
   // 협업 버튼 노출 로직
   useEffect(() => {
     if (travelMode === 'group' && adultTeenTotal() >= 2) {
@@ -327,7 +358,7 @@ export default function AiGenerationInputFormView() {
                 <p>한 번에 전부 묻지 않고, 여행을 설계하는 순서대로 짧게 이어갑니다.</p>
               </div>
               <div className="progress" aria-hidden="true">
-                <span id="progressFill" style={{ width: `${((hasDestination ? 1 : 0) + (hasDates ? 1 : 0)) / 2 * 100}%`, backgroundSize: '420px 100%' }}></span>
+                <span id="progressFill" style={{ width: `${(currentStep + 1) / STEPS.length * 100}%` }}></span>
               </div>
             </header>
 
@@ -554,25 +585,32 @@ export default function AiGenerationInputFormView() {
                         <span className="icon">💰</span>
                         <div>
                           <h3>여행 예산</h3>
-                          <p className="panel-note">1인 기준 하루 예산, 총 예산 등 편한 방식으로 적어주세요.</p>
+                          <p className="panel-note">항공권 제외 총 여행 예산을 입력해주세요.</p>
                         </div>
                       </div>
                       <span className="badge">선택</span>
                     </div>
                     <div className="input-row">
                       <input
-                        className="input"
+                        className={`input ${budgetError ? 'input-error' : ''}`}
                         id="budgetInput"
                         type="text"
-                        placeholder="예: 1인 하루 10만원, 총 여행 예산 150만원"
+                        placeholder="예: 100만원, 150만원, 200만원"
                         value={budgetText}
-                        onChange={(e) => setBudgetText(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setBudgetText(val)
+                          const result = validateBudget(val)
+                          setBudgetError(result.valid ? '' : result.message)
+                        }}
                       />
                     </div>
-                    <p className="hint">항공권 제외 금액을 자유롭게 입력하세요. (예: 50만원, 1인 하루 10만원, 총 150만원)</p>
+                    {budgetError && <p className="budget-error-msg">{budgetError}</p>}
+                    <p className="hint">입력한 예산은 일정 생성과 현지 예산 추적에 활용됩니다.</p>
                   </section>
                 </div>
-                <div className="step-actions">
+                <div className="step-actions has-back">
+                  <p className={`step-warning ${warning.step === 2 ? 'show' : ''}`}>{warning.message}</p>
                   <button className="step-action light" type="button" onClick={() => goStep(1)}>이전</button>
                   <button className="step-action" type="button" onClick={() => { if (canGoStep(3)) goStep(3) }}>여행 강도 조정</button>
                 </div>
@@ -617,7 +655,8 @@ export default function AiGenerationInputFormView() {
                     </div>
                   </div>
                 </section>
-                <div className="step-actions">
+                <div className="step-actions has-back">
+                  <p className={`step-warning ${warning.step === 3 ? 'show' : ''}`}>{warning.message}</p>
                   <button className="step-action light" type="button" onClick={() => goStep(2)}>이전</button>
                   <button className="step-action" type="button" onClick={() => { if (canGoStep(4)) goStep(4) }}>스타일 선택</button>
                 </div>
@@ -702,7 +741,7 @@ export default function AiGenerationInputFormView() {
                     <button className="submit" id="submitBtn" type="button" disabled={!ready} onClick={openConfirmModal}>일정 생성하기</button>
                   </div>
                 </section>
-                <div className="step-actions">
+                <div className="step-actions has-back">
                   <button className="step-action light" type="button" onClick={() => goStep(3)}>이전</button>
                 </div>
               </section>
@@ -719,19 +758,15 @@ export default function AiGenerationInputFormView() {
             <p>이 내용 그대로 AI 여행 일정을 생성합니다.</p>
           </div>
           <dl className="confirm-body" id="confirmBody">
-            {[
-              ['여행지', destinationLabel()],
-              ['여행 기간', `${formatDate(dates.startDate)} ~ ${formatDate(dates.endDate)} (${nights}박 ${nights + 1}일)`],
-              ['인원', travelerText()],
-              ['꼭 갈 장소', places.length ? places.join(', ') : '선택 안 함'],
-              ['예산', budgetText.trim() || '선택 안 함'],
-              ['여행 강도', intensityTouched ? `${intensity}/100 · ${intensityDesc}` : '선택 안 함'],
-              ['여행 스타일', styles.length ? styles.map(s => `#${s}`).join(' ') : '선택 안 함'],
-              ['여행 선호 방식', travelPreference.trim() || '선택 안 함']
-            ].map(([label, value]) => (
-              <div key={label} className="confirm-row">
+            {confirmItems.map(({ icon, label, value, type }) => (
+              <div key={label} className={`confirm-row ${type ? `is-${type}` : ''}`}>
+                <span className="confirm-row-icon" aria-hidden="true">{icon}</span>
                 <dt>{label}</dt>
-                <dd>{value}</dd>
+                <dd>
+                  {type === 'chips' && Array.isArray(value)
+                    ? value.map(item => <span key={item} className="confirm-value-chip">{item}</span>)
+                    : value}
+                </dd>
               </div>
             ))}
           </dl>

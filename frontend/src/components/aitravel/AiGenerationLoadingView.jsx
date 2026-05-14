@@ -1,4 +1,24 @@
 import { DEFAULT_TRIP, LOADING_MESSAGES, LOADING_PHASES, STAGE_LABELS } from '../../data/AiGenerationLoading'
+import { parseBudgetWon } from '../../utils/AiTravelDuration'
+
+function formatBudgetWon(won) {
+  if (!won || won <= 0) return null
+  if (won >= 100000000) {
+    const eok = Math.floor(won / 100000000)
+    const man = Math.round((won % 100000000) / 10000)
+    return man > 0 ? `${eok}억 ${man}만원` : `${eok}억원`
+  }
+  return `${Math.round(won / 10000)}만원`
+}
+
+function budgetDisplay(trip) {
+  const raw = trip.budget || trip.budgetText || ''
+  if (!raw) return '선택 안 함'
+  if (!trip.isCollab) return raw
+  const total = parseBudgetWon(raw)
+  const formatted = formatBudgetWon(total)
+  return formatted ? `합산 ${formatted}` : raw
+}
 
 function dateText(value) {
   if (!value) return ''
@@ -38,7 +58,7 @@ function buildFacts(trip) {
   return [
     ['여행 기간', `${dateText(trip.startDate)} ~ ${dateText(trip.endDate)} · ${trip.nights || 0}박 ${days}일`],
     ['인원', travelerText(trip)],
-    ['예산', trip.budget || '선택 안 함'],
+    ['예산', budgetDisplay(trip)],
     [trip.isCollab ? '평균 여행 강도' : '여행 강도', trip.intensity || '선택 안 함'],
     ['고정 장소', listText(places)],
     ['스타일', listText((trip.styles || []).map(style => `#${style}`))],
@@ -55,6 +75,20 @@ function buildChips(trip) {
     ...places,
     ...(trip.styles || []).map(style => `#${style}`),
   ].filter(Boolean)
+}
+
+const AUSTRALIA_HERO_IMAGE = 'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?auto=format&fit=crop&w=1200&q=90'
+const AUSTRALIA_DESTINATIONS = ['호주', '오스트레일리아', 'australia', '시드니', 'sydney', '멜버른', 'melbourne']
+
+function tripPhotoStyle(destination) {
+  const value = String(destination || '').toLowerCase()
+  const isAustralia = AUSTRALIA_DESTINATIONS.some(name => value.includes(name))
+  if (!isAustralia) return undefined
+
+  return {
+    backgroundImage: `linear-gradient(180deg, rgba(7, 17, 31, 0.02), rgba(7, 17, 31, 0.74)), url("${AUSTRALIA_HERO_IMAGE}")`,
+    backgroundPosition: 'center 52%',
+  }
 }
 
 export default function AiGenerationLoadingView({
@@ -102,8 +136,7 @@ export default function AiGenerationLoadingView({
                 <div className="message-wrap" aria-live="polite">
                   {hasError ? (
                     <p className="loading-message">
-                      일정 생성에 실패했어요.<br />
-                      <span style={{ color: '#fecaca' }}>{error}</span>
+                      일정 생성에 실패했어요.
                     </p>
                   ) : (
                     <p
@@ -154,7 +187,7 @@ export default function AiGenerationLoadingView({
             </section>
       
             <aside className="detail-panel">
-              <section className="trip-photo">
+              <section className="trip-photo" style={tripPhotoStyle(trip.destination || DEFAULT_TRIP.destination)}>
                 <p>YOUR NEXT TRIP</p>
                 <h2>{trip.destination || DEFAULT_TRIP.destination} 여행</h2>
               </section>

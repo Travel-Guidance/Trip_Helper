@@ -520,6 +520,10 @@ function validateAustraliaItinerary(plan, params = {}) {
 
 function buildItineraryRepairPrompt(plan, violations) {
   const summary = violations.map((violation, index) => `${index + 1}. [${violation.day}] ${violation.message}`).join('\n');
+  const hasSevereRouting = violations.some(violation =>
+    ['long_same_day_segment', 'region_revisit', 'long_region_movement', 'missing_accommodation_for_region', 'same_day_mixed_region']
+      .includes(violation.type)
+  );
 
   return `The itinerary has unrealistic routing. Fix every violation below and return strict JSON only.
 
@@ -527,15 +531,17 @@ Violations:
 ${summary}
 
 Correction rules (follow in this order):
-1. PACING: Use fewer Australia regions with deeper stays. If the violation says there are too many regions or transfers, remove lower-priority regions and list them in omittedPlaces.
+1. PACING: Use fewer Australia regions with deeper stays. If the violation says there are too many regions, repeated regions, missing accommodations, or transfer-day violations, remove the weakest region entirely and list it in omittedPlaces.
 2. REGION BLOCKS: Group each region into one consecutive stay. Do not do Sydney → Melbourne → Sydney or any A → B → A pattern.
-3. SAME-DAY REGION LOCK: Every item on a given day must be in the same city/region as that day's baseHotel. If a violation says an item belongs to a different region, move that item to a day whose baseHotel is in that item's region. Do NOT keep cross-region items on the same day under any circumstance.
+3. SAME-DAY REGION LOCK: Every item on a given day must be in the same city/region as that day's baseHotel. If a violation says an item belongs to a different region, either move that item to a day whose baseHotel is in that item's region OR omit it. Do NOT keep cross-region items on the same day under any circumstance.
 4. TRANSFER DAYS: If moving between distant regions (>400km), dedicate an entire day to the transfer: previous hotel departure → airport/station → flight/train → arrival hotel check-in. No tourist items on a transfer day. Do not place transfer days back-to-back.
 5. ARRIVAL DAY: The arrival day may only have items in the arrival city. Do not mix arrival-city items with items from a different region.
 6. ACCOMMODATION: Add a separate accommodations[] entry for each distinct region/city stay. checkIn/checkOut must exactly cover the days that use that accommodation as baseHotel.
 7. FIELDS: Keep all itinerary fields (summary, routeStrategy per day; duration, cost, reservation, transportTip, backup per item).
 8. MEALS: Replace any vague meal item ("점심 식사", "근처 맛집", "local cafe") with a real restaurant/cafe name in the same region.
-9. OMISSIONS: If the trip length cannot include all requested places, list them in omittedPlaces with reasons.
+9. OMISSIONS: If the trip length cannot include all requested places, list them in omittedPlaces with reasons and alternatives.
+10. FEASIBILITY: If you must omit requested places, set feasibility.status to "needs_adjustment". If the requested route is broadly impossible, set it to "impossible" and make feasibility.message start with "해당 예산과 기간으로 입력하신 일정은 무리입니다."
+${hasSevereRouting ? '11. IMPORTANT: Do not preserve the current route shape. Rebuild the itinerary around the fewest realistic region blocks, even if that means omitting Uluru, Brisbane, Kakadu, or Great Ocean Road.' : ''}
 
 Current itinerary JSON:
 ${JSON.stringify(plan)}`;

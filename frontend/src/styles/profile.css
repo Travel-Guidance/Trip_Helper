@@ -1,11 +1,678 @@
-/* ── 프로필 페이지 ─────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   프로필 v2 (pf2-*) — MainPage Tailwind 디자인 기반
+   sky-500 포인트 / 흰 카드 / rounded-2xl / shadow hover
+   ══════════════════════════════════════════════════════════ */
+
+.pf2-page {
+  min-height: 100vh;
+  background: #f9fafb;
+  padding-top: 64px;
+  padding-bottom: 80px;
+}
+
+.pf2-layout {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 24px;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* ── 사이드바 ─────────────────────────────────────────── */
+.pf2-sidebar {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #f3f4f6;
+  padding: 28px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 80px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+}
+
+.pf2-avatar-wrap { position: relative; }
+
+.pf2-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #1e3a5f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -1px;
+}
+
+.pf2-avatar-edit {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+  transition: background 0.12s;
+}
+.pf2-avatar-edit:hover { background: #f3f4f6; }
+
+.pf2-sidebar-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.3px;
+}
+
+.pf2-sidebar-email {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: -6px;
+}
+
+.pf2-provider-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #e5e7eb;
+}
+
+.pf2-sidebar-btns {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.pf2-edit-btn,
+.pf2-grade-btn {
+  flex: 1;
+  height: 34px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-family: inherit;
+  transition: background 0.12s;
+}
+.pf2-edit-btn:hover,
+.pf2-grade-btn:hover { background: #e5e7eb; }
+
+.pf2-stats-title {
+  width: 100%;
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+  padding-top: 6px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.pf2-stats-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.pf2-stat-item {
+  background: #f9fafb;
+  border: 1px solid #f3f4f6;
+  border-radius: 10px;
+  padding: 12px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.pf2-stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+}
+
+.pf2-stat-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.1;
+}
+
+.pf2-stat-label {
+  font-size: 10px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.pf2-quick-menu {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #f3f4f6;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.pf2-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  background: #ffffff;
+  border: none;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: background 0.1s;
+  text-align: left;
+  font-family: inherit;
+}
+.pf2-menu-item:last-child { border-bottom: none; }
+.pf2-menu-item:hover { background: #f9fafb; }
+
+.pf2-menu-danger { color: #ef4444; }
+.pf2-menu-danger .pf2-menu-icon { color: #ef4444; }
+.pf2-menu-danger:hover { background: #fff5f5; }
+
+.pf2-menu-icon { width: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #6b7280; }
+.pf2-menu-label { flex: 1; }
+.pf2-menu-chevron { color: #d1d5db; flex-shrink: 0; }
+
+/* ── 메인 콘텐츠 ─────────────────────────────────────── */
+.pf2-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* 웰컴 배너 — HeroSection 느낌 */
+.pf2-banner {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0369a1 100%);
+  border-radius: 16px;
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 4px 6px rgba(0,0,0,.07), 0 10px 15px rgba(0,0,0,.1);
+}
+
+.pf2-banner-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+.pf2-banner-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,.65);
+  margin-top: 4px;
+}
+
+.pf2-banner-btn {
+  flex-shrink: 0;
+  padding: 10px 22px;
+  background: #0ea5e9;
+  color: #ffffff;
+  border: none;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: background 0.15s, transform 0.2s;
+  box-shadow: 0 4px 6px rgba(14,165,233,.35);
+}
+.pf2-banner-btn:hover {
+  background: #38bdf8;
+  transform: scale(1.03);
+}
+
+/* 탭 — pill 스타일 */
+.pf2-tabs {
+  display: flex;
+  gap: 4px;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 4px;
+  border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+
+.pf2-tab {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.pf2-tab:hover { color: #374151; background: #f9fafb; }
+.pf2-tab.active {
+  background: #0ea5e9;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(14,165,233,.4);
+}
+
+.pf2-tab-count {
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  background: rgba(255,255,255,.25);
+  color: inherit;
+}
+.pf2-tab:not(.active) .pf2-tab-count {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* 카드 목록 */
+.pf2-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 카드 공통 — ServiceCard 스타일 */
+.pf2-card {
+  background: #ffffff;
+  border: 1px solid #f3f4f6;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  transition: box-shadow 0.3s, transform 0.3s;
+}
+.pf2-card:hover {
+  box-shadow: 0 20px 40px rgba(0,0,0,.1);
+  transform: translateY(-2px);
+}
+.pf2-card--cancelled { opacity: 0.5; }
+.pf2-card--cancelled:hover { transform: none; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+
+.pf2-card-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+/* 항공권 아이콘 — sky 그라디언트 */
+.pf2-flight-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* 숙소 아이콘 — orange 그라디언트 */
+.pf2-stay-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f97316, #f59e0b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.pf2-stay-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.pf2-stay-icon { font-size: 20px; }
+.pf2-flight-info { flex: 1; min-width: 0; }
+
+.pf2-flight-route {
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pf2-arrow { color: #9ca3af; margin: 0 4px; }
+
+.pf2-flight-airline {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pf2-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.pf2-badge--confirmed {
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.pf2-badge--cancelled {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.pf2-flight-meta {
+  display: flex;
+  padding: 12px 18px;
+  border-bottom: 1px solid #f3f4f6;
+  background: #f9fafb;
+}
+
+.pf2-meta-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-right: 14px;
+}
+
+.pf2-meta-col + .pf2-meta-col {
+  padding-left: 14px;
+  padding-right: 14px;
+  border-left: 1px solid #e5e7eb;
+}
+
+.pf2-meta-label {
+  font-size: 11px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.pf2-meta-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.pf2-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  gap: 10px;
+}
+
+.pf2-amount {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.pf2-foot-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pf2-ref {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 3px 8px;
+  letter-spacing: 0.3px;
+}
+
+.pf2-cancel-btn {
+  font-size: 12px;
+  font-weight: 600;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: background 0.12s;
+  font-family: inherit;
+}
+.pf2-cancel-btn:hover:not(:disabled) { background: #fee2e2; }
+.pf2-cancel-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* AI 일정 카드 — violet 그라디언트 */
+.pf2-plan-card {
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.pf2-plan-card:hover { background: #f9fafb; }
+
+.pf2-plan-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.pf2-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.1s, color 0.1s;
+  color: #d1d5db;
+}
+.pf2-delete-btn:hover { background: #fee2e2; color: #ef4444; }
+
+/* 최근 활동 */
+.pf2-activity {
+  background: #ffffff;
+  border: 1px solid #f3f4f6;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+
+.pf2-activity-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.pf2-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.1s;
+}
+.pf2-activity-item:last-child { border-bottom: none; }
+.pf2-activity-item:hover { background: #f9fafb; }
+
+.pf2-activity-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pf2-activity-body { flex: 1; min-width: 0; }
+
+.pf2-activity-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pf2-activity-time {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+/* 빈 상태 */
+.pf2-empty {
+  padding: 48px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid #f3f4f6;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+
+.pf2-empty-btn {
+  margin-top: 4px;
+  padding: 10px 24px;
+  background: #0ea5e9;
+  color: #ffffff;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+  box-shadow: 0 4px 6px rgba(14,165,233,.3);
+}
+.pf2-empty-btn:hover { background: #38bdf8; }
+
+/* 로딩 */
+.pf2-loading {
+  display: flex;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+.pf2-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #0ea5e9;
+  border-radius: 50%;
+  animation: pf2-spin 0.7s linear infinite;
+}
+
+@keyframes pf2-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .pf2-layout {
+    grid-template-columns: 1fr;
+    padding: 16px;
+    gap: 16px;
+  }
+  .pf2-sidebar { position: static; }
+  .pf2-stats-grid { grid-template-columns: repeat(4, 1fr); }
+  .pf2-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 20px;
+  }
+  .pf2-banner-btn { width: 100%; text-align: center; }
+}
+
+@media (max-width: 480px) {
+  .pf2-layout { padding: 12px; }
+  .pf2-stats-grid { grid-template-columns: 1fr 1fr; }
+  .pf2-flight-meta { flex-wrap: wrap; background: none; }
+  .pf2-meta-col + .pf2-meta-col { border-left: none; padding-left: 0; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   구버전 profile-* 클래스 (하위 호환)
+   ══════════════════════════════════════════════════════════ */
+
 .profile-page {
   min-height: 100vh;
   background: var(--bg);
   padding-bottom: 80px;
 }
 
-/* ── 프로필 헤더 ──────────────────────────────────────── */
 .profile-hero {
   background: linear-gradient(135deg, #0ea5e9 0%, #1A56DB 100%);
   padding: 48px 24px 32px;
@@ -69,17 +736,12 @@
   cursor: pointer;
   transition: background 0.15s;
 }
+.pf-photobook-btn:hover { background: rgba(255, 255, 255, 0.34); }
 
-.pf-photobook-btn:hover {
-  background: rgba(255, 255, 255, 0.34);
-}
-
-/* ── 탭 ──────────────────────────────────────────────── */
 .profile-tabs {
   background: var(--white);
   border-bottom: 1px solid var(--border);
   display: flex;
-  gap: 0;
   padding: 0 24px;
   position: sticky;
   top: 64px;
@@ -102,13 +764,11 @@
   border-right: none;
   font-family: inherit;
 }
-
 .profile-tab.active {
   color: var(--primary);
   border-bottom-color: var(--primary);
 }
 
-/* ── 콘텐츠 영역 ─────────────────────────────────────── */
 .profile-content {
   max-width: 720px;
   margin: 0 auto;
@@ -118,7 +778,6 @@
   gap: 12px;
 }
 
-/* ── 섹션 제목 ──────────────────────────────────────── */
 .profile-section-label {
   font-size: 12px;
   font-weight: 700;
@@ -128,7 +787,6 @@
   padding: 4px 0 2px;
 }
 
-/* ── 카드 공통 ──────────────────────────────────────── */
 .profile-card {
   background: var(--white);
   border: 1px solid var(--border);
@@ -137,7 +795,6 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* ── 항공권 카드 ─────────────────────────────────────── */
 .pf-flight-card {
   padding: 16px 18px;
   display: flex;
@@ -162,10 +819,7 @@
   letter-spacing: -0.5px;
 }
 
-.pf-flight-arrow {
-  font-size: 14px;
-  color: var(--text-light);
-}
+.pf-flight-arrow { font-size: 14px; color: var(--text-light); }
 
 .pf-ref-badge {
   font-size: 11px;
@@ -178,28 +832,10 @@
   letter-spacing: 0.5px;
 }
 
-.pf-flight-meta {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.pf-meta-item {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.pf-meta-label {
-  font-size: 11px;
-  color: var(--text-light);
-}
-
-.pf-meta-value {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-}
+.pf-flight-meta { display: flex; gap: 16px; flex-wrap: wrap; }
+.pf-meta-item { display: flex; flex-direction: column; gap: 1px; }
+.pf-meta-label { font-size: 11px; color: var(--text-light); }
+.pf-meta-value { font-size: 13px; font-weight: 600; color: var(--text); }
 
 .pf-flight-bottom {
   display: flex;
@@ -217,7 +853,6 @@
   color: #059669;
   font-weight: 600;
 }
-
 .pf-status-dot::before {
   content: '';
   width: 6px;
@@ -226,25 +861,10 @@
   background: #059669;
 }
 
-.pf-amount {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--primary);
-}
+.pf-amount { font-size: 15px; font-weight: 800; color: var(--primary); }
 
-/* ── 숙소 카드 ───────────────────────────────────────── */
-.pf-stay-card {
-  display: flex;
-  gap: 0;
-}
-
-.pf-stay-img {
-  width: 100px;
-  min-height: 110px;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
+.pf-stay-card { display: flex; }
+.pf-stay-img { width: 100px; min-height: 110px; object-fit: cover; flex-shrink: 0; }
 .pf-stay-img-placeholder {
   width: 100px;
   min-height: 110px;
@@ -264,35 +884,11 @@
   gap: 6px;
   min-width: 0;
 }
+.pf-stay-name { font-size: 15px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pf-stay-location { font-size: 12px; color: var(--text-muted); }
+.pf-stay-dates { font-size: 13px; font-weight: 600; color: var(--text); }
+.pf-stay-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
 
-.pf-stay-name {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.pf-stay-location {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.pf-stay-dates {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.pf-stay-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: auto;
-}
-
-/* ── AI 일정 카드 ────────────────────────────────────── */
 .pf-plan-card {
   padding: 16px 18px;
   display: flex;
@@ -301,10 +897,7 @@
   cursor: pointer;
   transition: background 0.12s;
 }
-
-.pf-plan-card:hover {
-  background: #f8fafc;
-}
+.pf-plan-card:hover { background: #f8fafc; }
 
 .pf-plan-icon {
   width: 44px;
@@ -318,22 +911,9 @@
   flex-shrink: 0;
 }
 
-.pf-plan-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.pf-plan-dest {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.pf-plan-meta {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
+.pf-plan-body { flex: 1; min-width: 0; }
+.pf-plan-dest { font-size: 15px; font-weight: 700; color: var(--text); }
+.pf-plan-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
 .pf-plan-delete {
   width: 30px;
@@ -346,13 +926,41 @@
   transition: background 0.12s, color 0.12s;
   flex-shrink: 0;
 }
+.pf-plan-delete:hover { background: #fee2e2; color: #ef4444; }
 
-.pf-plan-delete:hover {
-  background: #fee2e2;
+.pf-cancel-btn {
+  font-size: 11px;
+  font-weight: 600;
   color: #ef4444;
+  background: #fee2e2;
+  border: none;
+  border-radius: 7px;
+  padding: 5px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+.pf-cancel-btn:hover:not(:disabled) { background: #fecaca; }
+.pf-cancel-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.pf-status-cancelled {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.pf-status-cancelled::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
 }
 
-/* ── 빈 상태 ─────────────────────────────────────────── */
+.pf-card--cancelled { opacity: 0.55; }
+
 .pf-empty {
   text-align: center;
   padding: 48px 24px;
@@ -362,17 +970,8 @@
   align-items: center;
   gap: 10px;
 }
-
-.pf-empty-icon {
-  font-size: 40px;
-  opacity: 0.4;
-}
-
-.pf-empty-text {
-  font-size: 14px;
-  font-weight: 500;
-}
-
+.pf-empty-icon { font-size: 40px; opacity: 0.4; }
+.pf-empty-text { font-size: 14px; font-weight: 500; }
 .pf-empty-btn {
   margin-top: 6px;
   padding: 9px 22px;
@@ -383,17 +982,9 @@
   font-weight: 600;
   transition: background 0.15s;
 }
+.pf-empty-btn:hover { background: var(--primary-hover); }
 
-.pf-empty-btn:hover {
-  background: var(--primary-hover);
-}
-
-/* ── 로딩 스피너 ─────────────────────────────────────── */
-.pf-loading {
-  display: flex;
-  justify-content: center;
-  padding: 60px 0;
-}
+.pf-loading { display: flex; justify-content: center; padding: 60px 0; }
 
 .pf-spinner {
   width: 32px;
@@ -408,7 +999,6 @@
   to { transform: rotate(360deg); }
 }
 
-/* ── 반응형 ──────────────────────────────────────────── */
 @media (max-width: 480px) {
   .pf-flight-route { font-size: 16px; }
   .pf-stay-img, .pf-stay-img-placeholder { width: 80px; }
