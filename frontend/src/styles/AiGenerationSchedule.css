@@ -1189,3 +1189,183 @@
       line-height: 1.6;
       word-break: keep-all;
     }
+
+    .guest-schedule-modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      background:
+        radial-gradient(circle at 50% 24%, rgba(14, 165, 233, 0.2), transparent 36%),
+        rgba(8, 17, 32, 0.62);
+      backdrop-filter: blur(10px);
+      animation: guest-modal-fade-in 0.18s ease;
+    }
+
+    .guest-schedule-save-error {
+      position: fixed;
+      left: 50%;
+      bottom: 26px;
+      z-index: 10001;
+      transform: translateX(-50%);
+      width: min(420px, calc(100% - 32px));
+      padding: 13px 16px;
+      border-radius: 14px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      box-shadow: 0 14px 36px rgba(124, 45, 18, 0.18);
+      color: #9a3412;
+      font-size: 13px;
+      font-weight: 750;
+      text-align: center;
+    }
+
+    .guest-schedule-modal {
+      position: relative;
+      width: min(460px, 100%);
+      padding: 34px 30px 28px;
+      border-radius: 28px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(242, 249, 252, 0.98));
+      border: 1px solid rgba(255, 255, 255, 0.82);
+      box-shadow: 0 28px 80px rgba(2, 20, 40, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      text-align: center;
+      color: #0f172a;
+      animation: guest-modal-rise 0.22s cubic-bezier(0.34, 1.45, 0.64, 1);
+    }
+
+    .guest-schedule-modal-close {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: rgba(226, 232, 240, 0.78);
+      color: #64748b;
+      font-size: 22px;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .guest-schedule-modal-close:hover {
+      background: #dbeafe;
+      color: #0f5f92;
+    }
+
+    .guest-schedule-modal-icon {
+      width: 58px;
+      height: 58px;
+      margin: 0 auto 14px;
+      border-radius: 20px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #0ea5e9, #0f766e);
+      box-shadow: 0 14px 30px rgba(14, 116, 144, 0.3);
+      color: white;
+      font-size: 30px;
+      font-weight: 900;
+    }
+
+    .guest-schedule-modal-kicker {
+      margin: 0 0 8px;
+      color: #0f766e;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .guest-schedule-modal h2 {
+      margin: 0;
+      color: #0f172a;
+      font-size: 25px;
+      line-height: 1.28;
+      font-weight: 950;
+      letter-spacing: 0;
+      word-break: keep-all;
+    }
+
+    .guest-schedule-modal-copy {
+      margin: 13px auto 24px;
+      max-width: 360px;
+      color: #536173;
+      font-size: 14px;
+      line-height: 1.7;
+      font-weight: 650;
+      word-break: keep-all;
+    }
+
+    .guest-schedule-modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .guest-schedule-modal-btn {
+      min-height: 48px;
+      border-radius: 15px;
+      padding: 0 16px;
+      font-size: 14px;
+      font-weight: 850;
+      white-space: nowrap;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.15s, border-color 0.15s;
+    }
+
+    .guest-schedule-modal-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .guest-schedule-modal-btn.primary {
+      color: #fff;
+      background: linear-gradient(135deg, #0ea5e9, #0e7490);
+      box-shadow: 0 12px 26px rgba(14, 116, 144, 0.32);
+    }
+
+    .guest-schedule-modal-btn.secondary {
+      color: #0e7490;
+      background: #e8f7fb;
+      border: 1px solid #bfe7f1;
+    }
+
+    .guest-schedule-modal-btn.ghost {
+      grid-column: 1 / -1;
+      color: #64748b;
+      background: transparent;
+      border: 1px solid #d7e1ea;
+    }
+
+    .guest-schedule-modal-btn.ghost:hover {
+      color: #334155;
+      background: #f8fafc;
+    }
+
+    @keyframes guest-modal-fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes guest-modal-rise {
+      from { opacity: 0; transform: translateY(18px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @media (max-width: 520px) {
+      .guest-schedule-modal {
+        padding: 30px 20px 22px;
+        border-radius: 24px;
+      }
+
+      .guest-schedule-modal h2 {
+        font-size: 21px;
+      }
+
+      .guest-schedule-modal-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .guest-schedule-modal-btn.ghost {
+        grid-column: auto;
+      }
+    }

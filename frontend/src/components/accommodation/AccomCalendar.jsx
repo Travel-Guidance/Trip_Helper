@@ -50,6 +50,9 @@ export default function AccomCalendar({ checkIn, checkOut, onSelect, onClose }) 
   const getDayClass = (dateStr) => {
     if (dateStr < todayStr) return 'ac-cal-day ac-cal-day--past'
     let cls = 'ac-cal-day'
+    const dow = new Date(dateStr + 'T00:00:00').getDay()
+    if (dow === 0) cls += ' dow-sun'
+    if (dow === 6) cls += ' dow-sat'
     if (dateStr === tempIn)  cls += ' ac-cal-day--start'
     if (dateStr === tempOut) cls += ' ac-cal-day--end'
     if (tempIn && effectiveEnd && dateStr > tempIn && dateStr < effectiveEnd) cls += ' ac-cal-day--range'

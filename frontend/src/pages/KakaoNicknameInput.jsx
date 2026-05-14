@@ -4,6 +4,7 @@ import { User } from 'lucide-react'
 import { API_BASE } from '../api/config'
 import { useAuth } from '../store/AuthContext'
 import loginBg from '../assets/login_bg.png'
+import { hasPendingPlanSaveAfterAuth, savePendingPlanAfterAuth } from '../utils/pendingPlanSave'
 
 const DESTINATIONS = [
   { emoji: '🏖️', name: '보라카이', top: '12%',  right: '8%',  delay: '0s'   },
@@ -74,7 +75,16 @@ export default function KakaoNicknameInput() {
       }
 
       login(data.user, data.token)
-      navigate('/home')
+      const authSuccessPath = hasPendingPlanSaveAfterAuth() ? '/ai-generation-schedule' : '/home'
+      try {
+        if (hasPendingPlanSaveAfterAuth()) {
+          await savePendingPlanAfterAuth()
+        }
+      } catch {
+        setError('회원가입은 완료됐지만 일정 저장에 실패했습니다. 다시 시도해주세요.')
+        return
+      }
+      navigate(authSuccessPath, { replace: true })
     } catch {
       setError('서버에 연결할 수 없습니다.')
     } finally {

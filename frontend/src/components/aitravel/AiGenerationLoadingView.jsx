@@ -77,6 +77,20 @@ function buildChips(trip) {
   ].filter(Boolean)
 }
 
+const AUSTRALIA_HERO_IMAGE = 'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?auto=format&fit=crop&w=1200&q=90'
+const AUSTRALIA_DESTINATIONS = ['호주', '오스트레일리아', 'australia', '시드니', 'sydney', '멜버른', 'melbourne']
+
+function tripPhotoStyle(destination) {
+  const value = String(destination || '').toLowerCase()
+  const isAustralia = AUSTRALIA_DESTINATIONS.some(name => value.includes(name))
+  if (!isAustralia) return undefined
+
+  return {
+    backgroundImage: `linear-gradient(180deg, rgba(7, 17, 31, 0.02), rgba(7, 17, 31, 0.74)), url("${AUSTRALIA_HERO_IMAGE}")`,
+    backgroundPosition: 'center 52%',
+  }
+}
+
 export default function AiGenerationLoadingView({
   trip = DEFAULT_TRIP,
   progress = 0,
@@ -173,7 +187,7 @@ export default function AiGenerationLoadingView({
             </section>
       
             <aside className="detail-panel">
-              <section className="trip-photo">
+              <section className="trip-photo" style={tripPhotoStyle(trip.destination || DEFAULT_TRIP.destination)}>
                 <p>YOUR NEXT TRIP</p>
                 <h2>{trip.destination || DEFAULT_TRIP.destination} 여행</h2>
               </section>

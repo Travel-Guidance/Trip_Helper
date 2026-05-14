@@ -297,6 +297,46 @@ async function getUserPlans(req, res, next) {
   }
 }
 
+async function createPlan(req, res, next) {
+  try {
+    const { planData, tripInfo = {} } = req.body;
+    if (!planData || !Array.isArray(planData.days) || planData.days.length === 0) {
+      return res.status(400).json({ error: '저장할 일정 데이터가 없습니다.' });
+    }
+
+    const destinationName =
+      tripInfo.destination ||
+      tripInfo.country ||
+      tripInfo.dest ||
+      tripInfo.continent ||
+      planData.destination ||
+      '';
+    const nights = Number(tripInfo.nights);
+    const [result] = await pool.query(
+      'INSERT INTO travel_plans (user_id, destination, plan_data, budget, nights) VALUES (?, ?, ?, ?, ?)',
+      [
+        req.user.id,
+        destinationName,
+        JSON.stringify(planData),
+        tripInfo.budget || tripInfo.budgetText || '',
+        Number.isFinite(nights) ? nights : Math.max(0, planData.days.length - 1),
+      ]
+    );
+
+    res.status(201).json({
+      success: true,
+      planId: result.insertId,
+      plan: {
+        id: result.insertId,
+        destination: destinationName,
+        plan_data: planData,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function getPlanById(req, res, next) {
   try {
     const [rows] = await pool.query(
@@ -858,6 +898,7 @@ Korean text to translate: "${text.trim().replace(/"/g, '\\"')}"`;
 module.exports = {
   generatePlan,
   chatbot,
+  createPlan,
   getUserPlans,
   getPlanById,
   deletePlan,

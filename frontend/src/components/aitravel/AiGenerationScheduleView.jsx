@@ -35,7 +35,7 @@ const DESTINATION_IMAGES = {
   '멜버른':    'https://images.unsplash.com/photo-1545044846-351ba102b6d5?auto=format&fit=crop&w=1800&q=88',
   '골드코스트': 'https://images.unsplash.com/photo-1587400892770-8cce9b80c8c6?auto=format&fit=crop&w=1800&q=88',
   '케언즈':    'https://images.unsplash.com/photo-1559494007-9f5847c49d94?auto=format&fit=crop&w=1800&q=88',
-  '호주':      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1800&q=88',
+  '호주':      'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?auto=format&fit=crop&w=1800&q=88',
   '일본':      'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=1800&q=88',
   '도쿄':      'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=1800&q=88',
   '오사카':    'https://images.unsplash.com/photo-1590559899731-a382839e5549?auto=format&fit=crop&w=1800&q=88',
