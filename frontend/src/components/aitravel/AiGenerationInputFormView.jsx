@@ -289,6 +289,17 @@ export default function AiGenerationInputFormView() {
 
   const intensityColor = intensity <= 30 ? '#0f6bff' : intensity <= 60 ? '#00a676' : intensity <= 80 ? '#ffb020' : '#ef4444'
 
+  const confirmItems = [
+    { icon: '🌍', label: '여행지', value: destinationLabel(), type: 'strong' },
+    { icon: '📅', label: '여행 기간', value: `${formatDate(dates.startDate)} ~ ${formatDate(dates.endDate)} (${nights}박 ${nights + 1}일)` },
+    { icon: '👤', label: '인원', value: travelerText() },
+    { icon: '📍', label: '꼭 갈 장소', value: places.length ? places : ['선택 안 함'], type: 'chips' },
+    { icon: '💰', label: '예산', value: budgetText.trim() || '선택 안 함' },
+    { icon: '⚡', label: '여행 강도', value: intensityTouched ? `${intensity}/100 · ${intensityDesc}` : '선택 안 함' },
+    { icon: '✨', label: '여행 스타일', value: styles.length ? styles.map(s => `#${s}`) : ['선택 안 함'], type: 'chips' },
+    { icon: '💬', label: '여행 선호 방식', value: travelPreference.trim() || '선택 안 함', type: 'note' }
+  ]
+
   // 협업 버튼 노출 로직
   useEffect(() => {
     if (travelMode === 'group' && adultTeenTotal() >= 2) {
@@ -747,19 +758,15 @@ export default function AiGenerationInputFormView() {
             <p>이 내용 그대로 AI 여행 일정을 생성합니다.</p>
           </div>
           <dl className="confirm-body" id="confirmBody">
-            {[
-              ['여행지', destinationLabel()],
-              ['여행 기간', `${formatDate(dates.startDate)} ~ ${formatDate(dates.endDate)} (${nights}박 ${nights + 1}일)`],
-              ['인원', travelerText()],
-              ['꼭 갈 장소', places.length ? places.join(', ') : '선택 안 함'],
-              ['예산', budgetText.trim() || '선택 안 함'],
-              ['여행 강도', intensityTouched ? `${intensity}/100 · ${intensityDesc}` : '선택 안 함'],
-              ['여행 스타일', styles.length ? styles.map(s => `#${s}`).join(' ') : '선택 안 함'],
-              ['여행 선호 방식', travelPreference.trim() || '선택 안 함']
-            ].map(([label, value]) => (
-              <div key={label} className="confirm-row">
+            {confirmItems.map(({ icon, label, value, type }) => (
+              <div key={label} className={`confirm-row ${type ? `is-${type}` : ''}`}>
+                <span className="confirm-row-icon" aria-hidden="true">{icon}</span>
                 <dt>{label}</dt>
-                <dd>{value}</dd>
+                <dd>
+                  {type === 'chips' && Array.isArray(value)
+                    ? value.map(item => <span key={item} className="confirm-value-chip">{item}</span>)
+                    : value}
+                </dd>
               </div>
             ))}
           </dl>

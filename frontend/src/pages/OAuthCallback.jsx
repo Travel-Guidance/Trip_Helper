@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { API_BASE } from '../api/config'
 import { useAuth } from '../store/AuthContext'
+import { hasPendingPlanSaveAfterAuth, savePendingPlanAfterAuth } from '../utils/pendingPlanSave'
 
 export default function OAuthCallback() {
   const navigate = useNavigate()
@@ -39,7 +40,15 @@ export default function OAuthCallback() {
 
       if (data.token && data.user) {
         login(data.user, data.token)
-        navigate('/home', { replace: true })
+        const authSuccessPath = hasPendingPlanSaveAfterAuth() ? '/ai-generation-schedule' : '/home'
+        try {
+          if (hasPendingPlanSaveAfterAuth()) {
+            await savePendingPlanAfterAuth()
+          }
+        } catch (err) {
+          console.error('Pending plan save failed:', err)
+        }
+        navigate(authSuccessPath, { replace: true })
         return
       }
 

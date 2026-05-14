@@ -26,6 +26,7 @@ import ProfilePage from './pages/ProfilePage'
 import Photobook from './pages/Photobook'
 import { API_BASE } from './api/config'
 import OAuthCallback from './pages/OAuthCallback'
+import { hasPendingPlanSaveAfterAuth, savePendingPlanAfterAuth } from './utils/pendingPlanSave'
 
 function LegacyAccommodationRedirect() {
   const location = useLocation()
@@ -66,12 +67,21 @@ function SocialAuthRedirect() {
       const data = await res.json()
       if (data.token && data.user) {
         login(data.user, data.token)
+        try {
+          if (hasPendingPlanSaveAfterAuth()) {
+            await savePendingPlanAfterAuth()
+          }
+        } catch (err) {
+          console.error('Pending plan save failed:', err)
+        }
       }
+
     }
 
+    const nextPath = hasPendingPlanSaveAfterAuth() ? '/ai-generation-schedule' : '/home'
     handleKakaoCallback()
       .catch(err => console.error('카카오 로그인 처리 실패:', err))
-      .finally(() => navigate('/home', { replace: true }))
+      .finally(() => navigate(nextPath, { replace: true }))
   }, [location.search, navigate, login])
 
   return null
