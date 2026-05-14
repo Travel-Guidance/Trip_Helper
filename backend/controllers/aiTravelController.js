@@ -1,6 +1,6 @@
 'use strict';
 
-const { chat, generateText } = require('../services/geminiService');
+const { chat, generateText, generateFromImage } = require('../services/geminiService');
 const { buildPersonaSystem, getPersona } = require('../domains/aiTravel/persona');
 const { enrichPlanWithCoordinates } = require('../services/geocodeService');
 const { sanitizeAustraliaItinerary } = require('../services/itinerarySanitizer');
@@ -911,6 +911,43 @@ Korean text to translate: "${text.trim().replace(/"/g, '\\"')}"`;
   }
 }
 
+async function translateImage(req, res, next) {
+  try {
+    const { destination = '' } = req.body;
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: '번역할 이미지를 업로드해 주세요.' });
+    }
+
+    const prompt = `You are a travel image translator and guide for Korean travelers.
+Inspect the uploaded image. Identify what the photo is, then summarize and translate the useful meaning into natural Korean.
+If the image contains signs, menus, notices, tickets, receipts, labels, or travel instructions, translate the important content.
+If there is little or no readable text, describe the subject of the photo and explain what a traveler should know.
+Destination context: "${String(destination || '').trim() || 'unknown destination'}".
+
+Return ONLY a valid JSON object (no markdown, no code block):
+{
+  "title": "<what this photo is, in Korean, short and clear>",
+  "summary": "<Korean summary/translation within 10 short lines. Use newline characters between lines if helpful>",
+  "podcastScript": "<a warm short Korean podcast-style narration for a traveler, 2-4 sentences, based on the summary>"
+}`;
+
+    const raw = await generateFromImage(prompt, file.buffer, file.mimetype);
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('이미지 번역 결과를 파싱할 수 없습니다.');
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    res.json({
+      title: parsed.title || '이미지 설명',
+      summary: parsed.summary || parsed.translated || '',
+      podcastScript: parsed.podcastScript || parsed.summary || parsed.translated || '',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   generatePlan,
   chatbot,
@@ -925,4 +962,5 @@ module.exports = {
   updatePlanBudget,
   rebudgetPlanDay,
   translateText,
+  translateImage,
 };

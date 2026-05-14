@@ -1,4 +1,5 @@
 const { Router } = require('express');
+const multer = require('multer');
 const {
   generatePlan,
   chatbot,
@@ -13,6 +14,7 @@ const {
   updatePlanBudget,
   rebudgetPlanDay,
   translateText,
+  translateImage,
 } = require('../controllers/aiTravelController');
 const { generateCollabPlan } = require('../controllers/collabController');
 const { aiLimiter } = require('../middlewares/rateLimiter');
@@ -20,6 +22,13 @@ const optionalAuth = require('../middlewares/optionalAuth');
 const requireAuth = require('../middlewares/requireAuth');
 
 const router = Router();
+const imageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter(req, file, cb) {
+    cb(null, file.mimetype.startsWith('image/'));
+  },
+});
 
 /**
  * @swagger
@@ -101,5 +110,6 @@ router.post('/ai-travel/generate-collab', aiLimiter, optionalAuth, generateColla
 
 // 실시간 번역
 router.post('/translate', aiLimiter, translateText);
+router.post('/translate-image', aiLimiter, imageUpload.single('image'), translateImage);
 
 module.exports = router;
