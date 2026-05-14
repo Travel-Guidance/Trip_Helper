@@ -326,6 +326,36 @@ async function resolveFinalText(chatSession, response) {
   return safeText(fallback2);
 }
 
+async function parsePlanWithRepair(chatSession, text, sourceLabel = 'initial') {
+  try {
+    const parsed = extractJsonObject(text);
+    if (!Array.isArray(parsed.days) || parsed.days.length === 0) {
+      throw new Error('parsed JSON did not contain a days array');
+    }
+    return parsed;
+  } catch (err) {
+    console.warn(`[collabAgentService] ${sourceLabel} JSON 파싱 실패, 수리 요청:`, err.message);
+  }
+
+  const repairPrompt = `아래 응답은 JSON 파싱에 실패했습니다.
+설명, 마크다운, 코드블록 없이 유효한 JSON 객체만 다시 출력하세요.
+필수 최상위 필드: accommodations 배열, days 배열.
+가능하면 원래 내용의 장소, 날짜, omittedPlaces, warnings를 유지하세요.
+만약 아래 응답이 omittedPlaces 배열만 있다면, 그 배열은 omittedPlaces에 넣고 현실적인 축소 일정의 days를 새로 작성하세요.
+
+[파싱 실패 응답]
+${String(text || '').slice(0, 30000)}`;
+
+  const repairResponse = await safeSend(chatSession, repairPrompt);
+  const repairedText = await resolveFinalText(chatSession, repairResponse);
+  console.log(`[collabAgentService] repaired malformed JSON preview (${sourceLabel}):`, repairedText?.slice(0, 120));
+  const repaired = extractJsonObject(repairedText);
+  if (!Array.isArray(repaired.days) || repaired.days.length === 0) {
+    throw new Error('AI response JSON did not contain itinerary days after repair');
+  }
+  return repaired;
+}
+
 async function runCollabAgent(params) {
   const normalized = normalizePlanParams(params);
 
@@ -360,7 +390,7 @@ async function runCollabAgent(params) {
   if (!finalText || !finalText.includes('{')) {
     throw new Error('AI가 공동 일정을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.');
   }
-  let plan = extractJsonObject(finalText);
+  let plan = await parsePlanWithRepair(chatSession, finalText, 'initial');
 
   for (let repairAttempt = 1; repairAttempt <= 2; repairAttempt++) {
     const routeCheck = validateAustraliaItinerary(plan, params);
@@ -370,7 +400,7 @@ async function runCollabAgent(params) {
     const repairResponse = await safeSend(chatSession, buildItineraryRepairPrompt(plan, routeCheck.violations));
     finalText = await resolveFinalText(chatSession, repairResponse);
     console.log(`[collabAgentService] repaired finalText preview (${repairAttempt}/2):`, finalText.slice(0, 120));
-    plan = extractJsonObject(finalText);
+    plan = await parsePlanWithRepair(chatSession, finalText, `route-repair-${repairAttempt}`);
   }
 
 

@@ -1369,3 +1369,75 @@
         grid-column: auto;
       }
     }
+
+    .ai-generation-schedule-page .omitted-card {
+      margin-top: 14px;
+      background: linear-gradient(145deg, #f8fafc, #eef6f7);
+      border-color: #cbd5e1;
+    }
+
+    .ai-generation-schedule-page .omitted-card h2 {
+      color: #334155;
+    }
+
+    .ai-generation-schedule-page .omitted-summary {
+      margin: 0 0 12px;
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.6;
+      color: #334155;
+      word-break: keep-all;
+    }
+
+    .ai-generation-schedule-page .adjustment-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .ai-generation-schedule-page .adjustment-list span {
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 1px solid #dbe4ea;
+      font-size: 12px;
+      font-weight: 750;
+      color: #475569;
+    }
+
+    .ai-generation-schedule-page .omitted-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .ai-generation-schedule-page .omitted-item {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.86);
+      border: 1px solid #e2e8f0;
+      border-left: 3px solid #64748b;
+    }
+
+    .ai-generation-schedule-page .omitted-name,
+    .ai-generation-schedule-page .omitted-reason,
+    .ai-generation-schedule-page .omitted-alt {
+      margin: 0;
+      word-break: keep-all;
+    }
+
+    .ai-generation-schedule-page .omitted-name {
+      font-size: 13px;
+      font-weight: 850;
+      color: #1e293b;
+    }
+
+    .ai-generation-schedule-page .omitted-reason,
+    .ai-generation-schedule-page .omitted-alt {
+      margin-top: 5px;
+      font-size: 12px;
+      font-weight: 650;
+      line-height: 1.55;
+      color: #536173;
+    }

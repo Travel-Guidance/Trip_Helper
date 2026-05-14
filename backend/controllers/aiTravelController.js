@@ -31,6 +31,21 @@ function parseMustVisitList(value) {
     .filter(Boolean);
 }
 
+function normalizeBudgetForStorage({ budget, budgetText, totalBudgetWon } = {}) {
+  const candidates = [budgetText, budget, totalBudgetWon]
+    .filter(value => value !== undefined && value !== null && value !== '');
+
+  const value = candidates[0];
+  if (value === undefined) return '';
+
+  if (typeof value === 'object') {
+    const label = value.label || value.text || value.value || value.amount || '';
+    return String(label).trim().slice(0, 20);
+  }
+
+  return String(value).trim().slice(0, 20);
+}
+
 function extractMaxNumber(costStr) {
   const nums = String(costStr || '').match(/\d+(?:\.\d+)?/g);
   if (!nums?.length) return null;
@@ -252,11 +267,12 @@ async function generatePlan(req, res, next) {
     const userId = req.user?.id || null;
     let savedPlanId = null;
     if (userId) {
-      const { destination, country, dest, continent, nights, budget, budgetText } = req.body;
+      const { destination, country, dest, continent, nights } = req.body;
       const destinationName = destination || country || dest || continent || '';
+      const budgetLabel = normalizeBudgetForStorage(req.body);
       const [result] = await pool.query(
         'INSERT INTO travel_plans (user_id, destination, plan_data, budget, nights) VALUES (?, ?, ?, ?, ?)',
-        [userId, destinationName, JSON.stringify(data), budget || budgetText || '', nights || 0]
+        [userId, destinationName, JSON.stringify(data), budgetLabel, nights || 0]
       );
       savedPlanId = result.insertId;
     }

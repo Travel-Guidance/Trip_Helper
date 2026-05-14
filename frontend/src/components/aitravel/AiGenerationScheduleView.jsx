@@ -875,6 +875,35 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
             </aside>
           )}
 
+          {(planData?.feasibility?.status === 'needs_adjustment' || planData?.feasibility?.status === 'impossible' || planData?.omittedPlaces?.length > 0) && (
+            <aside className="intel-card omitted-card">
+              <h2>조정된 요청</h2>
+              {planData?.feasibility?.message && (
+                <p className="omitted-summary">{planData.feasibility.message}</p>
+              )}
+              {planData?.feasibility?.suggestedAdjustments?.length > 0 && (
+                <div className="adjustment-list">
+                  {planData.feasibility.suggestedAdjustments.map((item, i) => (
+                    <span key={i}>{item}</span>
+                  ))}
+                </div>
+              )}
+              {planData?.omittedPlaces?.length > 0 && (
+                <div className="omitted-list">
+                  {planData.omittedPlaces.map((place, i) => (
+                    <div key={i} className="omitted-item">
+                      <p className="omitted-name">{place.name}</p>
+                      <p className="omitted-reason">{place.reason}</p>
+                      {place.alternative && (
+                        <p className="omitted-alt">대안: {place.alternative}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </aside>
+          )}
+
           {planData?.accommodations?.length > 0 && (
             <aside className="intel-card accom-card">
               <h2>숙소 정보</h2>

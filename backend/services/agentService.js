@@ -79,7 +79,7 @@ function safeSend(chatSession, message) {
   return withRetry(() => chatSession.sendMessage(message));
 }
 
-const JSON_PROMPT = '지금까지 수집한 정보를 바탕으로 최종 여행 일정을 순수 JSON으로만 반환하세요. 마크다운, 설명 문장, 코드블록은 쓰지 마세요. 각 day에는 summary와 routeStrategy를 넣고, 각 item에는 duration, cost, reservation, transportTip, backup을 넣으세요.\n{"accommodations":[{"name":"숙소명","location":"위치","checkIn":"YYYY-MM-DD","checkOut":"YYYY-MM-DD","searchQuery":"검색어"}],"days":[{"label":"1일차","theme":"테마","summary":"오늘 일정 요약","routeStrategy":"동선 설계 이유","baseHotel":"숙소명","items":[{"time":"09:00","name":"장소명","note":"왜 이 장소를 배치했는지와 현장 팁","duration":"약 90분","cost":"무료 또는 예상 비용","reservation":"예약 여부","transportTip":"이전 장소에서 이동 팁","backup":"대체 장소","isMeal":false,"lat":-33.8568,"lng":151.2153}]}]}';
+const JSON_PROMPT = '지금까지 수집한 정보를 바탕으로 최종 여행 일정을 순수 JSON으로만 반환하세요. 마크다운, 설명 문장, 코드블록은 쓰지 마세요. 무리한 요청이면 feasibility.status를 needs_adjustment 또는 impossible로 두고, omittedPlaces에 제외 이유와 대안을 넣으세요. 각 day에는 summary와 routeStrategy를 넣고, 각 item에는 duration, cost, reservation, transportTip, backup을 넣으세요.\n{"feasibility":{"status":"feasible","message":"입력한 기간과 예산 안에서 무리 없는 핵심 루트로 구성했습니다.","suggestedAdjustments":[]},"warnings":[],"includedPlaces":["포함 장소"],"omittedPlaces":[{"name":"제외 장소","reason":"제외 이유","alternative":"대안"}],"accommodations":[{"name":"숙소명","location":"위치","checkIn":"YYYY-MM-DD","checkOut":"YYYY-MM-DD","searchQuery":"검색어"}],"days":[{"label":"1일차","theme":"테마","summary":"오늘 일정 요약","routeStrategy":"동선 설계 이유","baseHotel":"숙소명","items":[{"time":"09:00","name":"장소명","note":"왜 이 장소를 배치했는지와 현장 팁","duration":"약 90분","cost":"무료 또는 예상 비용","reservation":"예약 여부","transportTip":"이전 장소에서 이동 팁","backup":"대체 장소","isMeal":false,"lat":-33.8568,"lng":151.2153}]}]}';
 
 function safeText(resp) {
   try {
@@ -128,6 +128,37 @@ async function resolveFinalText(chatSession, response) {
   return safeText(fallback2);
 }
 
+async function parsePlanWithRepair(chatSession, text, sourceLabel = 'initial') {
+  try {
+    const parsed = extractJsonObject(text);
+    if (!Array.isArray(parsed.days) || parsed.days.length === 0) {
+      throw new Error('parsed JSON did not contain a days array');
+    }
+    return parsed;
+  } catch (err) {
+    console.warn(`[agentService] ${sourceLabel} JSON 파싱 실패, 수리 요청:`, err.message);
+  }
+
+  const repairPrompt = `아래 응답은 JSON 파싱에 실패했습니다.
+설명, 마크다운, 코드블록 없이 유효한 JSON 객체만 다시 출력하세요.
+필수 최상위 필드: feasibility 객체, warnings 배열, includedPlaces 배열, omittedPlaces 배열, accommodations 배열, days 배열.
+가능하면 원래 내용의 장소, 날짜, omittedPlaces, warnings를 유지하세요.
+만약 아래 응답이 omittedPlaces 배열만 있다면, 그 배열은 omittedPlaces에 넣고 현실적인 축소 일정의 days를 새로 작성하세요.
+전체 요청이 무리하면 feasibility.status를 "impossible" 또는 "needs_adjustment"로 두고, feasibility.message에 사용자에게 보여줄 한국어 안내를 넣으세요.
+
+[파싱 실패 응답]
+${String(text || '').slice(0, 30000)}`;
+
+  const repairResponse = await safeSend(chatSession, repairPrompt);
+  const repairedText = await resolveFinalText(chatSession, repairResponse);
+  console.log(`[agentService] repaired malformed JSON preview (${sourceLabel}):`, repairedText?.slice(0, 120));
+  const repaired = extractJsonObject(repairedText);
+  if (!Array.isArray(repaired.days) || repaired.days.length === 0) {
+    throw new Error('AI response JSON did not contain itinerary days after repair');
+  }
+  return repaired;
+}
+
 async function runAgent(params, onProgress = () => {}) {
   onProgress({ step: 'RAG', progress: 15, message: '현지 여행 정보 검색 중...' });
   const ragResult = await getRagContext(params);
@@ -160,7 +191,7 @@ async function runAgent(params, onProgress = () => {}) {
   if (!finalText || !finalText.includes('{')) {
     throw new Error('AI가 일정을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.');
   }
-  let plan = extractJsonObject(finalText);
+  let plan = await parsePlanWithRepair(chatSession, finalText, 'initial');
 
   onProgress({ step: 'VALIDATION', progress: 90, message: '최종 동선 및 제약 사항 검증 중...' });
   for (let repairAttempt = 1; repairAttempt <= 2; repairAttempt++) {
@@ -171,7 +202,7 @@ async function runAgent(params, onProgress = () => {}) {
     const repairResponse = await safeSend(chatSession, buildItineraryRepairPrompt(plan, routeCheck.violations));
     finalText = await resolveFinalText(chatSession, repairResponse);
     console.log(`[agentService] repaired finalText preview (${repairAttempt}/2):`, finalText.slice(0, 120));
-    plan = extractJsonObject(finalText);
+    plan = await parsePlanWithRepair(chatSession, finalText, `route-repair-${repairAttempt}`);
   }
 
   if (!Array.isArray(plan.days) || plan.days.length === 0) {
@@ -189,7 +220,7 @@ async function runAgent(params, onProgress = () => {}) {
     try {
       const missingResponse = await safeSend(chatSession, missingPrompt);
       const missingText = await resolveFinalText(chatSession, missingResponse);
-      const missingPlan = extractJsonObject(missingText);
+      const missingPlan = await parsePlanWithRepair(chatSession, missingText, `missing-days-${fillAttempts}`);
       if (!Array.isArray(missingPlan.days) || missingPlan.days.length === 0) break;
 
       const existingLabels = new Set(plan.days.map(d => d.label));

@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- ─── 기존 DB 마이그레이션 (컬럼 누락 시 추가) ─────────────
 -- 스키마가 이미 존재하는 경우 아래 프로시저가 누락된 컬럼을 추가합니다.
 DROP PROCEDURE IF EXISTS _migrate_users;
+DELIMITER $$
 CREATE PROCEDURE _migrate_users()
 BEGIN
   IF NOT EXISTS (
@@ -37,7 +38,8 @@ BEGIN
   ) THEN
     ALTER TABLE users MODIFY COLUMN email VARCHAR(255) NULL;
   END IF;
-END;
+END$$
+DELIMITER ;
 CALL _migrate_users();
 DROP PROCEDURE IF EXISTS _migrate_users;
 
