@@ -209,6 +209,9 @@
     }
 
     .ai-generation-schedule-page .intel-card {
+      min-width: 0;
+      align-self: start;
+      align-content: start;
       display: grid;
       gap: 12px;
       padding: 20px;
@@ -292,12 +295,15 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      min-width: 0;
     }
 
     .ai-generation-schedule-page .accom-item {
-      display: flex;
+      width: 100%;
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
-      justify-content: space-between;
       gap: 12px;
       padding: 12px 14px;
       border-radius: 14px;
@@ -317,6 +323,7 @@
       font-size: 13px;
       font-weight: 800;
       color: var(--ink);
+      line-height: 1.35;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -860,6 +867,11 @@
       .ai-generation-schedule-page .hero-card {
         min-height: 420px;
         padding: 20px;
+      }
+
+      .ai-generation-schedule-page .accom-item {
+        align-items: flex-start;
+        grid-template-columns: 1fr;
       }
 
       .ai-generation-schedule-page .hero-top, .ai-generation-schedule-page .module-head {
