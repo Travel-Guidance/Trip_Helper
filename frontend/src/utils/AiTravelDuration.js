@@ -766,3 +766,21 @@ export async function fetchNearbyCafes(point, radius = 800) {
 export async function fetchDayWeather(destination, date) {
   return apiGet(`/weather/day?destination=${encodeURIComponent(destination)}&date=${encodeURIComponent(date)}`)
 }
+
+export async function translateImageFile(file, destination = '') {
+  const apiBase = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
+  const formData = new FormData()
+  formData.append('image', file)
+  formData.append('destination', destination)
+  const token = localStorage.getItem('tripHelperToken')
+  const response = await fetch(`${apiBase}/api/translate-image`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  })
+  const data = await response.json().catch(() => null)
+  if (!response.ok || data?.error) {
+    throw new Error(data?.error || '이미지 번역을 처리하지 못했습니다.')
+  }
+  return data
+}

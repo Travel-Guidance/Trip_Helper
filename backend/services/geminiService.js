@@ -62,6 +62,22 @@ async function generateText(prompt, systemInstruction = null) {
   })
 }
 
+async function generateFromImage(prompt, imageBuffer, mimeType) {
+  const model = genAI.getGenerativeModel({ model: CHAT_MODEL_NAME })
+  return withRetry(async () => {
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: imageBuffer.toString('base64'),
+          mimeType,
+        },
+      },
+    ])
+    return result.response.text()
+  })
+}
+
 async function getEmbedding(text) {
   return withRetry(async () => {
     const result = await embeddingModel.embedContent(text)
@@ -80,4 +96,4 @@ async function chat(history = [], message, systemInstruction = null) {
   })
 }
 
-module.exports = { generateText, getEmbedding, chat, withRetry }
+module.exports = { generateText, generateFromImage, getEmbedding, chat, withRetry }

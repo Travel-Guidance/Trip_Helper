@@ -11,7 +11,7 @@ import {
   parseBudgetWon,
   normalizeSavedExpense, fetchSavedExpenses, persistExpense, fetchExchangeRate,
   rebudgetPlanDay,
-  fetchConsulateInfo, fetchEmergencyNearbyInfo, fetchNearbyAmenities, fetchIndoorPlaces, fetchNearbyCafes, fetchDayWeather, buildGoogleMapsRouteUrl,
+  fetchConsulateInfo, fetchEmergencyNearbyInfo, fetchNearbyAmenities, fetchIndoorPlaces, fetchNearbyCafes, fetchDayWeather, translateImageFile, buildGoogleMapsRouteUrl,
   requestSimpleRoute, requestTransitRoute, renderRouteMap, renderSafeRouteMap,
   getGeneratedPlanId, readGeneratedPlanResult,
   BUDGET_CATEGORIES, GOOGLE_MAP_SCRIPT_ID, GOOGLE_MAP_SCRIPT_SRC, EMERGENCY_RADIUS_METERS,
@@ -69,6 +69,172 @@ function TranslateModal({ destination }) {
           <div className="mi-result">{error || translated}</div>
           {pronunciation && <div className="mi-pronunciation">[ {pronunciation} ]</div>}
         </>
+      )}
+    </div>
+  )
+}
+
+function ImageTranslateModal({ destination }) {
+  const [file, setFile] = useState(null)
+  const [preview, setPreview] = useState('')
+  const [progress, setProgress] = useState(0)
+  const [status, setStatus] = useState('idle')
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState('')
+  const [speaking, setSpeaking] = useState(false)
+  const fileInputRef = useRef(null)
+
+  useEffect(() => () => {
+    if (preview) URL.revokeObjectURL(preview)
+    window.speechSynthesis?.cancel()
+  }, [preview])
+
+  function pickFile(nextFile) {
+    if (!nextFile) return
+    if (!nextFile.type?.startsWith('image/')) {
+      setError('이미지 파일만 업로드할 수 있습니다.')
+      return
+    }
+    if (preview) URL.revokeObjectURL(preview)
+    setFile(nextFile)
+    setPreview(URL.createObjectURL(nextFile))
+    setProgress(0)
+    setStatus('idle')
+    setResult(null)
+    setError('')
+  }
+
+  async function startUpload(nextFile = file) {
+    if (!nextFile) {
+      fileInputRef.current?.click()
+      return
+    }
+    setStatus('uploading')
+    setProgress(8)
+    setResult(null)
+    setError('')
+
+    let current = 8
+    const timer = window.setInterval(() => {
+      current = Math.min(92, current + Math.max(2, Math.round((92 - current) * 0.12)))
+      setProgress(current)
+    }, 240)
+
+    try {
+      const data = await translateImageFile(nextFile, destination)
+      window.clearInterval(timer)
+      setProgress(100)
+      setResult(data)
+      setStatus('done')
+    } catch (err) {
+      window.clearInterval(timer)
+      setError(err.message || '이미지 번역 중 오류가 발생했습니다.')
+      setStatus('error')
+    }
+  }
+
+  function handleFileChange(e) {
+    const nextFile = e.target.files?.[0]
+    if (!nextFile) return
+    pickFile(nextFile)
+    startUpload(nextFile)
+    e.target.value = ''
+  }
+
+  function speakPodcast() {
+    const text = result?.podcastScript || result?.summary || result?.translated
+    if (!text || !window.speechSynthesis) return
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'ko-KR'
+    utterance.rate = 0.92
+    utterance.pitch = 1.04
+    utterance.onend = () => setSpeaking(false)
+    utterance.onerror = () => setSpeaking(false)
+    setSpeaking(true)
+    window.speechSynthesis.speak(utterance)
+  }
+
+  function stopPodcast() {
+    window.speechSynthesis?.cancel()
+    setSpeaking(false)
+  }
+
+  const fileSizeMb = file ? (file.size / 1024 / 1024).toFixed(1) : ''
+  const progressStyle = { '--progress': `${progress}%` }
+  const titleText = result?.title || '이미지 설명'
+  const summaryText = String(result?.summary || result?.translated || '번역 결과가 없습니다.')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .slice(0, 10)
+    .join('\n')
+
+  return (
+    <div className="mi-image-translate">
+      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
+
+      {!file && (
+        <button
+          type="button"
+          className="mi-image-drop"
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={e => e.preventDefault()}
+          onDrop={e => {
+            e.preventDefault()
+            const nextFile = e.dataTransfer.files?.[0]
+            if (!nextFile) return
+            pickFile(nextFile)
+            startUpload(nextFile)
+          }}
+        >
+          <span className="mi-image-upload-ring">↑</span>
+          <strong>번역을 원하는 사진을 업로드하세요.</strong>
+        </button>
+      )}
+
+      {file && (
+        <div className="mi-image-processing">
+          <div className={`mi-image-progress${status === 'done' ? ' done' : ''}`} style={progressStyle}>
+            <span>{status === 'done' ? '✓' : `${progress}%`}</span>
+          </div>
+          <div className="mi-image-status">
+            {status === 'done' ? '업로드가 완료되었습니다!' : status === 'error' ? '업로드에 실패했습니다.' : '번역이 진행중입니다.'}
+          </div>
+          <div className="mi-image-file">
+            {preview && <img src={preview} alt="업로드 미리보기" />}
+            <div>
+              <strong>{file.name}</strong>
+              <span>{status === 'done' ? fileSizeMb : `${Math.max(0.1, fileSizeMb * progress / 100).toFixed(1)}/${fileSizeMb}`} MB</span>
+            </div>
+            <button type="button" onClick={() => {
+              stopPodcast()
+              setFile(null)
+              setPreview('')
+              setProgress(0)
+              setStatus('idle')
+              setResult(null)
+              setError('')
+            }}>×</button>
+          </div>
+        </div>
+      )}
+
+      {error && <div className="mi-image-error">{error}</div>}
+
+      {result && (
+        <div className="mi-image-result">
+          <div className="mi-image-result-title">
+            {titleText}
+          </div>
+          <div className="mi-image-result-box">
+            <strong>요약 번역</strong>
+            <p>{summaryText}</p>
+          </div>
+          <button type="button" className="mi-image-podcast" onClick={speaking ? stopPodcast : speakPodcast}>
+            {speaking ? '읽기 중지' : '팟캐스트 말투로 듣기'}
+          </button>
+        </div>
       )}
     </div>
   )
@@ -688,7 +854,7 @@ export default function AiTravelDurationView() {
 
   const modalTitles = {
     translate: '실시간 번역', emergency: '긴급 정보', nearby: '주변 편의시설',
-    hotel: '숙소 전략', budget: '예산 분석', fatigue: '피로도 상세',
+    hotel: '숙소 전략', budget: '예산 분석', imageTranslate: '이미지 번역',
     album: '여행 앨범', safety: '야간 안전 정보',
   }
 
@@ -756,7 +922,7 @@ export default function AiTravelDurationView() {
               {[
                 { modal: 'translate', icon: '🌐', label: '번역'    },
                 { modal: 'budget',    icon: '💰', label: '예산'    },
-                { modal: 'fatigue',   icon: '💪', label: '피로도'  },
+                { modal: 'imageTranslate', icon: '▧', label: '이미지 번역' },
                 { modal: 'nearby',    icon: '📍', label: '편의시설' },
                 { modal: 'emergency', icon: '🚨', label: '긴급'    },
                 { modal: 'safety',    icon: '🛡', label: '야간안전' },
@@ -1281,7 +1447,7 @@ export default function AiTravelDurationView() {
         className={`overlay${modalOpen ? ' show' : ''}`}
         onClick={e => { if (e.target.classList.contains('overlay')) closeModal() }}
       >
-        <div className="modal-box">
+        <div className={`modal-box${activeModalKey === 'imageTranslate' ? ' image-translate-modal' : ''}`}>
           <div className="modal-title">{modalTitles[activeModalKey]}</div>
           <div>
             {modalOpen && activeModalKey && (
@@ -1665,6 +1831,10 @@ function ModalContent({
 
   if (modalKey === 'translate') return (
     <TranslateModal destination={travelData?.destination || ''} />
+  )
+
+  if (modalKey === 'imageTranslate') return (
+    <ImageTranslateModal destination={travelData?.destination || ''} />
   )
 
   if (modalKey === 'emergency') {
