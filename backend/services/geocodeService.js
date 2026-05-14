@@ -7,9 +7,14 @@ function hasCoordinates(item) {
 }
 
 function cleanPlaceName(name) {
-  return String(name || '')
-    .trim()
-    .replace(/\s+(체크인|체크아웃|도착|출발|복귀|방문|관광|구경|산책|탐방)$/g, '')
+  const raw = String(name || '').trim();
+
+  // 괄호 안 영문명 우선 추출: "더치 베이커리 (The Dutchy's Bakery & Cafe) 브런치" → "The Dutchy's Bakery & Cafe"
+  const englishInParens = raw.match(/\(([A-Za-z][^)]{3,})\)/);
+  if (englishInParens) return englishInParens[1].trim();
+
+  return raw
+    .replace(/\s+(체크인|체크아웃|도착|출발|복귀|방문|관광|구경|산책|탐방|브런치|투어|전망대)$/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -38,10 +43,36 @@ function destinationText(params = {}) {
 }
 
 
+const VAGUE_NAME_PATTERNS = [
+  /^자유\s*시간/,
+  /^휴식$/,
+  /^호텔\s*휴식/,
+  /^체크\s*인\s*후/,
+  /^이동\s*후\s*휴식/,
+  /^(점심|저녁|아침)\s*식사$/,
+  /^(근처|로컬|현지|추천)\s*(맛집|카페|식당)/,
+  /^쇼핑$/,
+  /^산책$/,
+];
+
+const HOTEL_ITEM_PATTERNS = [
+  /숙소\s*(출발|복귀|도착)/,
+  /호텔\s*(출발|복귀|도착|체크인|체크아웃)/,
+  /(출발|복귀)$/,
+];
+
+function isVagueItem(item) {
+  const name = String(item?.name || '').trim().toLowerCase();
+  return !name || VAGUE_NAME_PATTERNS.some(p => p.test(name));
+}
+
+function isHotelItem(item) {
+  const name = String(item?.name || '').trim();
+  return HOTEL_ITEM_PATTERNS.some(p => p.test(name));
+}
+
 function shouldVerifyExistingCoordinates(item) {
-  if (!hasCoordinates(item)) return true;
-  if (item?.isMeal) return false;
-  return true;
+  return !isVagueItem(item);
 }
 
 async function geocodePlace(query, key = requireEnv('GOOGLE_MAPS_API_KEY')) {
@@ -85,11 +116,19 @@ async function enrichPlanWithCoordinates(plan, params = {}) {
   const cache = new Map();
 
   const days = await Promise.all(plan.days.map(async day => {
+    const cityContext = day.baseHotel || destination;
     const items = await Promise.all((day.items || []).map(async item => {
       if (!shouldVerifyExistingCoordinates(item)) return item;
 
-      const placeName = cleanPlaceName(item.name);
-      const query = [placeName || item.name, destination].filter(Boolean).join(', ');
+      // geocodeQuery(영문 장소명)가 있으면 그대로 사용, 없으면 기존 로직
+      const query = item.geocodeQuery
+        ? String(item.geocodeQuery).trim()
+        : (() => {
+            const placeName = isHotelItem(item)
+              ? (day.baseHotel || cleanPlaceName(item.name))
+              : cleanPlaceName(item.name);
+            return [placeName || item.name, cityContext].filter(Boolean).join(', ');
+          })();
       if (!query) return item;
 
       if (!cache.has(query)) {

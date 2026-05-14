@@ -1,3 +1,4 @@
+// Gemini API 기반 AI 여행 일정 생성 에이전트
 'use strict';
 
 const { genAI, CHAT_MODEL_NAME } = require('../config/gemini');
@@ -9,13 +10,9 @@ const {
   buildInitialPrompt,
   buildRagQuery,
   normalizePlanParams,
-} = require('../domains/aiTravel/promptBuilder');
+} = require('../domains/aiTravel/impPromptBuilder');
 const { extractJsonObject } = require('../domains/aiTravel/responseParser');
 const { withRetry } = require('./geminiService');
-const {
-  validateAustraliaItinerary,
-  buildItineraryRepairPrompt,
-} = require('./itineraryValidator');
 
 async function getRagContext(params) {
   try {
@@ -79,7 +76,7 @@ function safeSend(chatSession, message) {
   return withRetry(() => chatSession.sendMessage(message));
 }
 
-const JSON_PROMPT = '지금까지 수집한 정보를 바탕으로 최종 여행 일정을 순수 JSON으로만 반환하세요. 마크다운, 설명 문장, 코드블록은 쓰지 마세요. 무리한 요청이면 feasibility.status를 needs_adjustment 또는 impossible로 두고, omittedPlaces에 제외 이유와 대안을 넣으세요. 각 day에는 summary와 routeStrategy를 넣고, 각 item에는 duration, cost, reservation, transportTip, backup을 넣으세요.\n{"feasibility":{"status":"feasible","message":"입력한 기간과 예산 안에서 무리 없는 핵심 루트로 구성했습니다.","suggestedAdjustments":[]},"warnings":[],"includedPlaces":["포함 장소"],"omittedPlaces":[{"name":"제외 장소","reason":"제외 이유","alternative":"대안"}],"accommodations":[{"name":"숙소명","location":"위치","checkIn":"YYYY-MM-DD","checkOut":"YYYY-MM-DD","searchQuery":"검색어"}],"days":[{"label":"1일차","theme":"테마","summary":"오늘 일정 요약","routeStrategy":"동선 설계 이유","baseHotel":"숙소명","items":[{"time":"09:00","name":"장소명","note":"왜 이 장소를 배치했는지와 현장 팁","duration":"약 90분","cost":"무료 또는 예상 비용","reservation":"예약 여부","transportTip":"이전 장소에서 이동 팁","backup":"대체 장소","isMeal":false,"lat":-33.8568,"lng":151.2153}]}]}';
+const JSON_PROMPT = '지금까지 수집한 정보를 바탕으로 최종 여행 일정을 순수 JSON으로만 반환하세요. 마크다운, 설명 문장, 코드블록은 쓰지 마세요. 무리한 요청이면 feasibility.status를 needs_adjustment 또는 impossible로 두고, omittedPlaces에 제외 이유와 대안을 넣으세요. 각 day에는 summary와 routeStrategy를 넣고, 각 item에는 duration, cost, reservation, transportTip, backup을 넣으세요.\n{"feasibility":{"status":"feasible","message":"입력한 기간과 예산 안에서 무리 없는 핵심 루트로 구성했습니다.","suggestedAdjustments":[]},"warnings":[],"includedPlaces":["포함 장소"],"omittedPlaces":[{"name":"제외 장소","reason":"제외 이유","alternative":"대안"}],"accommodations":[{"name":"숙소명","location":"위치","checkIn":"YYYY-MM-DD","checkOut":"YYYY-MM-DD","searchQuery":"검색어"}],"days":[{"label":"1일차","theme":"테마","summary":"오늘 일정 요약","routeStrategy":"동선 설계 이유","baseHotel":"숙소명","items":[{"time":"09:00","name":"장소명","note":"왜 이 장소를 배치했는지와 현장 팁","duration":"약 90분","cost":"무료 또는 예상 비용","reservation":"예약 여부","transportTip":"이전 장소에서 이동 팁","backup":"대체 장소","isMeal":false,"geocodeQuery":"English place name for geocoding","lat":-33.8568,"lng":151.2153}]}]}';
 
 function safeText(resp) {
   try {
@@ -171,6 +168,7 @@ async function runAgent(params, onProgress = () => {}) {
     model: CHAT_MODEL_NAME,
     systemInstruction: AGENT_SYSTEM,
     tools: [{ functionDeclarations: toolDefinitions }],
+    generationConfig: { maxOutputTokens: 65536 },
   });
 
   const chatSession = model.startChat({ history: [] });
@@ -191,19 +189,8 @@ async function runAgent(params, onProgress = () => {}) {
   if (!finalText || !finalText.includes('{')) {
     throw new Error('AI가 일정을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.');
   }
-  let plan = await parsePlanWithRepair(chatSession, finalText, 'initial');
-
-  onProgress({ step: 'VALIDATION', progress: 90, message: '최종 동선 및 제약 사항 검증 중...' });
-  for (let repairAttempt = 1; repairAttempt <= 2; repairAttempt++) {
-    const routeCheck = validateAustraliaItinerary(plan, params);
-    if (routeCheck.valid) break;
-
-    console.warn('[agentService] 일정 동선 검증 위반:', routeCheck.violations.map(v => v.message).join(' | '));
-    const repairResponse = await safeSend(chatSession, buildItineraryRepairPrompt(plan, routeCheck.violations));
-    finalText = await resolveFinalText(chatSession, repairResponse);
-    console.log(`[agentService] repaired finalText preview (${repairAttempt}/2):`, finalText.slice(0, 120));
-    plan = await parsePlanWithRepair(chatSession, finalText, `route-repair-${repairAttempt}`);
-  }
+  onProgress({ step: 'VALIDATION', progress: 90, message: '일정 완성 중...' });
+  const plan = await parsePlanWithRepair(chatSession, finalText, 'initial');
 
   if (!Array.isArray(plan.days) || plan.days.length === 0) {
     throw new Error('AI가 일정을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.');
