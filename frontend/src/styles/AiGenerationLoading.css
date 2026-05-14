@@ -293,25 +293,6 @@
       overflow: hidden;
     }
 
-    .ai-generation-loading-page .runway::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      opacity: 0.28;
-      background:
-        repeating-linear-gradient(90deg, transparent 0 42px, rgba(255, 255, 255, 0.4) 42px 64px, transparent 64px 106px);
-      animation: runwayMove 1.8s linear infinite;
-    }
-
-    @keyframes runwayMove {
-      from {
-        transform: translateX(0);
-      }
-
-      to {
-        transform: translateX(-106px);
-      }
-    }
 
     .ai-generation-loading-page .progress-top {
       position: relative;

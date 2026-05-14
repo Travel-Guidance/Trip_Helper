@@ -44,8 +44,8 @@ export function lookupEmergencyNumber(destination) {
 
 export function heroImageForDestination(destination) {
   const images = {
-    호주: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1800&q=80',
-    시드니: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1800&q=80',
+    호주: 'https://unsplash.com/photos/3zb6QUVrfwA/download?force=true&w=2200',
+    시드니: 'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?auto=format&fit=crop&w=2200&q=90',
     일본: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=1800&q=80',
     도쿄: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=1800&q=80',
     오사카: 'https://images.unsplash.com/photo-1590559899731-a382839e5549?auto=format&fit=crop&w=1800&q=80',
@@ -97,6 +97,17 @@ export function parseDurationMinutes(text) {
   const hours = text?.match(/(\d+)\s*시간/)
   const mins  = text?.match(/(\d+)\s*분/)
   return (hours ? parseInt(hours[1], 10) * 60 : 0) + (mins ? parseInt(mins[1], 10) : 0)
+}
+
+export function estimateNswTaxiFareText(distanceMeters) {
+  const km = Number(distanceMeters) / 1000
+  if (!Number.isFinite(km) || km <= 0) return ''
+  const fare = 5 + Math.min(km, 12) * 2.52 + Math.max(0, km - 12) * 2.29
+  return `예상 AUD ${fare.toFixed(2)}`
+}
+
+function shouldShowAustralianTaxiFare(destination) {
+  return /호주|australia|sydney|시드니/i.test(String(destination || ''))
 }
 
 // ── 일정 구조 헬퍼 ─────────────────────────────────────────────
@@ -506,14 +517,17 @@ export function formatTransitResult(result) {
   return options
 }
 
-function formatSimpleRouteResult(result, mode) {
+function formatSimpleRouteResult(result, mode, destination) {
   const leg = result.routes?.[0]?.legs?.[0]
   if (!leg) return null
   const duration = leg.duration?.text || '시간 정보 없음'
   const distance = leg.distance?.text || '거리 정보 없음'
+  const taxiFare = mode === 'taxi' && shouldShowAustralianTaxiFare(destination)
+    ? estimateNswTaxiFareText(leg.distance?.value)
+    : ''
   return {
     mode, icon: mode === 'taxi' ? '🚕' : '🚶', title: mode === 'taxi' ? '택시' : '도보',
-    desc: `${duration} · ${distance}`, time: duration, minutes: parseDurationMinutes(duration) || 999,
+    desc: [duration, distance, taxiFare].filter(Boolean).join(' · '), time: duration, minutes: parseDurationMinutes(duration) || 999,
     route: {
       stepIdx: null,
       path:  leg.steps.flatMap(s => s.path?.map(latLngLiteral).filter(Boolean) || []),
@@ -523,7 +537,7 @@ function formatSimpleRouteResult(result, mode) {
   }
 }
 
-export function requestSimpleRoute(stopIdx, mode, { schedule, activeIdx, cityData }, onResult) {
+export function requestSimpleRoute(stopIdx, mode, { schedule, activeIdx, cityData, destination }, onResult) {
   const s   = schedule[activeIdx]
   if (!s) return
   const key = modeResultKey(s.day, stopIdx, mode)
@@ -534,7 +548,7 @@ export function requestSimpleRoute(stopIdx, mode, { schedule, activeIdx, cityDat
     origin: p[0], destination: p[1],
     travelMode: mode === 'taxi' ? google.maps.TravelMode.DRIVING : google.maps.TravelMode.WALKING,
   }, (result, status) => {
-    const formatted = status === 'OK' && result ? formatSimpleRouteResult(result, mode) : null
+    const formatted = status === 'OK' && result ? formatSimpleRouteResult(result, mode, destination) : null
     if (formatted) onResult(key, formatted)
   })
 }
@@ -588,14 +602,15 @@ export function renderRouteMap(targetId, { schedule, activeIdx, activeStopIdx, s
   const p     = selectedRoute?.start && selectedRoute?.end ? [selectedRoute.start, selectedRoute.end] : getRouteSegment(s.base, activeStopIdx, cityData)
   const map   = new google.maps.Map(el, { center: p[0], zoom: 13, mapTypeControl: false, streetViewControl: false, fullscreenControl: false })
   const bounds = new google.maps.LatLngBounds()
-  const labels = p.length === 1 ? [''] : selectedRoute ? ['S', 'E'] : ['출', '도']
+  const labels = p.length === 1 ? [''] : ['출', '도']
   const colors = p.length === 1 ? ['#0BB97A'] : selectedRoute ? ['#F59E0B', '#29ABE2'] : ['#0BB97A', '#29ABE2']
 
   p.forEach((pt, i) => {
     bounds.extend(pt)
+    const labelText = typeof labels[i] === 'string' ? labels[i] : (i === 0 ? '출' : '도')
     new google.maps.Marker({
       position: pt, map,
-      label: { text: labels[i], color: '#fff', fontWeight: '800', fontSize: '10px' },
+      label: { text: labelText, color: '#fff', fontWeight: '800', fontSize: '10px' },
       icon:  { path: google.maps.SymbolPath.CIRCLE, scale: 13, fillColor: colors[i] || '#29ABE2', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 3 },
     })
   })

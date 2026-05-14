@@ -9,6 +9,15 @@ import {
   STYLE_SUGGESTIONS
 } from '../../data/AiGenerationInputForm'
 
+function readDraft() {
+  try {
+    const stored = sessionStorage.getItem('aiTripDraft')
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
 export default function AiGenerationInputFormView() {
   // --- 상태 관리 ---
   const [currentStep, setCurrentStep] = useState(0)
@@ -24,6 +33,31 @@ export default function AiGenerationInputFormView() {
   const [travelPreference, setTravelPreference] = useState('')
   const [places, setPlaces] = useState([])
   const [styles, setStyles] = useState([])
+
+  useEffect(() => {
+    const draft = readDraft()
+    if (!draft) return
+    if (draft.destinations?.length) setDestinations(draft.destinations)
+    if (draft.startDate || draft.endDate) setDates({ startDate: draft.startDate || '', endDate: draft.endDate || '' })
+    if (draft.travelMode) setTravelMode(draft.travelMode)
+    setCounts({
+      adults: draft.adults ?? 1,
+      teens: draft.teens ?? 0,
+      children: draft.children ?? 0,
+      infants: draft.infants ?? 0,
+    })
+    if (draft.budgetText) setBudgetText(draft.budgetText)
+    if (draft.intensity) {
+      const match = String(draft.intensity).match(/^(\d+)\/100/)
+      if (match) {
+        setIntensity(Number(match[1]))
+        setIntensityTouched(true)
+      }
+    }
+    if (draft.travelPreference) setTravelPreference(draft.travelPreference)
+    if (draft.places?.length) setPlaces(draft.places)
+    if (draft.styles?.length) setStyles(draft.styles)
+  }, [])
   
   // UI 상태
   const [openCalendar, setOpenCalendar] = useState(null)
@@ -335,7 +369,7 @@ export default function AiGenerationInputFormView() {
 
           <section className="summary-card" aria-live="polite">
             <div className="summary-list" id="coverSummary">
-              {[hasDates, hasDestination, budgetText.trim().length > 0, intensityTouched, styles.length > 0].map((done, idx) => (
+              {[hasDestination, hasDates, budgetText.trim().length > 0, intensityTouched, styles.length > 0].map((done, idx) => (
                 <p key={idx} className={`summary-line ${done ? 'done' : ''}`}>
                   <span className="summary-line-icon">{done ? '✓' : '×'}</span>
                   <span>{done ? STEP_DONE_GUIDES[idx] : STEP_GUIDES[idx]}</span>
@@ -358,7 +392,7 @@ export default function AiGenerationInputFormView() {
                 <p>한 번에 전부 묻지 않고, 여행을 설계하는 순서대로 짧게 이어갑니다.</p>
               </div>
               <div className="progress" aria-hidden="true">
-                <span id="progressFill" style={{ width: `${(currentStep + 1) / STEPS.length * 100}%` }}></span>
+                <span id="progressFill" style={{ width: `${Math.max(currentStep + 1, STEPS.filter(s => s.done()).length) / STEPS.length * 100}%` }}></span>
               </div>
             </header>
 
@@ -366,7 +400,7 @@ export default function AiGenerationInputFormView() {
               {STEPS.map((step, index) => (
                 <button
                   key={index}
-                  className={`journey-tab ${index === currentStep ? 'active' : ''} ${index < currentStep || (step.required && step.done()) ? 'done' : ''}`}
+                  className={`journey-tab ${index === currentStep ? 'active' : ''} ${index < currentStep || step.done() ? 'done' : ''}`}
                   type="button"
                   onClick={() => { if (canGoStep(index)) goStep(index) }}
                 >

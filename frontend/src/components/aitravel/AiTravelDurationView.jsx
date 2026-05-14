@@ -257,7 +257,8 @@ export default function AiTravelDurationView() {
   const mapState = useCallback(() => ({
     schedule, activeIdx, activeStopIdx, selectedTravelMode,
     activeTransitStepIdx, routeModeResults, cityData, transitResults,
-  }), [schedule, activeIdx, activeStopIdx, selectedTravelMode, activeTransitStepIdx, routeModeResults, cityData, transitResults])
+    destination: travelData?.destination,
+  }), [schedule, activeIdx, activeStopIdx, selectedTravelMode, activeTransitStepIdx, routeModeResults, cityData, transitResults, travelData?.destination])
 
   const getActiveEmergencyPoint = useCallback(() => {
     if (!day) return null
@@ -377,7 +378,7 @@ export default function AiTravelDurationView() {
   // ── 하루 전체 정류장 택시·대중교통 선조회 ────────────────────
   useEffect(() => {
     if (!mapReady || !travelData || !day) return
-    const state = { schedule, activeIdx, cityData }
+    const state = { schedule, activeIdx, cityData, destination: travelData.destination }
     dayStops.forEach((_, i) => {
       if (i === 0) return
       requestSimpleRoute(i, 'taxi', state, (key, result) => {
@@ -825,10 +826,10 @@ export default function AiTravelDurationView() {
     if (!day) return
     const key = modeResultKey(day.day, stopIdx, mode)
     if (routeModeResults[key]) return
-    requestSimpleRoute(stopIdx, mode, { schedule, activeIdx, cityData }, (k, result) => {
+    requestSimpleRoute(stopIdx, mode, { schedule, activeIdx, cityData, destination: travelData.destination }, (k, result) => {
       setRouteModeResults(prev => ({ ...prev, [k]: result }))
     })
-  }, [day, schedule, activeIdx, cityData, routeModeResults])
+  }, [day, schedule, activeIdx, cityData, routeModeResults, travelData?.destination])
 
   if (!travelData) {
     return (

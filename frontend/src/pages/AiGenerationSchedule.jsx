@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { PLAN } from '../data/AiGenerationSchedule'
 import AiGenerationScheduleView from '../components/aitravel/AiGenerationScheduleView'
 import TravelChatDrawer from '../components/aitravel/TravelChatDrawer'
 import { getPlanDetail } from '../api/bookingApi'
@@ -10,29 +9,6 @@ import {
   markPendingPlanSaveAfterAuth,
   savePendingPlanAfterAuth,
 } from '../utils/pendingPlanSave'
-
-const DEMO_PLAN = {
-  days: PLAN.map((day, i) => ({
-    label: `${i + 1}일차`,
-    theme: day.title,
-    items: day.nodes.map(node => ({
-      time: node.time,
-      name: node.title,
-      note: node.body,
-      isMeal: node.kind === 'meal',
-      lat: node.lat,
-      lng: node.lng,
-    })),
-  })),
-}
-
-const DEMO_INFO = {
-  country: '후쿠오카',
-  nights: PLAN.length - 1,
-  styles: ['맛집 탐방', '산책'],
-  adults: 2,
-  children: 0,
-}
 
 function readResult() {
   try {
@@ -124,11 +100,18 @@ export default function AiGenerationSchedule() {
   }, [planId])
 
   const displayResult = savedResult ?? result
+
+  useEffect(() => {
+    if (!loading && !planId && !displayResult) {
+      navigate('/ai-generation-inputform', { replace: true })
+    }
+  }, [loading, planId, displayResult, navigate])
+
   const shouldWarnBeforeLeave = !isLoggedIn && !planId && Boolean(displayResult?.planData)
-  const planData = displayResult?.planData ?? DEMO_PLAN
+  const planData = displayResult?.planData
   const tripInfo = displayResult?.tripInfo
     ? { ...displayResult.tripInfo, nights: Number(displayResult.tripInfo.nights) }
-    : DEMO_INFO
+    : null
 
   useEffect(() => {
     if (!isLoggedIn || !hasPendingPlanSaveAfterAuth() || displayResult?.planId) return
@@ -237,7 +220,7 @@ export default function AiGenerationSchedule() {
     })
   }
 
-  if (loading) {
+  if (loading || (!planId && !displayResult)) {
     return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>일정을 불러오는 중...</div>
   }
 
@@ -264,7 +247,7 @@ export default function AiGenerationSchedule() {
           onDiscard={handleDiscardFromModal}
         />
       )}
-      <TravelChatDrawer destination={tripInfo.country || tripInfo.continent || ''} />
+      <TravelChatDrawer destination={tripInfo?.country || tripInfo?.continent || ''} />
     </>
   )
 }
