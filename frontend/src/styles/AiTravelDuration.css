@@ -322,7 +322,7 @@
       cursor: pointer; transition: background .12s, color .12s, border-color .12s;
     }
     .ai-travel-duration-page .tool-pad-btn:hover { background: rgba(41,171,226,.08); color: var(--blue-d); border-color: rgba(41,171,226,.25); }
-    .ai-travel-duration-page .tool-pad-btn span { font-size: 16px; }
+    .ai-travel-duration-page .tool-pad-icon { width: 17px; height: 17px; stroke-width: 2.2; color: currentColor; }
 
     /* ─── FEED ─── */
     .ai-travel-duration-page .feed { display: flex; flex-direction: column; gap: 12px; }
@@ -1270,7 +1270,7 @@
     .ai-travel-duration-page .city-num, .ai-travel-duration-page .city-duration, .ai-travel-duration-page .city-day { font-size: 11px; }
 
     .ai-travel-duration-page .c-card-title, .ai-travel-duration-page .tool-pad-btn, .ai-travel-duration-page .sec-kicker, .ai-travel-duration-page .tl-t, .ai-travel-duration-page .tl-badge, .ai-travel-duration-page .tl-tag, .ai-travel-duration-page .tl-route-label, .ai-travel-duration-page .tl-transit-toggle, .ai-travel-duration-page .tl-transit-note, .ai-travel-duration-page .reroute-drop p, .ai-travel-duration-page .b-name, .ai-travel-duration-page .b-val, .ai-travel-duration-page .meal-reroute-panel p, .ai-travel-duration-page .map-hd-btn, .ai-travel-duration-page .fc-ring-denom, .ai-travel-duration-page .fc-hint { font-size: 11px; }
-    .ai-travel-duration-page .tool-pad-btn span { font-size: 18px; }
+    .ai-travel-duration-page .tool-pad-icon { width: 18px; height: 18px; }
 
     .ai-travel-duration-page .sec-head h2 { font-size: 18px; }
     .ai-travel-duration-page .sec-desc, .ai-travel-duration-page .sec-action-btn, .ai-travel-duration-page .tl-card p, .ai-travel-duration-page .reroute-drop strong, .ai-travel-duration-page .rd-yes, .ai-travel-duration-page .rd-no, .ai-travel-duration-page .b-block-title, .ai-travel-duration-page .exp-input, .ai-travel-duration-page .exp-num, .ai-travel-duration-page .exp-log-item, .ai-travel-duration-page .meal-reroute-panel strong, .ai-travel-duration-page .map-route-card span, .ai-travel-duration-page .map-btn, .ai-travel-duration-page .wx-cond, .ai-travel-duration-page .wx-outfit, .ai-travel-duration-page .wx-outfit strong, .ai-travel-duration-page .tl-transit-main strong, .ai-travel-duration-page .tl-transit-time, .ai-travel-duration-page .fc-btn, .ai-travel-duration-page .toast-msg, .ai-travel-duration-page .ta-btn, .ai-travel-duration-page .mi-emergency span, .ai-travel-duration-page .mi-safe span, .ai-travel-duration-page .mi-phrase button { font-size: 12px; }
@@ -1288,6 +1288,69 @@
     .ai-travel-duration-page .exp-num,
     .ai-travel-duration-page .exp-log-item { font-size: 14px; }
     .ai-travel-duration-page .exp-add { font-size: 22px; }
+
+    /* ─── TEACHERS DAY EASTER EGG ─── */
+    @keyframes tde-fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes tde-textIn {
+      0%   { opacity: 0; transform: scale(0.3) translateY(40px); }
+      60%  { opacity: 1; transform: scale(1.08) translateY(-6px); }
+      80%  { transform: scale(0.96) translateY(2px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    @keyframes tde-subIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes tde-floatUp {
+      0%   { transform: translateY(0) scale(1);    opacity: 1; }
+      70%  { opacity: 0.8; }
+      100% { transform: translateY(-105vh) scale(0.4); opacity: 0; }
+    }
+    .tde-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(10, 10, 30, 0.88);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      animation: tde-fadeIn 0.4s ease;
+      overflow: hidden;
+    }
+    .tde-inner {
+      position: relative; z-index: 2;
+      text-align: center; padding: 48px 40px;
+      display: flex; flex-direction: column; align-items: center; gap: 20px;
+    }
+    .tde-text {
+      font-size: clamp(2.4rem, 8vw, 5rem);
+      font-weight: 900; line-height: 1.25;
+      background: linear-gradient(135deg, #ff69b4 0%, #ffd700 40%, #ff4500 70%, #ff1493 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      filter: drop-shadow(0 0 28px rgba(255, 105, 180, 0.75));
+      animation: tde-textIn 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    .tde-sub {
+      font-size: clamp(0.9rem, 2.5vw, 1.15rem);
+      color: rgba(255,255,255,.85); font-weight: 600; letter-spacing: 0.04em;
+      animation: tde-subIn 0.6s ease 0.5s both;
+    }
+    .tde-close {
+      margin-top: 8px; padding: 10px 28px; border-radius: 50px;
+      background: rgba(255,255,255,.15); color: #fff;
+      font-size: 0.95rem; font-weight: 700;
+      border: 1.5px solid rgba(255,255,255,.3); cursor: pointer;
+      animation: tde-subIn 0.6s ease 0.8s both;
+      transition: background 0.2s;
+    }
+    .tde-close:hover { background: rgba(255,255,255,.28); }
+    .tde-hearts { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+    .tde-heart {
+      position: absolute; bottom: -10%;
+      animation: tde-floatUp linear infinite;
+      will-change: transform;
+      user-select: none;
+    }
 
     /* ─── RESPONSIVE ─── */
     @media (max-width: 1100px) {

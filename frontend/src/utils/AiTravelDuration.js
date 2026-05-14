@@ -600,7 +600,7 @@ export function renderRouteMap(targetId, { schedule, activeIdx, activeStopIdx, s
   const p     = selectedRoute?.start && selectedRoute?.end ? [selectedRoute.start, selectedRoute.end] : getRouteSegment(s.base, activeStopIdx, cityData)
   const map   = new google.maps.Map(el, { center: p[0], zoom: 13, mapTypeControl: false, streetViewControl: false, fullscreenControl: false })
   const bounds = new google.maps.LatLngBounds()
-  const labels = p.length === 1 ? [''] : ['출', '도']
+  const labels = p.length === 1 ? ['출'] : ['출', '도']
   const colors = p.length === 1 ? ['#0BB97A'] : selectedRoute ? ['#F59E0B', '#29ABE2'] : ['#0BB97A', '#29ABE2']
 
   p.forEach((pt, i) => {
@@ -608,7 +608,7 @@ export function renderRouteMap(targetId, { schedule, activeIdx, activeStopIdx, s
     const labelText = typeof labels[i] === 'string' ? labels[i] : (i === 0 ? '출' : '도')
     new google.maps.Marker({
       position: pt, map,
-      label: { text: labelText, color: '#fff', fontWeight: '800', fontSize: '10px' },
+      label: labelText,
       icon:  { path: google.maps.SymbolPath.CIRCLE, scale: 13, fillColor: colors[i] || '#29ABE2', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 3 },
     })
   })
