@@ -176,9 +176,7 @@ export function getModeOptions(stop, i, { day, routeModeResults, transitResults 
   const transitLive = routeModeResults[modeResultKey(day, i, 'transit')]
   const fallbackWalk = i === 0
     ? { time: '0분', desc: '숙소 앞에서 바로 일정 시작', minutes: 0 }
-    : stop.kind === 'risk'
-      ? { time: '18분', desc: '대로변 우회 · 골목길 회피', minutes: 18 }
-      : { time: i % 2 ? '12분' : '15분', desc: '현재 루트 유지 · 골목길 포함', minutes: i % 2 ? 12 : 15 }
+    : { time: '조회', desc: '도보 경로 조회', minutes: 999 }
   if (i === 0) {
     return [
       { mode: 'walk', icon: '🚶', title: '도보 시작', desc: '숙소 앞에서 바로 일정 시작', time: '0분', minutes: 0 },

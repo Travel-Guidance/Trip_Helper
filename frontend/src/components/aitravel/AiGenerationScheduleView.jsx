@@ -628,8 +628,9 @@ const RouteMap = forwardRef(function RouteMap({ routeItems, activeDay, dest }, r
 
         const resolved = await Promise.all(spotItems.map(async item => {
           const point = pointFromItem(item)
+          if (point) return point
           const position = await geocodePlace(`${item.name}, ${dest}`)
-          return position ? { ...position, title: item.name, time: item.time } : point
+          return position ? { ...position, title: item.name, time: item.time } : null
         }))
         if (cancelled) return
         geocodedRef.current = resolved
@@ -842,7 +843,7 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
             </div>
             <div className="hero-body">
               <h1 className="hero-title">{dest}</h1>
-              <p className="hero-copy">{days.map(d => d.theme).join(' · ')}</p>
+              {/* <p className="hero-copy">{days.map(d => d.theme).join(' · ')}</p> */}
             </div>
             <div className="hero-stats-bar">
               <div className="hero-stat"><span>총 방문지</span><strong>{totalPlaces}곳</strong></div>
@@ -995,6 +996,7 @@ export default function AiGenerationScheduleView({ planData, tripInfo, onReset, 
                               sessionStorage.setItem('accom_booking_queue', JSON.stringify(queue))
                               sessionStorage.setItem('accom_booking_index', '0')
                               sessionStorage.setItem('accom_return_url', window.location.pathname + window.location.search)
+                              sessionStorage.setItem('accom_booking_source', 'ai-generation-schedule')
                               const { name: _n, ...first } = queue[0]
                               navigate(`/accommodation/results?${new URLSearchParams(first)}`)
                             }}
