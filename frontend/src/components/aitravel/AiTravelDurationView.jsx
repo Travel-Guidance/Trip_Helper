@@ -1073,6 +1073,7 @@ export default function AiTravelDurationView() {
   }, [])
 
   const saveAlbumMemory = useCallback(() => {
+    if (!albumPhoto) { showToast('!', '사진 필요', '사진을 먼저 등록해주세요.', 'warn'); return }
     const token = localStorage.getItem('tripHelperToken')
     if (!token) { closeModal(); return }
     const currentStop = dayStops[activeStopIdx]

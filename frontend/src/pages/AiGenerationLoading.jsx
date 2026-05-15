@@ -103,45 +103,48 @@ export default function AiGenerationLoading() {
 
         const reader = response.body.getReader()
         const decoder = new TextDecoder()
+        let buffer = ''
+
+        const processEvent = (eventText) => {
+          for (const line of eventText.split('\n')) {
+            if (!line.startsWith('data: ')) continue
+            try {
+              const json = JSON.parse(line.substring(6))
+
+              if (json.error) {
+                setError(json.error)
+                return
+              }
+              if (json.progress !== undefined) setProgress(json.progress)
+              if (json.message) setServerMessage(json.message)
+
+              if (json.step === 'COMPLETED' && json.data) {
+                sessionStorage.setItem('aiPlanResult', JSON.stringify({
+                  planData: json.data,
+                  tripInfo: params,
+                  planId: json.planId || null,
+                }))
+                setIsFinishing(true)
+                setProgress(100)
+                setTimeout(() => navigate('/ai-generation-schedule'), 650)
+              }
+            } catch (e) {
+              console.warn('Failed to parse SSE event:', line, e)
+            }
+          }
+        }
 
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
 
-          const chunk = decoder.decode(value, { stream: true })
-          const lines = chunk.split('\n')
+          buffer += decoder.decode(value, { stream: true })
 
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const json = JSON.parse(line.substring(6))
-                
-                if (json.error) {
-                  setError(json.error)
-                  break
-                }
+          const events = buffer.split('\n\n')
+          buffer = events.pop()
 
-                if (json.progress !== undefined) {
-                  setProgress(json.progress)
-                }
-                if (json.message) {
-                  setServerMessage(json.message)
-                }
-
-                if (json.step === 'COMPLETED' && json.data) {
-                  sessionStorage.setItem('aiPlanResult', JSON.stringify({ 
-                    planData: json.data, 
-                    tripInfo: params, 
-                    planId: json.planId || null 
-                  }))
-                  setIsFinishing(true)
-                  setProgress(100)
-                  setTimeout(() => navigate('/ai-generation-schedule'), 650)
-                }
-              } catch (e) {
-                console.warn('Failed to parse SSE line:', line, e)
-              }
-            }
+          for (const event of events) {
+            if (event.trim()) processEvent(event)
           }
         }
       } catch (err) {
