@@ -1253,6 +1253,8 @@
     .ai-travel-duration-page .mi-album-preview-del { position: absolute; bottom: 10px; right: 10px; padding: 5px 12px; border-radius: 999px; background: rgba(0,0,0,.6); color: #fff; border: none; font-size: 12px; font-weight: 600; cursor: pointer; backdrop-filter: blur(4px); transition: background .15s; }
     .ai-travel-duration-page .mi-album-preview-del:hover { background: rgba(220,38,38,.75); }
     .ai-travel-duration-page .mi-album-memo-wrap { margin-top: 14px; }
+    .ai-travel-duration-page .mi-album-title-input { width: 100%; padding: 9px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border2); color: var(--text); font-size: 14px; font-weight: 600; font-family: inherit; margin-bottom: 8px; box-sizing: border-box; transition: border-color .2s; }
+    .ai-travel-duration-page .mi-album-title-input:focus { border-color: var(--blue); outline: none; }
     .ai-travel-duration-page .mi-album-memo { width: 100%; min-height: 72px; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border2); color: var(--text); font-size: 13px; font-family: inherit; line-height: 1.6; resize: none; transition: border-color .2s; }
     .ai-travel-duration-page .mi-album-memo:focus { border-color: var(--blue); outline: none; }
     .ai-travel-duration-page .mi-album-memo-counter { text-align: right; font-size: 11px; color: var(--muted); margin-top: 4px; }

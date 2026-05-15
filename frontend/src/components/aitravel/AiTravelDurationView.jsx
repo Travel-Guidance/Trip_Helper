@@ -250,6 +250,7 @@ export default function AiTravelDurationView() {
   const [emergencyMapUrl, setEmergencyMapUrl] = useState('')
   const [albumPhoto,    setAlbumPhoto]    = useState('')
   const [albumPhotoUrl, setAlbumPhotoUrl] = useState('')
+  const [albumTitle,    setAlbumTitle]    = useState('')
   const [albumMemo,     setAlbumMemo]     = useState('')
   const [activeModalKey, setActiveModalKey] = useState('')
   const [modalOpen,     setModalOpen]     = useState(false)
@@ -895,6 +896,7 @@ export default function AiTravelDurationView() {
     const planResult  = readGeneratedPlanResult()
     const payload = {
       photoUrl: albumPhotoUrl || null, memo: albumMemo || null,
+      title: albumTitle || null,
       locationName: currentStop?.name || null, dayNum: day?.day || 1,
       destination: travelData?.destination || '내 여행',
       planId: getGeneratedPlanId(planResult),
@@ -905,7 +907,7 @@ export default function AiTravelDurationView() {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(payload),
     }).finally(closeModal)
-  }, [dayStops, activeStopIdx, albumPhotoUrl, albumMemo, day, travelData, closeModal])
+  }, [dayStops, activeStopIdx, albumPhotoUrl, albumTitle, albumMemo, day, travelData, closeModal])
 
   // ── 트랜짓 경로 요청 ──────────────────────────────────────
   const handleTransitRequest = useCallback((stopIdx) => {
@@ -1667,9 +1669,11 @@ export default function AiTravelDurationView() {
                 dayStops={dayStops}
                 albumPhoto={albumPhoto}
                 albumPhotoUrl={albumPhotoUrl}
+                albumTitle={albumTitle}
                 albumMemo={albumMemo}
                 setAlbumPhoto={setAlbumPhoto}
                 setAlbumPhotoUrl={setAlbumPhotoUrl}
+                setAlbumTitle={setAlbumTitle}
                 setAlbumMemo={setAlbumMemo}
                 formatExpense={formatExpense}
                 formatKrw={formatKrw}
@@ -1920,7 +1924,7 @@ function CityAccordion({ travelData, schedule, cityData, cityGroups, activeIdx, 
 
 function ModalContent({
   modalKey, travelData, expenses, schedule, cityData, activeIdx, activeStopIdx, dayStops,
-  albumPhoto, albumPhotoUrl, albumMemo, setAlbumPhoto, setAlbumPhotoUrl, setAlbumMemo,
+  albumPhoto, albumPhotoUrl, albumTitle, albumMemo, setAlbumPhoto, setAlbumPhotoUrl, setAlbumTitle, setAlbumMemo,
   formatExpense, formatKrw, formatEurAsKrw, total, totalSpent, categoryBreakdown,
   emergencyMapUrl, setEmergencyMapUrl, getActiveEmergencyPoint, closeModal,
 }) {
@@ -2183,7 +2187,17 @@ function ModalContent({
           <button className="mi-album-preview-del" onClick={() => { setAlbumPhoto(''); setAlbumPhotoUrl('') }}>× 사진 삭제</button>
         </div>
       ) : (
-        <label className="mi-album-drop">
+        <label
+          className="mi-album-drop"
+          onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('drag-over') }}
+          onDragLeave={e => e.currentTarget.classList.remove('drag-over')}
+          onDrop={e => {
+            e.preventDefault()
+            e.currentTarget.classList.remove('drag-over')
+            const f = e.dataTransfer.files[0]
+            if (f && f.type.startsWith('image/')) loadFile(f)
+          }}
+        >
           <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files[0]; if (f) loadFile(f); e.target.value = '' }} />
           <div className="mi-album-drop-icon">📷</div>
           <div className="mi-album-drop-text">클릭하거나 사진을 드래그하세요</div>
@@ -2191,6 +2205,10 @@ function ModalContent({
         </label>
       )}
       <div className="mi-album-memo-wrap">
+        <input
+          className="mi-album-title-input" maxLength={50} placeholder="제목을 입력하세요..."
+          value={albumTitle} onChange={e => setAlbumTitle(e.target.value)}
+        />
         <textarea
           className="mi-album-memo" maxLength={300} placeholder="오늘 여행 소감을 간단히 적어보세요..."
           value={albumMemo} onChange={e => setAlbumMemo(e.target.value)}

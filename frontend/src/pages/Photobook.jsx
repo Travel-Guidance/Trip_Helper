@@ -802,6 +802,26 @@ const PALETTES = [
   { c1: '#4facfe', c2: '#00f2fe' },
 ]
 
+const CITY_EN = {
+  '시드니': 'SYDNEY', '멜버른': 'MELBOURNE', '브리즈번': 'BRISBANE', '퍼스': 'PERTH', '애들레이드': 'ADELAIDE',
+  '서울': 'SEOUL', '부산': 'BUSAN', '제주': 'JEJU', '인천': 'INCHEON',
+  '도쿄': 'TOKYO', '오사카': 'OSAKA', '교토': 'KYOTO', '삿포로': 'SAPPORO', '후쿠오카': 'FUKUOKA',
+  '방콕': 'BANGKOK', '파타야': 'PATTAYA', '치앙마이': 'CHIANG MAI', '푸켓': 'PHUKET',
+  '파리': 'PARIS', '런던': 'LONDON', '로마': 'ROME', '바르셀로나': 'BARCELONA', '마드리드': 'MADRID',
+  '뉴욕': 'NEW YORK', '로스앤젤레스': 'LOS ANGELES', '라스베가스': 'LAS VEGAS', '시카고': 'CHICAGO',
+  '싱가포르': 'SINGAPORE', '홍콩': 'HONG KONG', '마카오': 'MACAU',
+  '발리': 'BALI', '자카르타': 'JAKARTA',
+  '두바이': 'DUBAI', '이스탄불': 'ISTANBUL',
+  '프라하': 'PRAGUE', '빈': 'VIENNA', '암스테르담': 'AMSTERDAM', '베를린': 'BERLIN',
+  '호놀룰루': 'HONOLULU', '뭄바이': 'MUMBAI', '델리': 'DELHI',
+  '타이베이': 'TAIPEI', '베이징': 'BEIJING', '상하이': 'SHANGHAI',
+}
+
+function extractCityEn(location) {
+  const first = location.split(/[\s(]/)[0]
+  return CITY_EN[first] || null
+}
+
 function resolveUrl(url, apiBase) {
   if (!url) return ''
   return url.startsWith('http') ? url : `${apiBase}${url}`
@@ -840,7 +860,6 @@ export default function Photobook() {
         const words = (album.destination || album.title || '여행').split(' ')
         const coverTitle = words.length >= 2 ? `${words[0]}<br>${words.slice(1).join(' ')}` : words[0]
         const palette = PALETTES[i % PALETTES.length]
-        const locations = [...new Set(album.pages.map(p => p.location).filter(Boolean))]
         const pages = album.pages
           .filter(p => p.photo_url)
           .map(p => ({
@@ -849,12 +868,14 @@ export default function Photobook() {
             img: resolveUrl(p.photo_url, apiBase),
           }))
         if (pages.length === 0) return null
+        const dest = album.destination || '내 여행'
+        const sub = 'SYDNEY · MELBOURNE'
         return {
           id: `user-${album.id}`,
-          title: album.title || album.destination || '내 여행',
+          title: album.title || dest,
           coverTitle,
           season: toSeason(album.created_at),
-          sub: locations.slice(0, 3).join(' · ') || album.destination || '내 여행',
+          sub,
           c1: palette.c1,
           c2: palette.c2,
           cover: 'url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=900&q=80)',
@@ -1082,9 +1103,10 @@ export default function Photobook() {
     }
 
     function updateControls(book) {
-      pageCount.textContent = `${Math.min(currentPageIndex + 1, book.pages.length)} / ${book.pages.length}`
+      const right = Math.min(currentPageIndex + 2, book.pages.length)
+      pageCount.textContent = `${currentPageIndex + 1}–${right} / ${book.pages.length}`
       prevPageBtn.disabled = currentPageIndex === 0
-      nextPageBtn.disabled = currentPageIndex >= book.pages.length - 1
+      nextPageBtn.disabled = currentPageIndex + 2 >= book.pages.length
     }
 
     function renderAlbum() {
@@ -1181,10 +1203,10 @@ export default function Photobook() {
 
     async function nextPage(startRotate = 0) {
       const book = travelBooks[currentBookIndex]
-      if (isFlipping || currentPageIndex >= book.pages.length - 1) return
+      if (isFlipping || currentPageIndex + 2 >= book.pages.length) return
 
       isFlipping = true
-      const targetIndex = currentPageIndex + 1
+      const targetIndex = currentPageIndex + 2
       const isDrag = startRotate !== 0
 
       await fadeContentsOut(isDrag ? 0.15 : 0.22)
@@ -1220,7 +1242,7 @@ export default function Photobook() {
       if (isFlipping || currentPageIndex <= 0) return
 
       isFlipping = true
-      const targetIndex = currentPageIndex - 1
+      const targetIndex = currentPageIndex - 2
 
       await fadeContentsOut(0.22)
 

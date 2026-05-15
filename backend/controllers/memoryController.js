@@ -36,7 +36,7 @@ async function saveMemory(req, res) {
   const userId = req.user?.id
   if (!userId) return res.status(401).json({ error: '로그인이 필요합니다.' })
 
-  const { photoUrl, memo, locationName, dayNum, destination, planId } = req.body
+  const { photoUrl, memo, title, locationName, dayNum, destination, planId } = req.body
 
   const conn = await pool.getConnection()
   try {
@@ -79,7 +79,7 @@ async function saveMemory(req, res) {
         dayNum || 1,
         sortOrder,
         photoUrl || null,
-        locationName || null,
+        title || null,
         memo || null,
         locationName || null,
       ]
