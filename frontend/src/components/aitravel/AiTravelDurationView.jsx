@@ -1,19 +1,19 @@
 // AiTravelDurationView.jsx - 여행 일정 메인 뷰 (상태·렌더링 통합 React 컴포넌트)
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import TeachersDayEgg from './TeachersDayEgg'
-import { Camera, Dumbbell, Hotel, Languages, MapPin, Shield, Siren, Wallet } from 'lucide-react'
+import { Camera, Dumbbell, Hotel, Image, Languages, MapPin, Shield, Siren, Wallet } from 'lucide-react'
 import { apiPost, apiGet } from '../../api/apiClient'
 import {
   buildGeneratedTravelData, getDayStops, getRouteInfo, getRouteSegment,
   haversineMeters, formatDistance, lookupEmergencyNumber, heroImageForDestination,
-  makeFormatters, getModeOptions, getTransportPlan, getTransitDemoOptions,
+  makeFormatters, getTransportPlan, getTransitDemoOptions,
   getTransitDetailOptions, transitPanelKey, modeResultKey,
   getTotalSpent, getCurrentDayNumber, getDailyBudgetWon, getCurrentDayExpenses,
   getCurrentDaySpent, getTodayAvailableBudget, getCategoryBreakdown,
   parseBudgetWon,
   normalizeSavedExpense, fetchSavedExpenses, persistExpense, deleteExpense, fetchExchangeRate,
   rebudgetPlanDay, updatePlanBudget,
-  fetchConsulateInfo, fetchEmergencyNearbyInfo, fetchNearbyAmenities, fetchIndoorPlaces, fetchNearbyCafes, fetchDayWeather, buildGoogleMapsRouteUrl,
+  fetchConsulateInfo, fetchEmergencyNearbyInfo, fetchNearbyAmenities, fetchIndoorPlaces, fetchNearbyCafes, fetchDayWeather, translateImageFile, buildGoogleMapsRouteUrl,
   requestSimpleRoute, requestTransitRoute, renderRouteMap, renderSafeRouteMap,
   getGeneratedPlanId, readGeneratedPlanResult,
   BUDGET_CATEGORIES, GOOGLE_MAP_SCRIPT_ID, GOOGLE_MAP_SCRIPT_SRC, EMERGENCY_RADIUS_METERS,
@@ -21,17 +21,20 @@ import {
 
 const QUICK_PHRASES = ['이거 얼마예요?', '화장실 어디예요?', '영수증 주세요', '택시 불러주세요', '병원이 어디예요?', '도와주세요!']
 const TOOL_ITEMS = [
-  { modal: 'translate', Icon: Languages, label: '번역' },
-  { modal: 'budget',    Icon: Wallet,    label: '예산' },
-  { modal: 'fatigue',   Icon: Dumbbell,  label: '피로도' },
-  { modal: 'nearby',    Icon: MapPin,    label: '편의시설' },
-  { modal: 'emergency', Icon: Siren,     label: '긴급' },
-  { modal: 'safety',    Icon: Shield,    label: '야간안전' },
-  { modal: 'album',     Icon: Camera,    label: '사진' },
-  { modal: 'hotel',     Icon: Hotel,     label: '숙소' },
+  { modal: 'translate',      Icon: Languages, label: '번역' },
+  { modal: 'budget',         Icon: Wallet,    label: '예산' },
+  { modal: 'imageTranslate', Icon: Image,     label: '이미지 번역' },
+  { modal: 'nearby',         Icon: MapPin,    label: '편의시설' },
+  { modal: 'emergency',      Icon: Siren,     label: '긴급' },
+  { modal: 'safety',         Icon: Shield,    label: '야간안전' },
+  { modal: 'album',          Icon: Camera,    label: '사진' },
+  { modal: 'hotel',          Icon: Hotel,     label: '숙소' },
 ]
 
-const EASTER_EGG_PHRASE = '박보경 강사님 사랑합니다'
+const EASTER_EGG_PHRASE = '박보경 강사님 감사합니다'
+
+const PODCAST_ICON_URL = 'https://cdn-icons-gif.flaticon.com/15748/15748293.gif'
+const PODCAST_ICON_STATIC_URL = 'https://cdn-icons-png.flaticon.com/512/15748/15748293.png'
 
 function TranslateModal({ destination }) {
   const [input, setInput]               = useState('')
@@ -43,6 +46,7 @@ function TranslateModal({ destination }) {
 
   async function doTranslate(text) {
     if (!text.trim()) return
+    if (text.trim() === EASTER_EGG_PHRASE) { setShowEasterEgg(true); return }
     setLoading(true)
     setTranslated('')
     setPronunciation('')
@@ -90,6 +94,177 @@ function TranslateModal({ destination }) {
         </>
       )}
       {showEasterEgg && <TeachersDayEgg onClose={() => setShowEasterEgg(false)} />}
+    </div>
+  )
+}
+
+function ImageTranslateModal({ destination, podcastEnabled, setPodcastEnabled }) {
+  const [file, setFile] = useState(null)
+  const [preview, setPreview] = useState('')
+  const [progress, setProgress] = useState(0)
+  const [status, setStatus] = useState('idle')
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState('')
+  const fileInputRef = useRef(null)
+
+  useEffect(() => () => {
+    if (preview) URL.revokeObjectURL(preview)
+    window.speechSynthesis?.cancel()
+  }, [preview])
+
+  function pickFile(nextFile) {
+    if (!nextFile) return
+    if (!nextFile.type?.startsWith('image/')) {
+      setError('이미지 파일만 업로드할 수 있습니다.')
+      return
+    }
+    if (preview) URL.revokeObjectURL(preview)
+    setFile(nextFile)
+    setPreview(URL.createObjectURL(nextFile))
+    setProgress(0)
+    setStatus('idle')
+    setResult(null)
+    setError('')
+  }
+
+  async function startUpload(nextFile = file) {
+    if (!nextFile) {
+      fileInputRef.current?.click()
+      return
+    }
+    setStatus('uploading')
+    setProgress(8)
+    setResult(null)
+    setError('')
+
+    let current = 8
+    const timer = window.setInterval(() => {
+      current = Math.min(92, current + Math.max(2, Math.round((92 - current) * 0.12)))
+      setProgress(current)
+    }, 240)
+
+    try {
+      const data = await translateImageFile(nextFile, destination)
+      window.clearInterval(timer)
+      setProgress(100)
+      setResult(data)
+      setStatus('done')
+    } catch (err) {
+      window.clearInterval(timer)
+      setError(err.message || '이미지 번역 중 오류가 발생했습니다.')
+      setStatus('error')
+    }
+  }
+
+  function handleFileChange(e) {
+    const nextFile = e.target.files?.[0]
+    if (!nextFile) return
+    pickFile(nextFile)
+    startUpload(nextFile)
+    e.target.value = ''
+  }
+
+  function stopPodcast() {
+    window.speechSynthesis?.cancel()
+  }
+
+  const podcastText = result?.podcastScript || result?.summary || result?.translated
+
+  useEffect(() => {
+    if (!podcastEnabled) {
+      window.speechSynthesis?.cancel()
+      return
+    }
+    if (!podcastText || !window.speechSynthesis) return
+
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(podcastText)
+    utterance.lang = 'ko-KR'
+    utterance.rate = 0.92
+    utterance.pitch = 1.04
+    utterance.onend = () => {
+      setPodcastEnabled(false)
+    }
+    utterance.onerror = () => {
+      setPodcastEnabled(false)
+    }
+    window.speechSynthesis.speak(utterance)
+  }, [podcastEnabled, podcastText, setPodcastEnabled])
+
+  const progressStyle = { '--progress': `${progress}%` }
+  const titleText = result?.title || '이미지 설명'
+  const summaryText = String(result?.summary || result?.translated || '번역 결과가 없습니다.')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .slice(0, 10)
+    .join('\n')
+
+  return (
+    <div className="mi-image-translate">
+      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
+
+      {!file && (
+        <button
+          type="button"
+          className="mi-image-drop"
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={e => e.preventDefault()}
+          onDrop={e => {
+            e.preventDefault()
+            const nextFile = e.dataTransfer.files?.[0]
+            if (!nextFile) return
+            pickFile(nextFile)
+            startUpload(nextFile)
+          }}
+        >
+          <span className="mi-image-upload-ring">↑</span>
+          <strong>번역을 원하는 사진을 업로드하세요.</strong>
+        </button>
+      )}
+
+      {file && (
+        <div className={`mi-image-processing${status === 'done' ? ' done' : ''}`}>
+          {status === 'done' && preview ? (
+            <div className="mi-image-preview-card">
+              <img src={preview} alt="업로드한 사진" />
+              <button type="button" onClick={() => {
+                setPodcastEnabled(false)
+                stopPodcast()
+                setFile(null)
+                setPreview('')
+                setProgress(0)
+                setStatus('idle')
+                setResult(null)
+                setError('')
+              }} aria-label="업로드한 사진 지우기">×</button>
+            </div>
+          ) : (
+            <>
+              <div className="mi-image-progress" style={progressStyle}>
+                <span>{`${progress}%`}</span>
+              </div>
+              <div className="mi-image-status">
+                {status === 'error' ? '업로드에 실패했습니다.' : '번역중입니다.'}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {error && <div className="mi-image-error">{error}</div>}
+
+      {result && (
+        <div className="mi-image-result">
+          <div className="mi-image-result-title">
+            {titleText}
+          </div>
+          <div className="mi-image-result-box">
+            <strong>요약 번역</strong>
+            <p>{summaryText}</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -254,6 +429,7 @@ export default function AiTravelDurationView() {
   const [albumMemo,     setAlbumMemo]     = useState('')
   const [activeModalKey, setActiveModalKey] = useState('')
   const [modalOpen,     setModalOpen]     = useState(false)
+  const [imagePodcastEnabled, setImagePodcastEnabled] = useState(false)
   const [mealRerouteOpen, setMealRerouteOpen] = useState(false)
   const [routeCard, setRouteCard]   = useState({ title: '선택한 이동 구간', desc: '이동수단을 선택하면 실제 시간·거리가 표시됩니다.' })
   const [toast, setToast]           = useState({ show: false, icon: '', title: '', msg: '', type: '', actions: [] })
@@ -616,7 +792,7 @@ export default function AiTravelDurationView() {
   }, [])
 
   // ── 지출 추가 ─────────────────────────────────────────────
-  const handleAddExpense = useCallback(() => {
+  function handleAddExpense() {
     const name = expName.trim()
     const amountLocal = parseFloat(expAmt) || 0
     if (!name || !amountLocal) return
@@ -647,7 +823,7 @@ export default function AiTravelDurationView() {
       const msg = total ? `오늘 남은 예산 ${formatExpense(Math.max(0, todayAvailable - amountKrw))}` : '카테고리 비중이 업데이트되었습니다'
       showToast('✓', `${formatLocalAmount(amountLocal)} 입력됨`, msg, 'ok')
     }
-  }, [expName, expAmt, expCat, localToKrw, total, totalSpent, currentDayNumber, activeStopIdx, exchangeRate, dayStops, showToast, formatLocalAmount, formatExpense, todayAvailable])
+  }
 
   const handleDeleteExpense = useCallback((expense) => {
     setExpenses(prev => prev.filter(e => e !== expense))
@@ -887,7 +1063,11 @@ export default function AiTravelDurationView() {
 
   // ── 모달 ──────────────────────────────────────────────────
   const openModal  = useCallback((key) => { setActiveModalKey(key); setModalOpen(true) }, [])
-  const closeModal = useCallback(() => { setModalOpen(false); setActiveModalKey('') }, [])
+  const closeModal = useCallback(() => {
+    setImagePodcastEnabled(false)
+    setModalOpen(false)
+    setActiveModalKey('')
+  }, [])
 
   const saveAlbumMemory = useCallback(() => {
     const token = localStorage.getItem('tripHelperToken')
@@ -947,7 +1127,7 @@ export default function AiTravelDurationView() {
 
   const modalTitles = {
     translate: '실시간 번역', emergency: '긴급 정보', nearby: '주변 편의시설',
-    hotel: '숙소 전략', budget: '예산 분석', fatigue: '피로도 상세',
+    hotel: '숙소 전략', budget: '예산 분석', imageTranslate: '이미지 번역',
     album: '여행 앨범', safety: '야간 안전 정보',
   }
 
@@ -1654,14 +1834,13 @@ export default function AiTravelDurationView() {
         className={`overlay${modalOpen ? ' show' : ''}`}
         onClick={e => { if (e.target.classList.contains('overlay')) closeModal() }}
       >
-        <div className="modal-box">
+        <div className={`modal-box${activeModalKey === 'imageTranslate' ? ' image-translate-modal' : ''}`}>
           <div className="modal-title">{modalTitles[activeModalKey]}</div>
           <div>
             {modalOpen && activeModalKey && (
               <ModalContent
                 modalKey={activeModalKey}
                 travelData={travelData}
-                expenses={expenses}
                 schedule={schedule}
                 cityData={cityData}
                 activeIdx={activeIdx}
@@ -1677,18 +1856,35 @@ export default function AiTravelDurationView() {
                 setAlbumMemo={setAlbumMemo}
                 formatExpense={formatExpense}
                 formatKrw={formatKrw}
-                formatEurAsKrw={formatEurAsKrw}
                 total={total}
                 totalSpent={totalSpent}
                 categoryBreakdown={categoryBreakdown}
                 emergencyMapUrl={emergencyMapUrl}
                 setEmergencyMapUrl={setEmergencyMapUrl}
                 getActiveEmergencyPoint={getActiveEmergencyPoint}
-                closeModal={closeModal}
+                safetyData={safetyData}
+                safetyLoading={safetyLoading}
+                imagePodcastEnabled={imagePodcastEnabled}
+                setImagePodcastEnabled={setImagePodcastEnabled}
               />
             )}
           </div>
           <div className="modal-footer">
+            {activeModalKey === 'imageTranslate' && (
+              <button
+                type="button"
+                className={`mi-podcast-toggle${imagePodcastEnabled ? ' on' : ' off'}`}
+                onClick={() => setImagePodcastEnabled(enabled => !enabled)}
+                aria-pressed={imagePodcastEnabled}
+                aria-label={imagePodcastEnabled ? '팟캐스트 읽기 끄기' : '팟캐스트 읽기 켜기'}
+              >
+                <img
+                  src={imagePodcastEnabled ? PODCAST_ICON_URL : PODCAST_ICON_STATIC_URL}
+                  alt=""
+                  aria-hidden="true"
+                />
+              </button>
+            )}
             <button className="mf ghost" onClick={closeModal}>닫기</button>
             <button className="mf primary" onClick={() => { if (activeModalKey === 'album') saveAlbumMemory(); else closeModal() }}>확인</button>
           </div>
@@ -1923,10 +2119,12 @@ function CityAccordion({ travelData, schedule, cityData, cityGroups, activeIdx, 
 // ── 모달 콘텐츠 ───────────────────────────────────────────────
 
 function ModalContent({
-  modalKey, travelData, expenses, schedule, cityData, activeIdx, activeStopIdx, dayStops,
+  modalKey, travelData, schedule, cityData, activeIdx, activeStopIdx, dayStops,
   albumPhoto, albumPhotoUrl, albumTitle, albumMemo, setAlbumPhoto, setAlbumPhotoUrl, setAlbumTitle, setAlbumMemo,
-  formatExpense, formatKrw, formatEurAsKrw, total, totalSpent, categoryBreakdown,
-  emergencyMapUrl, setEmergencyMapUrl, getActiveEmergencyPoint, closeModal,
+  formatExpense, formatKrw, total, totalSpent, categoryBreakdown,
+  emergencyMapUrl, setEmergencyMapUrl, getActiveEmergencyPoint,
+  safetyData, safetyLoading,
+  imagePodcastEnabled, setImagePodcastEnabled,
 }) {
   const [consulateHtml,  setConsulateHtml]  = useState('')
   const [nearbyHtml,     setNearbyHtml]     = useState('')
@@ -2040,6 +2238,14 @@ function ModalContent({
 
   if (modalKey === 'translate') return (
     <TranslateModal destination={travelData?.destination || ''} />
+  )
+
+  if (modalKey === 'imageTranslate') return (
+    <ImageTranslateModal
+      destination={travelData?.destination || ''}
+      podcastEnabled={imagePodcastEnabled}
+      setPodcastEnabled={setImagePodcastEnabled}
+    />
   )
 
   if (modalKey === 'emergency') {

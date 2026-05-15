@@ -1,6 +1,6 @@
 'use strict';
 
-const { chat, generateText } = require('../services/geminiService');
+const { chat, generateText, generateFromImage } = require('../services/geminiService');
 const { buildPersonaSystem, getPersona } = require('../domains/aiTravel/persona');
 const { enrichPlanWithCoordinates } = require('../services/geocodeService');
 const { sanitizeAustraliaItinerary } = require('../services/itinerarySanitizer');
@@ -22,6 +22,13 @@ function extractJsonObject(text) {
   const end = raw.lastIndexOf('}');
   if (start < 0 || end < start) throw new Error('JSON 응답을 찾을 수 없습니다.');
   return JSON.parse(raw.slice(start, end + 1));
+}
+
+function sanitizePodcastScript(value) {
+  return String(value || '')
+    .replace(/^["'\s]*(?:안녕하세요[!.?,。\s]*)+/i, '')
+    .replace(/^["'\s]*(?:여러분[,\s]*)?(?:오늘은|지금부터|이번에는|자[,，]?\s*)\s*/i, '')
+    .trim();
 }
 
 function parseMustVisitList(value) {
@@ -911,6 +918,61 @@ Korean text to translate: "${text.trim().replace(/"/g, '\\"')}"`;
   }
 }
 
+async function translateImage(req, res, next) {
+  try {
+    const { destination = '' } = req.body;
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: '번역할 이미지를 업로드해 주세요.' });
+    }
+
+    const prompt = `You are a travel image translator and long-form audio guide writer for Korean travelers.
+Inspect the uploaded image. Identify what the photo is, then summarize and translate the useful meaning into natural Korean.
+The summary must read like a smooth spoken explanation, not like disconnected bullet points.
+If the image appears to show a tourist attraction, landmark, museum, historic site, monument, temple, palace, church, street, natural attraction, or famous building, identify the most likely place name. If you are not certain, say it is an estimated identification in the summary and podcastScript.
+For tourist attraction photos, write the podcastScript as a rich audio guide: explain the attraction name, origin of the name, historical background, cultural meaning, architecture or natural features, why it is famous, what to look at on site, photo/view points, hidden details, visitor tips, etiquette, and nearby context.
+If the image contains signs, menus, notices, tickets, receipts, labels, or travel instructions, translate the important content and include practical traveler guidance.
+If there is little or no readable text and it is not clearly a tourist attraction, describe the subject of the photo and explain what a traveler should know.
+Destination context: "${String(destination || '').trim() || 'unknown destination'}".
+
+Return ONLY a valid JSON object (no markdown, no code block):
+{
+  "title": "<what this photo is, in Korean, short and clear>",
+  "summary": "<Natural Korean explanatory prose, 4-7 connected sentences. Use complete predicates and smooth transitions, not fragments or bullet points.>",
+  "podcastScript": "<a Korean long-form podcast/audio-guide script, around 20 minutes when read aloud, based on the image and destination context>"
+}
+
+PodcastScript rules:
+- Target length: about 20 minutes when read aloud. Aim for 6,000-8,000 Korean characters.
+- Write in natural spoken Korean, as if a local audio guide is explaining the place while the traveler is looking at the photo.
+- Use multiple coherent paragraphs separated with escaped \\n\\n inside the JSON string.
+- Do NOT use "안녕하세요" anywhere.
+- Do NOT start with a greeting, host intro, opening line, or setup phrase.
+- Start immediately with the useful content from the image.
+- Bad starts: "안녕하세요", "여러분", "오늘은", "지금부터", "이번에는", "자,".
+- Good starts for attractions: "이곳은...", "사진 속 장소는...", "이 건축물은...", "이 유적은...".
+- Do not invent precise dates, names, legends, or facts if uncertain. Say "정확한 명칭은 사진만으로 단정하기 어렵지만" when needed.
+- Keep the output valid JSON. Escape all line breaks inside string values as \\n.`;
+
+    const raw = await generateFromImage(prompt, file.buffer, file.mimetype, {
+      maxOutputTokens: 8192,
+      temperature: 0.7,
+    });
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('이미지 번역 결과를 파싱할 수 없습니다.');
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    res.json({
+      title: parsed.title || '이미지 설명',
+      summary: parsed.summary || parsed.translated || '',
+      podcastScript: sanitizePodcastScript(parsed.podcastScript || parsed.summary || parsed.translated || ''),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   generatePlan,
   chatbot,
@@ -925,4 +987,5 @@ module.exports = {
   updatePlanBudget,
   rebudgetPlanDay,
   translateText,
+  translateImage,
 };

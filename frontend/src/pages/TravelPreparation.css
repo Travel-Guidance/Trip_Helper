@@ -1,0 +1,107 @@
+.travel-prep-container {
+  box-sizing: border-box;
+  font-family: "Pretendard", "Malgun Gothic", sans-serif;
+  background: linear-gradient(to bottom, #87ceeb, #e0f6ff);
+  min-height: calc(100vh - 56px);
+  padding: 40px 20px 100px;
+  color: #333;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* 상단 소개글 영역 */
+.prep-header {
+  text-align: center;
+  margin-bottom: 50px;
+  margin-top: 30px;
+  color: #1a4a76;
+}
+
+.prep-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 15px;
+  font-weight: 800;
+}
+
+.prep-header p {
+  font-size: 1.1rem;
+  color: #3d6a8f;
+  line-height: 1.5;
+}
+
+/* 반응형 그리드: 화면 크기에 맞춰 카드가 자동 배열됨 */
+.prep-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+}
+
+/* 입체 도형 느낌의 카드 디자인 */
+.prep-card {
+  background-color: #ffffff;
+  border-radius: 20px;
+  overflow: hidden;
+  /* 3D 느낌을 주는 그림자 효과 */
+  box-shadow:
+    0 10px 20px rgba(0, 0, 0, 0.08),
+    0 6px 6px rgba(0, 0, 0, 0.05);
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 마우스를 올렸을 때 카드가 위로 살짝 떠오르는 효과 */
+.prep-card:hover {
+  transform: translateY(-10px);
+  box-shadow:
+    0 15px 30px rgba(0, 0, 0, 0.15),
+    0 10px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* 카드 상단: 물품 이름 (진한 글씨) */
+.card-title {
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #2c3e50;
+  padding: 20px 10px 15px;
+  background-color: #f8fbff;
+  border-bottom: 2px solid #eef2f6;
+}
+
+/* 카드 중앙: 이미지 영역 */
+.card-image {
+  width: 100%;
+  height: 250px;
+  overflow: hidden;
+  background-color: #f0f0f0; /* 이미지가 없을 때 기본 배경색 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* 이미지 전체가 보이도록 설정 */
+}
+
+/* 카드 하단: 안내사항 (2~3줄) */
+.card-info {
+  padding: 20px;
+  flex-grow: 1; /* 글자 수가 달라도 카드 높이를 맞춰줌 */
+  background-color: #ffffff;
+}
+
+.card-info p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #555;
+  word-break: keep-all; /* 단어 단위로 줄바꿈 처리 */
+}
+
+.card-info strong {
+  color: #e74c3c; /* 강조하고 싶은 부분은 빨간색으로 표시 */
+}
