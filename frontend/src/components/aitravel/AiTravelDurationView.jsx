@@ -1062,7 +1062,10 @@ export default function AiTravelDurationView() {
   }, [showToast, fatigueVal, formatEurAsKrw, schedule, activeIdx, activeStopIdx, cityData, selectedTravelMode, routeModeResults, emergencyMapUrl, dayStops])
 
   // ── 모달 ──────────────────────────────────────────────────
-  const openModal  = useCallback((key) => { setActiveModalKey(key); setModalOpen(true) }, [])
+  const openModal  = useCallback((key) => {
+    if (key === 'album') { setAlbumPhoto(''); setAlbumPhotoUrl(''); setAlbumTitle(''); setAlbumMemo('') }
+    setActiveModalKey(key); setModalOpen(true)
+  }, [])
   const closeModal = useCallback(() => {
     setImagePodcastEnabled(false)
     setModalOpen(false)
@@ -1086,8 +1089,15 @@ export default function AiTravelDurationView() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(payload),
-    }).finally(closeModal)
-  }, [dayStops, activeStopIdx, albumPhotoUrl, albumTitle, albumMemo, day, travelData, closeModal])
+    }).then(r => {
+      closeModal()
+      if (r.ok) showToast('✓', '등록 완료', '여행 앨범에 사진이 저장되었습니다.', 'ok')
+      else showToast('!', '등록 실패', '사진 저장에 실패했습니다. 다시 시도해주세요.', 'warn')
+    }).catch(() => {
+      closeModal()
+      showToast('!', '등록 실패', '네트워크 오류로 저장에 실패했습니다.', 'warn')
+    })
+  }, [dayStops, activeStopIdx, albumPhotoUrl, albumTitle, albumMemo, day, travelData, closeModal, showToast])
 
   // ── 트랜짓 경로 요청 ──────────────────────────────────────
   const handleTransitRequest = useCallback((stopIdx) => {
@@ -1832,7 +1842,6 @@ export default function AiTravelDurationView() {
       {/* OVERLAY MODAL */}
       <div
         className={`overlay${modalOpen ? ' show' : ''}`}
-        onClick={e => { if (e.target.classList.contains('overlay')) closeModal() }}
       >
         <div className={`modal-box${activeModalKey === 'imageTranslate' ? ' image-translate-modal' : ''}`}>
           <div className="modal-title">{modalTitles[activeModalKey]}</div>

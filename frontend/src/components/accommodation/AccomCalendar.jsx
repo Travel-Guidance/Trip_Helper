@@ -48,7 +48,7 @@ export default function AccomCalendar({ checkIn, checkOut, onSelect, onClose }) 
     : 0
 
   const getDayClass = (dateStr) => {
-    if (dateStr < todayStr) return 'ac-cal-day ac-cal-day--past'
+    if (dateStr <= todayStr) return 'ac-cal-day ac-cal-day--past'
     let cls = 'ac-cal-day'
     const dow = new Date(dateStr + 'T00:00:00').getDay()
     if (dow === 0) cls += ' dow-sun'
@@ -94,7 +94,7 @@ export default function AccomCalendar({ checkIn, checkOut, onSelect, onClose }) 
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day     = i + 1
             const dateStr = toStr(year, month, day)
-            const past    = dateStr < todayStr
+            const past    = dateStr <= todayStr
             return (
               <button
                 key={day}
